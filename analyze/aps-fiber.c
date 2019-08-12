@@ -1991,45 +1991,6 @@ void *count_node(void *u, void *node)
   return u;
 }
 
-
-// function that checks whether os1 includes everything in os2
-BOOL oset_includes(OSET os1, OSET os2)
-{
-    OSET p, q;
-    BOOL contains = TRUE;
-    for (q = os2; q !=
-        NULL && contains; q = q -> rest) {
-        contains = FALSE;
-        for (p = os1; p != NULL; p = p -> rest) {
-            if (p -> o ==
-                q -> o) {
-                contains = TRUE;
-                break;
-            }
-        }
-    }
-    return contains;
-}
-
-// function that checks whether os1 includes everything in os2
-BOOL uset_includes(USET us1, USET us2)
-{
-    USET p, q;
-    BOOL contains = TRUE;
-    for (q = us2; q !=
-        NULL && contains; q = q -> rest) {
-        contains = FALSE;
-        for (p = us1; p != NULL; p = p -> rest) {
-            if (p -> u ==
-                q -> u) {
-                contains = TRUE;
-                break;
-            }
-        }
-    }
-    return contains;
-}
-
 //
 void *compute_OU(void *u, void *node)
 {
@@ -3378,5 +3339,4 @@ void print_fiberset_entry(FIBERSET fs, FILE *stream) {
     break;
   }
 }
-
 
