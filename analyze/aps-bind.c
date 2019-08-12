@@ -120,6 +120,28 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
   switch (Declaration_KEY(d)) {
   case KEYdeclaration:
     {
+
+      switch (Declaration_KEY(d)) {
+          case KEYconstructor_decl:
+          {
+            TypeEnvironment type_env_ptr = old->type_env;
+            while (type_env_ptr != NULL && type_env_ptr->type_formals != NULL) {
+                Declaration tfs = type_env_ptr->type_formals;
+                Declaration tf;
+                for (tf = first_Declaration(tfs); tf != NULL ; tf = DECL_NEXT(tf)) {
+                    if (TYPE_FORMAL_IS_EXTENSION(tf)) {
+                        aps_error(d, "Adding a constructor in extending module should be forbidden");
+                    }
+                }
+                type_env_ptr = type_env_ptr->outer;
+            }
+
+            break;
+          }
+          default:
+            break;
+      }
+
       Symbol name = def_name(declaration_def(d));
       if (name == NULL || name == underscore_symbol) {
 	return old;
