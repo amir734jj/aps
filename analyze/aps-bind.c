@@ -3,6 +3,7 @@
 #include <string.h>
 #include "jbb-alloc.h"
 #include "aps-ag.h"
+#include "aps-fiber.c"
 
 int bind_debug;
 
@@ -129,7 +130,7 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
                 Declaration tfs = type_env_ptr->type_formals;
                 Declaration tf;
                 for (tf = first_Declaration(tfs); tf != NULL ; tf = DECL_NEXT(tf)) {
-                    if (TYPE_FORMAL_IS_EXTENSION(tf)) {
+                    if (TYPE_FORMAL_IS_EXTENSION(tf) && !local_type_p(type_env_ptr->u.inferred)) {
                         aps_error(d, "Adding a constructor in extending module should be forbidden");
                     }
                 }
