@@ -126,6 +126,7 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
           case KEYconstructor_decl:
           {
             TypeEnvironment type_env_ptr = old->type_env;
+            fprintf(stderr,"line 129\n");
             while (type_env_ptr != NULL && type_env_ptr->type_formals != NULL) {
                 Declaration tfs = type_env_ptr->type_formals;
                 Declaration tf;
