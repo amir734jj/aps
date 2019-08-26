@@ -118,7 +118,10 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
   if (underscore_symbol == 0) {
     underscore_symbol = intern_symbol("_");
   }
-  switch (Declaration_KEY(d)) {
+
+    fprintf(stderr,"line 122\n");
+
+    switch (Declaration_KEY(d)) {
   case KEYdeclaration:
     {
 
