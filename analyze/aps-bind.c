@@ -134,11 +134,14 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
                 Declaration tfs = type_env_ptr->type_formals;
                 Declaration tf;
                 fprintf(stderr,"line 132\n");
+
+                int i = 0;
                 for (tf = first_Declaration(tfs); tf != NULL ; tf = DECL_NEXT(tf)) {
                     fprintf(stderr,"line 134\n");
-                    if (TYPE_FORMAL_IS_EXTENSION(tf) && !local_type_p(type_env_ptr->u.inferred)) {
+                    if (TYPE_FORMAL_IS_EXTENSION(tf) && !local_type_p(type_env_ptr->u.inferred[i])) {
                         aps_error(d, "Adding a constructor in extending module should be forbidden");
                     }
+                    i++;
                 }
                 type_env_ptr = type_env_ptr->outer;
             }
