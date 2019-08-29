@@ -26,6 +26,7 @@ main(int argc,char **argv) {
       } else usage();
     } else {
       Program p = find_Program(make_string(argv[i]));
+      printf("we are here!");
       bind_Program(p);
       aps_check_error("binding");
       type_Program(p);

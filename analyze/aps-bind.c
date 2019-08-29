@@ -119,7 +119,7 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
     underscore_symbol = intern_symbol("_");
   }
 
-    fprintf(stderr,"line 122\n");
+    printf("line 122\n");
 
     switch (Declaration_KEY(d)) {
   case KEYdeclaration:
@@ -129,15 +129,15 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
           case KEYconstructor_decl:
           {
             TypeEnvironment type_env_ptr = old->type_env;
-            fprintf(stderr,"line 129\n");
+              printf("line 129\n");
             while (type_env_ptr != NULL && type_env_ptr->type_formals != NULL) {
                 Declaration tfs = type_env_ptr->type_formals;
                 Declaration tf;
-                fprintf(stderr,"line 132\n");
+                printf("line 132\n");
 
                 int i = 0;
                 for (tf = first_Declaration(tfs); tf != NULL ; tf = DECL_NEXT(tf)) {
-                    fprintf(stderr,"line 134\n");
+                    printf("line 134\n");
                     if (TYPE_FORMAL_IS_EXTENSION(tf) && !local_type_p(type_env_ptr->u.inferred[i])) {
                         aps_error(d, "Adding a constructor in extending module should be forbidden");
                     }
