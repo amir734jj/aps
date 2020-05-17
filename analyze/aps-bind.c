@@ -57,7 +57,8 @@ void load_type_actuals(TypeActuals type_actuals, TypeEnvironment te) {
   }
 }
 
-static void push_type_contour(Declaration d, TypeActuals tacts, Declaration tdecl) {
+void create_type_contour(TypeEnvironment outer, Declaration d, TypeActuals tacts, void *tnode)
+{
   Declarations formals = NULL;
   switch (Declaration_KEY(d))
   {
@@ -76,15 +77,33 @@ static void push_type_contour(Declaration d, TypeActuals tacts, Declaration tdec
   TypeEnvironment new_type_env =
     (TypeEnvironment)HALLOC(sizeof(struct TypeContour) + sizeof(Type) * type_actuals_count);
 
-  new_type_env->outer = current_type_env;
+  new_type_env->outer = outer;
   new_type_env->source = d;
   new_type_env->num_type_actuals = type_actuals_count;
   new_type_env->type_formals = formals;
-  new_type_env->u.result_decl = tdecl;
 
   if (tacts != NULL) {
     load_type_actuals(tacts, new_type_env);
   }
+
+  switch (ABSTRACT_APS_tnode_phylum(tnode))
+  {
+  case KEYType:
+    new_type_env->u.result_type = (Type) tnode;
+    break;
+  case KEYDeclaration:
+    new_type_env->u.result_decl = (Declaration) tnode;
+    break;
+  default:
+    aps_error(tnode, "Unexpected result AST node type of %d", (int) ABSTRACT_APS_tnode_phylum(tnode));
+    break;
+  }
+
+  return new_type_env;
+}
+
+static void push_type_contour(Declaration d, TypeActuals tacts, Declaration tdecl) {
+  TypeEnvironment new_type_env = create_type_contour(current_type_env, d, tacts, tdecl);
   current_type_env = new_type_env;
 }
 
@@ -97,7 +116,6 @@ static void set_instance_index(Declarations ds)
     Declaration_info(formal)->instance_index = i;
   }
 }
-
 
 static void pop_type_contour()
 {

@@ -29,6 +29,180 @@ Type constructor_return_type(Declaration decl) {
 
 Declaration current_module = NULL;
 
+// Signature infer_signature(TypeEnvironment scope, Signature sig, Declaration decl);
+Signature infer_type_sig(TypeEnvironment scope, Declaration decl, Type type);
+TypeEnvironment build_type_inst_type_environment(Type ty);
+
+
+// Populates the derives properties of a Sign_Info struct
+Signature infer_signature(TypeEnvironment scope, Signature sig, Declaration decl) {
+  // printf("%d\n", Signature_KEY(sig));
+  switch (Signature_KEY(sig)) {
+  case KEYsig_inst:
+    {
+      Class class = sig_inst_class(sig);
+      Use use = class_use_use(class);
+      Declaration class_decl = USE_DECL(use);
+
+      // For each formal used in signature
+      //    Find the formal's index that is used in module declaration such that the names match
+      //        Lookup the actual in type instance actual using index
+      TypeActuals inferred_actuals = nil_TypeActuals();
+      TypeActuals tfs1 = sig_inst_actuals(sig);
+
+      int count = 0;
+      for (Type tf1=first_TypeActual(tfs1); tf1 != NULL; tf1 = TYPE_NEXT(tf1), count++) {
+          char* tf1_name = symbol_name(use_name(type_use_use(tf1)));
+          if (strcmp("Result", symbol_name(use_name(type_use_use(tf1)))) == 0) {
+            inferred_actuals = append_TypeActuals(inferred_actuals, list_TypeActuals(tf1));
+            count--;
+            continue;
+          }
+
+          Declarations tfs2 = some_class_decl_type_formals(decl);
+          int i = 0;
+          for (Declaration tf2=first_Declaration(tfs2); tf2 != NULL; tf2 = DECL_NEXT(tf2), i++) {
+            char* tf2_name = decl_name(tf2);
+            if (strcmp(tf1_name, tf2_name) == 0) {
+              int j = 0;
+              TypeActuals as = scope->type_actuals;
+              Type a;
+              for (a = first_TypeActual(as); a != NULL; a=TYPE_NEXT(a), j++) {
+                if (i == j) {
+                  inferred_actuals = append_TypeActuals(inferred_actuals, list_TypeActuals(a));
+                  count--;
+                }
+              }
+            }
+          }
+      }
+
+      if (count != 0) {
+        aps_error(sig, "Failed to resolve actuals while inferring type_sig");
+      }
+
+      Signature sig_self = sig_inst(TRUE, TRUE, class, inferred_actuals);
+
+      // push resolved actuals to the contour
+      scope = create_type_contour(scope, scope->source, inferred_actuals, scope->u.result_decl);
+
+      Signature parent_sig = some_class_decl_parent(class_decl);
+      Signature parent_inferred_signature = infer_signature(scope, parent_sig, class_decl);
+
+      return mult_sig(sig_self, parent_inferred_signature);
+    }
+    break;
+    case KEYmult_sig:
+      {
+        Signature inferred_sig1 = infer_signature(scope, mult_sig_sig1(sig), decl);
+        Signature inferred_sig2 = infer_signature(scope, mult_sig_sig2(sig), decl);
+        return mult_sig(inferred_sig1, inferred_sig2);
+      }
+      break;
+    case KEYfixed_sig:
+      {
+        Types types = fixed_sig_types(sig);
+        // TODO: Consult with Dr. Boyland
+        // Maybe iterate over the types and resolve their signatures
+        return no_sig();
+      } 
+    case KEYno_sig:
+      return no_sig();
+    case KEYsig_use:
+      return no_sig();
+    default:
+      aps_error(sig, "Not sure that is the type code while inferring signatures");
+      break;
+  }
+
+  // Continue further
+  return no_sig();
+}
+
+
+Signature infer_type_sig(TypeEnvironment scope, Declaration decl, Type type) {
+  switch (Type_KEY(type))
+  {
+  case KEYtype_use:
+  {
+    // This will be set by a secondary traversal
+    return no_sig();
+  }
+  case KEYtype_inst:
+  {
+    // TypeEnvironment is null, build it
+    if (scope == NULL) {
+      scope = build_type_inst_type_environment(type_decl_type(decl));
+    }
+
+    // // if (Use_KEY(use) == KEYqual_use) {
+    // //   if (Type_KEY(qual_use_from(use)) == KEYtype_use) {
+    // //     Declaration e = USE_DECL(type_use_use(qual_use_from(use)));
+    // //     scope->u.type_actuals = type_inst_type_actuals(type_decl_type(e));
+    // //   } else {
+    // //     scope->u.type_actuals = type_inst_type_actuals(qual_use_from(use));
+    // //   }
+    // // }
+
+    // // get class from module, get signature from type_int
+    // // this can also be accomplished by using scope
+    // Module module = type_inst_module(type);
+    // Use module_use = module_use_use(module);
+    // Declaration class_decl = Use_info(module_use)->use_decl;
+
+    // Signature self_sig = sig_inst(TRUE, TRUE, class_use(module_use), scope->type_actuals);
+    // // Collect all the extended modules
+    // Signature parents_sig = some_class_decl_parent(class_decl);
+    // Signature parent_inferred_signature = infer_signature(scope, parents_sig, class_decl);
+
+    // // Mix in together signatures
+    // Signature result_sig = mult_sig(self_sig, parent_inferred_signature);
+
+    // if (strcmp("Result", decl_name(module_decl_result_type(class_decl))) != 0) {
+    //   Signature result_decl_sig = infer_type_sig(scope, type_decl_type(module_decl_result_type(class_decl)));
+    //   result_sig = mult_sig(result_sig, result_decl_sig);
+    // }
+
+    return NULL;
+  }
+  case KEYno_type:
+  case KEYremote_type:
+  case KEYprivate_type:
+    return no_sig();
+    return;
+  case KEYfunction_type:
+    return no_sig();
+  default:
+    aps_error(type, "Not sure that is the type code while inferring signatures");
+    break;
+  }
+
+  return no_sig();
+}
+
+// Code taken from type_inst type checking 
+TypeEnvironment build_type_inst_type_environment(Type ty)
+{
+  Use mu = module_use_use(type_inst_module(ty));
+  Declaration mdecl = USE_DECL(mu);
+
+  Declarations formals = module_decl_type_formals(mdecl);
+  TypeActuals actuals = type_inst_type_actuals(ty);
+
+  int num_type_actuals = compute_type_contour_size(formals, actuals);
+  TypeEnvironment te = (TypeEnvironment)HALLOC(sizeof(struct TypeContour) + num_type_actuals * sizeof(Type));
+
+  te->num_type_actuals = compute_type_contour_size(formals, actuals);
+
+  te->outer = USE_TYPE_ENV(mu);
+  te->source = mdecl;
+  te->type_formals = module_decl_type_formals(mdecl);
+  te->u.result_type = ty;
+  // te->type_actuals = type_inst_type_actuals(ty);
+
+  return te;
+}
+
 static void* do_typechecking(void* ignore, void*node) {
   // find places where Expression, Pattern or Default is used
   switch (ABSTRACT_APS_tnode_phylum(node)) {
@@ -258,6 +432,26 @@ static void* do_typechecking(void* ignore, void*node) {
     {
       Type ty = (Type)node;
       switch (Type_KEY(ty)) {
+      case KEYtype_use:
+      {
+        Use use = type_use_use(ty);
+        Declaration decl = USE_DECL(use);
+        if (decl == NULL) aps_error(ty, "Use is not set while inferring type_sig");
+
+        TypeEnvironment te = USE_TYPE_ENV(use);
+
+        switch (Declaration_KEY(decl))
+        {
+        case KEYtype_decl:
+          Type_info(ty)->type_sig = infer_type_sig(te, decl, ty);
+          break;
+        default:
+          aps_warning(ty, "Use is of %d and inferring signature for it is not implemented",
+            Declaration_KEY(decl));
+        }
+
+        return 0;
+      }
       case KEYtype_inst:
 	{
 	  Use mu = module_use_use(type_inst_module(ty));
