@@ -33,4 +33,4 @@ extern int bind_debug;
 #define PRAGMA_ACTIVATION 1
 
 void load_type_actuals(TypeActuals type_actuals, TypeEnvironment te);
-void create_type_contour(TypeEnvironment outer, Declaration d, TypeActuals tacts, void *tnode);
+TypeEnvironment create_type_contour(TypeEnvironment outer, Declaration d, TypeActuals tacts, void *tnode);
