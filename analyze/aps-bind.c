@@ -86,17 +86,19 @@ TypeEnvironment create_type_contour(TypeEnvironment outer, Declaration d, TypeAc
     load_type_actuals(tacts, new_type_env);
   }
 
-  switch (ABSTRACT_APS_tnode_phylum(tnode))
-  {
-  case KEYType:
-    new_type_env->u.result_type = (Type) tnode;
-    break;
-  case KEYDeclaration:
-    new_type_env->u.result_decl = (Declaration) tnode;
-    break;
-  default:
-    aps_error(tnode, "Unexpected result AST node type of %d", (int) ABSTRACT_APS_tnode_phylum(tnode));
-    break;
+  if (tnode != NULL) {
+    switch (ABSTRACT_APS_tnode_phylum(tnode))
+    {
+    case KEYType:
+      new_type_env->u.result_type = (Type) tnode;
+      break;
+    case KEYDeclaration:
+      new_type_env->u.result_decl = (Declaration) tnode;
+      break;
+    default:
+      aps_error(tnode, "Unexpected result AST node type of %d", (int) ABSTRACT_APS_tnode_phylum(tnode));
+      break;
+    }
   }
 
   return new_type_env;

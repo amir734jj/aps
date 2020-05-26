@@ -120,50 +120,47 @@ Signature infer_signature(TypeEnvironment scope, Signature sig, Declaration decl
 }
 
 
-Signature infer_type_sig(TypeEnvironment scope, Declaration decl, Type type) {
+Signature infer_type_sig(TypeEnvironment scope, Declaration tdecl, Type type) {
   switch (Type_KEY(type))
   {
   case KEYtype_use:
-  {
-    // This will be set by a secondary traversal
-    return no_sig();
-  }
+    return infer_type_sig(scope, tdecl, type_decl_type(tdecl));
   case KEYtype_inst:
   {
     // TypeEnvironment is null, build it
     if (scope == NULL) {
-      scope = build_type_inst_type_environment(type_decl_type(decl));
+      scope = build_type_inst_type_environment(type_decl_type(tdecl));
     }
 
-    // // if (Use_KEY(use) == KEYqual_use) {
-    // //   if (Type_KEY(qual_use_from(use)) == KEYtype_use) {
-    // //     Declaration e = USE_DECL(type_use_use(qual_use_from(use)));
-    // //     scope->u.type_actuals = type_inst_type_actuals(type_decl_type(e));
-    // //   } else {
-    // //     scope->u.type_actuals = type_inst_type_actuals(qual_use_from(use));
-    // //   }
-    // // }
+    if (Use_KEY(use) == KEYqual_use) {
+      if (Type_KEY(qual_use_from(use)) == KEYtype_use) {
+        Declaration e = USE_DECL(type_use_use(qual_use_from(use)));
+        scope->u.type_actuals = type_inst_type_actuals(type_decl_type(e));
+      } else {
+        scope->u.type_actuals = type_inst_type_actuals(qual_use_from(use));
+      }
+    }
 
-    // // get class from module, get signature from type_int
-    // // this can also be accomplished by using scope
-    // Module module = type_inst_module(type);
-    // Use module_use = module_use_use(module);
-    // Declaration class_decl = Use_info(module_use)->use_decl;
+    // get class from module, get signature from type_int
+    // this can also be accomplished by using scope
+    Module module = type_inst_module(type);
+    Use module_use = module_use_use(module);
+    Declaration class_decl = Use_info(module_use)->use_decl;
 
-    // Signature self_sig = sig_inst(TRUE, TRUE, class_use(module_use), scope->type_actuals);
-    // // Collect all the extended modules
-    // Signature parents_sig = some_class_decl_parent(class_decl);
-    // Signature parent_inferred_signature = infer_signature(scope, parents_sig, class_decl);
+    Signature self_sig = sig_inst(TRUE, TRUE, class_use(module_use), scope->type_actuals);
+    // Collect all the extended modules
+    Signature parents_sig = some_class_decl_parent(class_decl);
+    Signature parent_inferred_signature = infer_signature(scope, parents_sig, class_decl);
 
-    // // Mix in together signatures
-    // Signature result_sig = mult_sig(self_sig, parent_inferred_signature);
+    // Mix in together signatures
+    Signature result_sig = mult_sig(self_sig, parent_inferred_signature);
 
-    // if (strcmp("Result", decl_name(module_decl_result_type(class_decl))) != 0) {
-    //   Signature result_decl_sig = infer_type_sig(scope, type_decl_type(module_decl_result_type(class_decl)));
-    //   result_sig = mult_sig(result_sig, result_decl_sig);
-    // }
+    if (strcmp("Result", decl_name(module_decl_result_type(class_decl))) != 0) {
+      Signature result_decl_sig = infer_type_sig(scope, module_decl_result_type(class_decl), type_decl_type(module_decl_result_type(class_decl)));
+      result_sig = mult_sig(result_sig, result_decl_sig);
+    }
 
-    return NULL;
+    return result_sig;
   }
   case KEYno_type:
   case KEYremote_type:
@@ -185,22 +182,10 @@ TypeEnvironment build_type_inst_type_environment(Type ty)
 {
   Use mu = module_use_use(type_inst_module(ty));
   Declaration mdecl = USE_DECL(mu);
-
-  Declarations formals = module_decl_type_formals(mdecl);
+  TypeEnvironment outer = USE_TYPE_ENV(mu);
   TypeActuals actuals = type_inst_type_actuals(ty);
 
-  int num_type_actuals = compute_type_contour_size(formals, actuals);
-  TypeEnvironment te = (TypeEnvironment)HALLOC(sizeof(struct TypeContour) + num_type_actuals * sizeof(Type));
-
-  te->num_type_actuals = compute_type_contour_size(formals, actuals);
-
-  te->outer = USE_TYPE_ENV(mu);
-  te->source = mdecl;
-  te->type_formals = module_decl_type_formals(mdecl);
-  te->u.result_type = ty;
-  // te->type_actuals = type_inst_type_actuals(ty);
-
-  return te;
+  return create_type_contour(outer, mdecl, actuals, ty);
 }
 
 static void* do_typechecking(void* ignore, void*node) {
@@ -444,10 +429,12 @@ static void* do_typechecking(void* ignore, void*node) {
         {
         case KEYtype_decl:
           Type_info(ty)->type_sig = infer_type_sig(te, decl, ty);
+          print_Signature(Type_info(ty)->type_sig, stdout);
+          printf("\n");
           break;
         default:
-          aps_warning(ty, "Use is of %d and inferring signature for it is not implemented",
-            Declaration_KEY(decl));
+          aps_warning(ty, "Use decl `%s` is of type %d and inferring signature for it is not implemented", 
+            decl_name(decl), Declaration_KEY(decl));
         }
 
         return 0;
