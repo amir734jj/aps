@@ -2798,11 +2798,11 @@ void print_phy_graph(PHY_GRAPH *phy_graph, FILE *stream) {
     fputs(" -> ",stream);
     for (j=0; j < n; ++j) {
       DEPENDENCY kind= phy_graph->mingraph[i*n+j];
-      if (kind != no_dependency) fputs("\n\t", stream);
       if (kind == no_dependency) continue;
       if (kind == fiber_dependency) fputc('(',stream);
       print_instance(&phy_graph->instances.array[j],stream);
       if (kind == fiber_dependency) fputc(')',stream);
+      fputc(' ',stream);
     }
     fputc('\n',stream);
   }
@@ -2834,9 +2834,7 @@ void print_cycles(STATE *s, FILE *stream) {
       switch (phy_graph->mingraph[j*n+j]) {
       case no_dependency: break;
       case indirect_circular_dependency:
-      {
-        printf("Here!\n");
-      }
+        printf("indirect_circular_dependency\n");
       case indirect_control_fiber_dependency:
       case control_fiber_dependency:
       case indirect_fiber_dependency:
