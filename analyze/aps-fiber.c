@@ -290,7 +290,6 @@ Declaration attr_ref_p(Expression expr) {
 	  else if (DECL_IS_LOCAL(attr) && !FIELD_DECL_P(attr)) {
 	    switch (Declaration_KEY(attr)) {
         case KEYattribute_decl:
-        case KEYfunction_decl:
           return attr;
         }
       }

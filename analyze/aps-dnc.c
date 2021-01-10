@@ -1062,23 +1062,6 @@ Declaration attr_ref_node_decl(Expression e)
 {
   Expression node = attr_ref_object(e);
   switch (Expression_KEY(node)) {
-  case KEYfuncall:
-  {
-    Expression ff = funcall_f(e);
-    switch (Expression_KEY(ff))
-    {
-    case KEYvalue_use:
-      {
-        Declaration use_decl = USE_DECL(value_use_use(ff));
-        switch (Declaration_KEY(use_decl))
-        {
-        case KEYfunction_decl:
-          return use_decl;
-        }
-      }
-      break;
-    }
-  }
   default:
     fatal_error("%d: can't handle this attribute instance",
           tnode_line_number(node));
@@ -2294,7 +2277,9 @@ void *augment_dependency_graph_func_calls(void *paug_graph, void *node) {
       Declaration fdecl = 0;
       if ((fdecl = local_call_p(e)) != NULL &&
 	  Declaration_KEY(fdecl) == KEYfunction_decl) {
+      // printf("fdecl: %s\n", decl_name(fdecl));
 	Declaration proxy = Expression_info(e)->funcall_proxy;
+        // printf("proxy: %s\n", symbol_name(pragma_call_name(proxy)));
 	if (proxy == NULL)
 	  fatal_error("missing funcall proxy");
 	augment_dependency_graph_for_node(aug_graph,proxy);
@@ -2305,6 +2290,7 @@ void *augment_dependency_graph_func_calls(void *paug_graph, void *node) {
     { Declaration decl = (Declaration)node;
       switch (Declaration_KEY(decl)) {
       case KEYsome_function_decl:
+      // printf("somedecl: %s\n", decl_name(decl));
       case KEYtop_level_match:
 	/* don't look inside (unless its what we're doing the analysis for) */
 	if (aug_graph->match_rule != node) return NULL;
