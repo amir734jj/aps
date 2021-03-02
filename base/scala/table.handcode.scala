@@ -86,7 +86,7 @@ trait C_TABLE_LATTICE[TResult, T_KeyType, T_ValueType]
   with C_LATTICE[TResult]
 
 class M_TABLE_LATTICE[T_KeyType, T_ValueType] (
-    _name : String,
+    val _name : String,
     val _t_KeyType : C_TYPE[T_KeyType] with C_ORDERED[T_KeyType],
     val _t_ValueType : C_TYPE[T_ValueType] with C_COMBINABLE[T_ValueType] with C_LATTICE[T_ValueType])
   extends M_TABLE[T_KeyType, T_ValueType](_name, _t_KeyType, _t_ValueType)
