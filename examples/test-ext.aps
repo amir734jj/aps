@@ -1,0 +1,6 @@
+with "test";
+
+module TEST_EXT[T :: TEST[]] extends T begin
+  phylum Program;
+  pragma root_phylum(type Program);
+end;

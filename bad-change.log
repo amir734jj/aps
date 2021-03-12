@@ -1,0 +1,1933 @@
+*** FINAL DNC STATE ***
+Analysis state for FIRST_IMPL
+Augmented dependency graph for global dependencies
+ (FIRST_IMPL.G[Program]'shared_info,FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first,FIRST_IMPL.G[Program]'shared_info$declarationTable,FIRST_IMPL.G[Program]'shared_info$epsilon,FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first,FIRST_IMPL.G[Program]'shared_info$declarationTable!,FIRST_IMPL.program_first,declarationTable,declarationTable$s_first,epsilon)
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info->declarationTable$s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first->declarationTable$s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->declarationTable$s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$epsilon->declarationTable$s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first->declarationTable$s_first:s(_),X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.G[Program]'shared_info$declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?3_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->declarationTable:s_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->declarationTable$s_first:X?3_
+declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?3_
+declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable:s_
+declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?3_
+declarationTable->FIRST_IMPL.program_first:s?_
+declarationTable->declarationTable$s_first:X?3_
+declarationTable$s_first->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:s(_),X?7_
+declarationTable$s_first->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?7_
+declarationTable$s_first->declarationTable$s_first:X?7_
+epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable.s_first:X?7_
+epsilon->FIRST_IMPL.G[Program]'shared_info$epsilon:s_
+epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable!.s_first:X?7_
+epsilon->declarationTable$s_first:X?7_
+
+Augmented dependency graph for FIRST[].terminal
+ (self.G[Item]'shared_info,self.item_symbol,self.item_is_terminal)
+
+Augmented dependency graph for FIRST[].nonterminal
+ (self.G[Item]'shared_info,self.item_symbol,self.item_is_terminal)
+
+Augmented dependency graph for FIRST[].stmt
+ (self.G[Stmt]'shared_info,self.G[Stmt]'shared_info$declarationTable.s_first,self.G[Stmt]'shared_info$declarationTable,self.G[Stmt]'shared_info$epsilon,self.G[Stmt]'shared_info$declarationTable!.s_first,self.G[Stmt]'shared_info$declarationTable!,items.G[Items]'shared_info,items.G[Items]'shared_info$declarationTable.s_first,items.G[Items]'shared_info$declarationTable,items.G[Items]'shared_info$epsilon,items.items_first,temp,s_obj,s_obj$s_first,s_obj$s_first!)
+self.G[Stmt]'shared_info->self.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmt]'shared_info->self.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmt]'shared_info->items.G[Items]'shared_info:s_
+self.G[Stmt]'shared_info->items.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmt]'shared_info->items.items_first:s?_
+self.G[Stmt]'shared_info->temp:s?_
+self.G[Stmt]'shared_info->s_obj$s_first:X?3_
+self.G[Stmt]'shared_info->s_obj$s_first!:s?_
+self.G[Stmt]'shared_info$declarationTable.s_first->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmt]'shared_info$declarationTable.s_first->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmt]'shared_info$declarationTable.s_first->items.G[Items]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Stmt]'shared_info$declarationTable.s_first->items.items_first:s?_
+self.G[Stmt]'shared_info$declarationTable.s_first->temp:s?_
+self.G[Stmt]'shared_info$declarationTable.s_first->s_obj$s_first:X?7_
+self.G[Stmt]'shared_info$declarationTable.s_first->s_obj$s_first!:s?_
+self.G[Stmt]'shared_info$declarationTable->self.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable->self.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable->items.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable->items.G[Items]'shared_info$declarationTable:s(_)
+self.G[Stmt]'shared_info$declarationTable->items.items_first:s?_
+self.G[Stmt]'shared_info$declarationTable->temp:s?_
+self.G[Stmt]'shared_info$declarationTable->s_obj$s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable->s_obj$s_first!:s?_
+self.G[Stmt]'shared_info$epsilon->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmt]'shared_info$epsilon->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmt]'shared_info$epsilon->items.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmt]'shared_info$epsilon->items.G[Items]'shared_info$epsilon:s(_)
+self.G[Stmt]'shared_info$epsilon->items.items_first:s?_
+self.G[Stmt]'shared_info$epsilon->temp:s?_
+self.G[Stmt]'shared_info$epsilon->s_obj$s_first:X?7_
+self.G[Stmt]'shared_info$epsilon->s_obj$s_first!:s?_
+self.G[Stmt]'shared_info$declarationTable!.s_first->self.G[Stmt]'shared_info$declarationTable.s_first:s?_
+self.G[Stmt]'shared_info$declarationTable!.s_first->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmt]'shared_info$declarationTable!.s_first->items.G[Items]'shared_info$declarationTable.s_first:s?_
+self.G[Stmt]'shared_info$declarationTable!.s_first->items.items_first:s?_
+self.G[Stmt]'shared_info$declarationTable!.s_first->temp:s?_
+self.G[Stmt]'shared_info$declarationTable!.s_first->s_obj$s_first:X?7_
+self.G[Stmt]'shared_info$declarationTable!.s_first->s_obj$s_first!:s?_
+self.G[Stmt]'shared_info$declarationTable!->self.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable!->self.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$declarationTable!->self.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable!->items.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable!->items.G[Items]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$declarationTable!->items.items_first:s?_
+self.G[Stmt]'shared_info$declarationTable!->temp:s?_
+self.G[Stmt]'shared_info$declarationTable!->s_obj$s_first:X?3_
+self.G[Stmt]'shared_info$declarationTable!->s_obj$s_first!:s?_
+items.G[Items]'shared_info->self.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+items.G[Items]'shared_info->self.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+items.G[Items]'shared_info->items.G[Items]'shared_info$declarationTable.s_first:X?3_
+items.G[Items]'shared_info->items.items_first:s?_
+items.G[Items]'shared_info->temp:s?_
+items.G[Items]'shared_info->s_obj$s_first:X?3_
+items.G[Items]'shared_info->s_obj$s_first!:s?_
+items.G[Items]'shared_info$declarationTable.s_first->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+items.G[Items]'shared_info$declarationTable.s_first->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+items.G[Items]'shared_info$declarationTable.s_first->items.G[Items]'shared_info$declarationTable.s_first:X?7_
+items.G[Items]'shared_info$declarationTable.s_first->items.items_first:s?_
+items.G[Items]'shared_info$declarationTable.s_first->temp:s?_
+items.G[Items]'shared_info$declarationTable.s_first->s_obj$s_first:X?7_
+items.G[Items]'shared_info$declarationTable.s_first->s_obj$s_first!:s?_
+items.G[Items]'shared_info$declarationTable->self.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+items.G[Items]'shared_info$declarationTable->self.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+items.G[Items]'shared_info$declarationTable->items.G[Items]'shared_info$declarationTable.s_first:X?3_
+items.G[Items]'shared_info$declarationTable->items.items_first:s?_
+items.G[Items]'shared_info$declarationTable->temp:s?_
+items.G[Items]'shared_info$declarationTable->s_obj$s_first:X?3_
+items.G[Items]'shared_info$declarationTable->s_obj$s_first!:s?_
+items.G[Items]'shared_info$epsilon->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+items.G[Items]'shared_info$epsilon->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+items.G[Items]'shared_info$epsilon->items.G[Items]'shared_info$declarationTable.s_first:X?7_
+items.G[Items]'shared_info$epsilon->items.items_first:s?_
+items.G[Items]'shared_info$epsilon->temp:s?_
+items.G[Items]'shared_info$epsilon->s_obj$s_first:X?7_
+items.G[Items]'shared_info$epsilon->s_obj$s_first!:s?_
+items.items_first->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+items.items_first->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+items.items_first->items.G[Items]'shared_info$declarationTable.s_first:X?7_
+items.items_first->items.items_first:X?7_
+items.items_first->temp:s_
+items.items_first->s_obj$s_first:X?7_
+items.items_first->s_obj$s_first!:s?_
+temp->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+temp->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+temp->items.G[Items]'shared_info$declarationTable.s_first:X?7_
+temp->items.items_first:X?7_
+temp->temp:X?7_
+temp->s_obj$s_first:X?7_
+temp->s_obj$s_first!:s_
+s_obj->self.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+s_obj->self.G[Stmt]'shared_info$declarationTable:s?_
+s_obj->self.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+s_obj->self.G[Stmt]'shared_info$declarationTable!:s_
+s_obj->items.G[Items]'shared_info$declarationTable.s_first:X?3_
+s_obj->items.G[Items]'shared_info$declarationTable:s?_
+s_obj->items.items_first:s?_
+s_obj->temp:s?_
+s_obj->s_obj$s_first:X?3_
+s_obj->s_obj$s_first!:s_
+s_obj$s_first->self.G[Stmt]'shared_info$declarationTable.s_first:s?_
+s_obj$s_first->self.G[Stmt]'shared_info$declarationTable!.s_first:s(_),X?7_
+s_obj$s_first->items.G[Items]'shared_info$declarationTable.s_first:s?_
+s_obj$s_first->items.items_first:s?_
+s_obj$s_first->temp:s?_
+s_obj$s_first->s_obj$s_first:X?7_
+s_obj$s_first->s_obj$s_first!:s?_
+s_obj$s_first!->self.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+s_obj$s_first!->self.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+s_obj$s_first!->items.G[Items]'shared_info$declarationTable.s_first:X?7_
+s_obj$s_first!->items.items_first:X?7_
+s_obj$s_first!->temp:X?7_
+s_obj$s_first!->s_obj$s_first:X?13_),X?7_
+s_obj$s_first!->s_obj$s_first!:X?7_
+
+Augmented dependency graph for FIRST[].program
+ (self.G[Program]'shared_info,self.G[Program]'shared_info$declarationTable.s_first,self.G[Program]'shared_info$declarationTable,self.G[Program]'shared_info$epsilon,self.G[Program]'shared_info$declarationTable!.s_first,self.G[Program]'shared_info$declarationTable!,self.program_first,stmts.G[Stmts]'shared_info,stmts.G[Stmts]'shared_info$declarationTable.s_first,stmts.G[Stmts]'shared_info$declarationTable,stmts.G[Stmts]'shared_info$epsilon,stmts.G[Stmts]'shared_info$declarationTable!.s_first,stmts.G[Stmts]'shared_info$declarationTable!)
+self.G[Program]'shared_info->self.G[Program]'shared_info$declarationTable.s_first:X?3_
+self.G[Program]'shared_info->self.G[Program]'shared_info$declarationTable!.s_first:X?3_
+self.G[Program]'shared_info->self.program_first:s_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info:s_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Program]'shared_info$declarationTable.s_first->self.G[Program]'shared_info$declarationTable.s_first:X?7_
+self.G[Program]'shared_info$declarationTable.s_first->self.G[Program]'shared_info$declarationTable!.s_first:X?7_
+self.G[Program]'shared_info$declarationTable.s_first->stmts.G[Stmts]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Program]'shared_info$declarationTable.s_first->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Program]'shared_info$declarationTable->self.G[Program]'shared_info$declarationTable.s_first:X?3_
+self.G[Program]'shared_info$declarationTable->self.G[Program]'shared_info$declarationTable!.s_first:X?3_
+self.G[Program]'shared_info$declarationTable->self.program_first:s_
+self.G[Program]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Program]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Program]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Program]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable.s_first:X?7_
+self.G[Program]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable!.s_first:X?7_
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Program]'shared_info$declarationTable!.s_first->self.G[Program]'shared_info$declarationTable.s_first:s?(_),X?7_
+self.G[Program]'shared_info$declarationTable!.s_first->self.G[Program]'shared_info$declarationTable!.s_first:X?7_
+self.G[Program]'shared_info$declarationTable!.s_first->stmts.G[Stmts]'shared_info$declarationTable.s_first:s?(_),X?7_
+self.G[Program]'shared_info$declarationTable!.s_first->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Program]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable.s_first:X?3_
+self.G[Program]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable!.s_first:X?3_
+self.G[Program]'shared_info$declarationTable!->self.program_first:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Program]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts.G[Stmts]'shared_info->self.G[Program]'shared_info$declarationTable.s_first:X?3_
+stmts.G[Stmts]'shared_info->self.G[Program]'shared_info$declarationTable!.s_first:X?3_
+stmts.G[Stmts]'shared_info->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts.G[Stmts]'shared_info->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable.s_first->self.G[Program]'shared_info$declarationTable.s_first:X?7_
+stmts.G[Stmts]'shared_info$declarationTable.s_first->self.G[Program]'shared_info$declarationTable!.s_first:X?7_
+stmts.G[Stmts]'shared_info$declarationTable.s_first->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts.G[Stmts]'shared_info$declarationTable.s_first->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->self.G[Program]'shared_info$declarationTable.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable->self.G[Program]'shared_info$declarationTable!.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts.G[Stmts]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable.s_first:X?7_
+stmts.G[Stmts]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable!.s_first:X?7_
+stmts.G[Stmts]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts.G[Stmts]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Program]'shared_info$declarationTable.s_first:s?(_),X?7_
+stmts.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Program]'shared_info$declarationTable!.s_first:s(_),X?7_
+stmts.G[Stmts]'shared_info$declarationTable!.s_first->stmts.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts.G[Stmts]'shared_info$declarationTable!.s_first->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable!.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable!:s(_)
+stmts.G[Stmts]'shared_info$declarationTable!->self.program_first:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].none
+ (self.G[Items]'shared_info,self.G[Items]'shared_info$declarationTable.s_first,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.items_first)
+self.G[Items]'shared_info->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info->self.items_first:s_
+self.G[Items]'shared_info$declarationTable.s_first->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$declarationTable.s_first->self.items_first:s?_
+self.G[Items]'shared_info$declarationTable->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info$declarationTable->self.items_first:s?_
+self.G[Items]'shared_info$epsilon->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$epsilon->self.items_first:s_
+self.items_first->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.items_first->self.items_first:X?7_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].single
+ (<cond@75>,<match@73>,<match@71>,self.G[Items]'shared_info,self.G[Items]'shared_info$declarationTable.s_first,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.items_first,item.G[Item]'shared_info,item.item_symbol,item.item_is_terminal,_,item_first_objs,item_first_objs$s_first,first,first$s_first)
+<cond@75>-><match@73>:s_
+<cond@75>-><match@71>:s_
+<cond@75>->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+<cond@75>->self.items_first:s_
+<cond@75>->item_first_objs$s_first:X?3_
+<cond@75>->first$s_first:X?3_
+<match@73>-><match@71>:s-01
+<match@73>->self.G[Items]'shared_info$declarationTable.s_first:X?3-01
+<match@73>->self.items_first:s-01
+<match@73>->item_first_objs$s_first:X?3-01
+<match@73>->first$s_first:X?3-01
+<match@71>->self.G[Items]'shared_info$declarationTable.s_first:X?3+02-01
+<match@71>->self.items_first:s+02-01
+<match@71>->item_first_objs$s_first:X?3+02-01
+<match@71>->first$s_first:X?3+02-01
+self.G[Items]'shared_info-><match@73>:s-01
+self.G[Items]'shared_info-><match@71>:s?-01
+self.G[Items]'shared_info->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info->self.items_first:s?_
+self.G[Items]'shared_info->item.G[Item]'shared_info:s_
+self.G[Items]'shared_info->_:s_
+self.G[Items]'shared_info->item_first_objs:s_
+self.G[Items]'shared_info->item_first_objs$s_first:X?3_
+self.G[Items]'shared_info->first:s?_
+self.G[Items]'shared_info->first$s_first:X?3_
+self.G[Items]'shared_info$declarationTable.s_first->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$declarationTable.s_first->self.items_first:s?_
+self.G[Items]'shared_info$declarationTable.s_first->item_first_objs$s_first:s(_),X?7_
+self.G[Items]'shared_info$declarationTable.s_first->first$s_first:s?(_),X?7_
+self.G[Items]'shared_info$declarationTable-><match@73>:s-01
+self.G[Items]'shared_info$declarationTable-><match@71>:s?-01
+self.G[Items]'shared_info$declarationTable->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info$declarationTable->self.items_first:s?_
+self.G[Items]'shared_info$declarationTable->_:s_
+self.G[Items]'shared_info$declarationTable->item_first_objs:s_
+self.G[Items]'shared_info$declarationTable->item_first_objs$s_first:X?3_
+self.G[Items]'shared_info$declarationTable->first:s?_
+self.G[Items]'shared_info$declarationTable->first$s_first:X?3_
+self.G[Items]'shared_info$epsilon->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$epsilon->self.items_first:s?_
+self.G[Items]'shared_info$epsilon->item_first_objs$s_first:X?7_
+self.G[Items]'shared_info$epsilon->first$s_first:X?7_
+self.items_first->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.items_first->self.items_first:X?7_
+self.items_first->item_first_objs$s_first:X?7_
+self.items_first->first$s_first:X?7_
+item.item_symbol-><match@73>:s-01
+item.item_symbol-><match@71>:s?-01
+item.item_symbol->self.G[Items]'shared_info$declarationTable.s_first:X?7+01,X?3-01
+item.item_symbol->self.items_first:s+01,s?-01
+item.item_symbol->_:s_
+item.item_symbol->item_first_objs:s_
+item.item_symbol->item_first_objs$s_first:X?7+01,X?3-01
+item.item_symbol->first:s?_
+item.item_symbol->first$s_first:X?7+01,X?3-01
+item.item_is_terminal-><cond@75>:s_
+item.item_is_terminal-><match@73>:s?_
+item.item_is_terminal-><match@71>:s?_
+item.item_is_terminal->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+item.item_is_terminal->self.items_first:s?_
+item.item_is_terminal->item_first_objs$s_first:X?3_
+item.item_is_terminal->first$s_first:X?3_
+item_first_objs-><match@71>:s+02-01
+item_first_objs->self.G[Items]'shared_info$declarationTable.s_first:X?3+02-01
+item_first_objs->self.items_first:s?+02-01
+item_first_objs->item_first_objs$s_first:X?3+02-01
+item_first_objs->first:s_
+item_first_objs->first$s_first:X?3+02-01
+item_first_objs$s_first->self.G[Items]'shared_info$declarationTable.s_first:X?7+06-01
+item_first_objs$s_first->self.items_first:s?+06-01
+item_first_objs$s_first->item_first_objs$s_first:X?7+06-01
+item_first_objs$s_first->first$s_first:s(_),X?7+06-01
+first->self.G[Items]'shared_info$declarationTable.s_first:X?3+06-01
+first->self.items_first:s+06-01
+first->item_first_objs$s_first:X?3+06-01
+first->first$s_first:X?3+06-01
+first$s_first->self.G[Items]'shared_info$declarationTable.s_first:X?7+06-01
+first$s_first->self.items_first:s+06-01
+first$s_first->item_first_objs$s_first:X?7+06-01
+first$s_first->first$s_first:X?7+06-01
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].append
+ (self.G[Items]'shared_info,self.G[Items]'shared_info$declarationTable.s_first,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.items_first,items1.G[Items]'shared_info,items1.G[Items]'shared_info$declarationTable.s_first,items1.G[Items]'shared_info$declarationTable,items1.G[Items]'shared_info$epsilon,items1.items_first,items2.G[Items]'shared_info,items2.G[Items]'shared_info$declarationTable.s_first,items2.G[Items]'shared_info$declarationTable,items2.G[Items]'shared_info$epsilon,items2.items_first,black_dot(...):79.G[black_dot]'shared_info,black_dot(...):79.result,black_dot(...):79.s2,black_dot(...):79.s1)
+self.G[Items]'shared_info->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info->self.items_first:s?_
+self.G[Items]'shared_info->items1.G[Items]'shared_info:s_
+self.G[Items]'shared_info->items1.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info->items1.items_first:s?_
+self.G[Items]'shared_info->items2.G[Items]'shared_info:s_
+self.G[Items]'shared_info->items2.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info->items2.items_first:s?_
+self.G[Items]'shared_info->black_dot(...):79.G[black_dot]'shared_info:s_
+self.G[Items]'shared_info->black_dot(...):79.result:s?_
+self.G[Items]'shared_info->black_dot(...):79.s2:s?_
+self.G[Items]'shared_info->black_dot(...):79.s1:s?_
+self.G[Items]'shared_info$declarationTable.s_first->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$declarationTable.s_first->self.items_first:s?_
+self.G[Items]'shared_info$declarationTable.s_first->items1.G[Items]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Items]'shared_info$declarationTable.s_first->items1.items_first:s?_
+self.G[Items]'shared_info$declarationTable.s_first->items2.G[Items]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Items]'shared_info$declarationTable.s_first->items2.items_first:s?_
+self.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.result:s?_
+self.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.s2:s?_
+self.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.s1:s?_
+self.G[Items]'shared_info$declarationTable->self.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info$declarationTable->self.items_first:s?_
+self.G[Items]'shared_info$declarationTable->items1.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info$declarationTable->items1.G[Items]'shared_info$declarationTable:s(_)
+self.G[Items]'shared_info$declarationTable->items1.items_first:s?_
+self.G[Items]'shared_info$declarationTable->items2.G[Items]'shared_info$declarationTable.s_first:X?3_
+self.G[Items]'shared_info$declarationTable->items2.G[Items]'shared_info$declarationTable:s(_)
+self.G[Items]'shared_info$declarationTable->items2.items_first:s?_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:s?_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:s?_
+self.G[Items]'shared_info$epsilon->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$epsilon->self.items_first:s?_
+self.G[Items]'shared_info$epsilon->items1.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$epsilon->items1.G[Items]'shared_info$epsilon:s(_)
+self.G[Items]'shared_info$epsilon->items1.items_first:s?_
+self.G[Items]'shared_info$epsilon->items2.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.G[Items]'shared_info$epsilon->items2.G[Items]'shared_info$epsilon:s(_)
+self.G[Items]'shared_info$epsilon->items2.items_first:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.s2:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.s1:s?_
+self.items_first->self.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.items_first->self.items_first:X?7_
+self.items_first->items1.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.items_first->items1.items_first:X?7_
+self.items_first->items2.G[Items]'shared_info$declarationTable.s_first:X?7_
+self.items_first->items2.items_first:X?7_
+self.items_first->black_dot(...):79.result:X?7_
+self.items_first->black_dot(...):79.s2:X?7_
+self.items_first->black_dot(...):79.s1:X?7_
+items1.G[Items]'shared_info->items1.G[Items]'shared_info$declarationTable.s_first:X?3_
+items1.G[Items]'shared_info->items1.items_first:s?_
+items1.G[Items]'shared_info->black_dot(...):79.result:s?_
+items1.G[Items]'shared_info->black_dot(...):79.s1:s?_
+items1.G[Items]'shared_info$declarationTable.s_first->items1.G[Items]'shared_info$declarationTable.s_first:X?7_
+items1.G[Items]'shared_info$declarationTable.s_first->items1.items_first:s?_
+items1.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.result:s?_
+items1.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.s1:s?_
+items1.G[Items]'shared_info$declarationTable->items1.G[Items]'shared_info$declarationTable.s_first:X?3_
+items1.G[Items]'shared_info$declarationTable->items1.items_first:s?_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:s?_
+items1.G[Items]'shared_info$epsilon->items1.G[Items]'shared_info$declarationTable.s_first:X?7_
+items1.G[Items]'shared_info$epsilon->items1.items_first:s?_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.s1:s?_
+items1.items_first->items1.G[Items]'shared_info$declarationTable.s_first:X?7_
+items1.items_first->items1.items_first:X?7_
+items1.items_first->black_dot(...):79.result:s?_
+items1.items_first->black_dot(...):79.s1:s_
+items2.G[Items]'shared_info->items2.G[Items]'shared_info$declarationTable.s_first:X?3_
+items2.G[Items]'shared_info->items2.items_first:s?_
+items2.G[Items]'shared_info->black_dot(...):79.result:s?_
+items2.G[Items]'shared_info->black_dot(...):79.s2:s?_
+items2.G[Items]'shared_info$declarationTable.s_first->items2.G[Items]'shared_info$declarationTable.s_first:X?7_
+items2.G[Items]'shared_info$declarationTable.s_first->items2.items_first:s?_
+items2.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.result:s?_
+items2.G[Items]'shared_info$declarationTable.s_first->black_dot(...):79.s2:s?_
+items2.G[Items]'shared_info$declarationTable->items2.G[Items]'shared_info$declarationTable.s_first:X?3_
+items2.G[Items]'shared_info$declarationTable->items2.items_first:s?_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:s?_
+items2.G[Items]'shared_info$epsilon->items2.G[Items]'shared_info$declarationTable.s_first:X?7_
+items2.G[Items]'shared_info$epsilon->items2.items_first:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.s2:s?_
+items2.items_first->items2.G[Items]'shared_info$declarationTable.s_first:X?7_
+items2.items_first->items2.items_first:X?7_
+items2.items_first->black_dot(...):79.result:s?_
+items2.items_first->black_dot(...):79.s2:s_
+black_dot(...):79.G[black_dot]'shared_info->black_dot(...):79.result:s?_
+black_dot(...):79.s2->black_dot(...):79.result:s?_
+black_dot(...):79.s1->black_dot(...):79.result:s?_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].none
+ (self.G[Stmts]'shared_info,self.G[Stmts]'shared_info$declarationTable.s_first,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.G[Stmts]'shared_info$declarationTable!.s_first,self.G[Stmts]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:s?_
+self.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].single
+ (self.G[Stmts]'shared_info,self.G[Stmts]'shared_info$declarationTable.s_first,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.G[Stmts]'shared_info$declarationTable!.s_first,self.G[Stmts]'shared_info$declarationTable!,stmt.G[Stmt]'shared_info,stmt.G[Stmt]'shared_info$declarationTable.s_first,stmt.G[Stmt]'shared_info$declarationTable,stmt.G[Stmt]'shared_info$epsilon,stmt.G[Stmt]'shared_info$declarationTable!.s_first,stmt.G[Stmt]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info:s_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->stmt.G[Stmt]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:s?(_),X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->stmt.G[Stmt]'shared_info$declarationTable.s_first:s?(_),X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+stmt.G[Stmt]'shared_info->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmt.G[Stmt]'shared_info->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmt.G[Stmt]'shared_info->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+stmt.G[Stmt]'shared_info->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmt.G[Stmt]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmt.G[Stmt]'shared_info$declarationTable.s_first->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+stmt.G[Stmt]'shared_info$declarationTable.s_first->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+stmt.G[Stmt]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmt.G[Stmt]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmt.G[Stmt]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?7_
+stmt.G[Stmt]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+stmt.G[Stmt]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:s?(_),X?7_
+stmt.G[Stmt]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:s(_),X?7_
+stmt.G[Stmt]'shared_info$declarationTable!.s_first->stmt.G[Stmt]'shared_info$declarationTable.s_first:s?(_),X?7_
+stmt.G[Stmt]'shared_info$declarationTable!.s_first->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?7_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable.s_first:X?3_
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable!.s_first:X?3_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].append
+ (self.G[Stmts]'shared_info,self.G[Stmts]'shared_info$declarationTable.s_first,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.G[Stmts]'shared_info$declarationTable!.s_first,self.G[Stmts]'shared_info$declarationTable!,stmts1.G[Stmts]'shared_info,stmts1.G[Stmts]'shared_info$declarationTable.s_first,stmts1.G[Stmts]'shared_info$declarationTable,stmts1.G[Stmts]'shared_info$epsilon,stmts1.G[Stmts]'shared_info$declarationTable!.s_first,stmts1.G[Stmts]'shared_info$declarationTable!,stmts2.G[Stmts]'shared_info,stmts2.G[Stmts]'shared_info$declarationTable.s_first,stmts2.G[Stmts]'shared_info$declarationTable,stmts2.G[Stmts]'shared_info$epsilon,stmts2.G[Stmts]'shared_info$declarationTable!.s_first,stmts2.G[Stmts]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info:s_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info:s_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->stmts1.G[Stmts]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->stmts2.G[Stmts]'shared_info$declarationTable.s_first:s(_),X?7_
+self.G[Stmts]'shared_info$declarationTable.s_first->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:s?_
+self.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->stmts1.G[Stmts]'shared_info$declarationTable.s_first:s?_
+self.G[Stmts]'shared_info$declarationTable!.s_first->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!.s_first->stmts2.G[Stmts]'shared_info$declarationTable.s_first:s?_
+self.G[Stmts]'shared_info$declarationTable!.s_first->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable.s_first->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable.s_first->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable.s_first->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable.s_first->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:s(_),X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!.s_first->stmts1.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!.s_first->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!.s_first->stmts2.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!.s_first->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable.s_first->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable.s_first->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable.s_first->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable.s_first->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!.s_first->self.G[Stmts]'shared_info$declarationTable!.s_first:s(_),X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!.s_first->stmts1.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!.s_first->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!.s_first->stmts2.G[Stmts]'shared_info$declarationTable.s_first:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!.s_first->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable.s_first:X?3_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable!.s_first:X?3_
+
+Augmented dependency graph for contains_epsilon
+ (contains_epsilon.G[contains_epsilon]'shared_info,contains_epsilon.result,contains_epsilon.s_set)
+contains_epsilon.G[contains_epsilon]'shared_info->contains_epsilon.result:s_
+contains_epsilon.s_set->contains_epsilon.result:s_
+
+Augmented dependency graph for black_dot
+ (<cond@103>,black_dot.G[black_dot]'shared_info,black_dot.result,black_dot.s2,black_dot.s1,contains_epsilon(...):99.G[contains_epsilon]'shared_info,contains_epsilon(...):99.result,contains_epsilon(...):99.s_set)
+<cond@103>->black_dot.result:s_
+black_dot.G[black_dot]'shared_info->black_dot.result:s_
+black_dot.G[black_dot]'shared_info->contains_epsilon(...):99.G[contains_epsilon]'shared_info:s_
+black_dot.G[black_dot]'shared_info->contains_epsilon(...):99.result:s?_
+black_dot.s2->black_dot.result:s_
+black_dot.s1->black_dot.result:s_
+black_dot.s1->contains_epsilon(...):99.result:s?_
+black_dot.s1->contains_epsilon(...):99.s_set:s_
+contains_epsilon(...):99.G[contains_epsilon]'shared_info->contains_epsilon(...):99.result:s?_
+contains_epsilon(...):99.s_set->contains_epsilon(...):99.result:s?_
+
+
+Summary dependency graph for Program
+G[Program]'shared_info -> G[Program]'shared_info$declarationTable.s_first G[Program]'shared_info$declarationTable!.s_first program_first 
+G[Program]'shared_info$declarationTable.s_first -> G[Program]'shared_info$declarationTable.s_first G[Program]'shared_info$declarationTable!.s_first 
+G[Program]'shared_info$declarationTable -> G[Program]'shared_info$declarationTable.s_first G[Program]'shared_info$declarationTable!.s_first program_first 
+G[Program]'shared_info$epsilon -> G[Program]'shared_info$declarationTable.s_first G[Program]'shared_info$declarationTable!.s_first 
+G[Program]'shared_info$declarationTable!.s_first -> G[Program]'shared_info$declarationTable.s_first G[Program]'shared_info$declarationTable!.s_first 
+G[Program]'shared_info$declarationTable! -> G[Program]'shared_info$declarationTable.s_first G[Program]'shared_info$declarationTable G[Program]'shared_info$declarationTable!.s_first program_first 
+program_first -> 
+
+Summary dependency graph for Item
+G[Item]'shared_info -> 
+item_symbol -> 
+item_is_terminal -> 
+
+Summary dependency graph for Items
+G[Items]'shared_info -> G[Items]'shared_info$declarationTable.s_first items_first 
+G[Items]'shared_info$declarationTable.s_first -> G[Items]'shared_info$declarationTable.s_first items_first 
+G[Items]'shared_info$declarationTable -> G[Items]'shared_info$declarationTable.s_first items_first 
+G[Items]'shared_info$epsilon -> G[Items]'shared_info$declarationTable.s_first items_first 
+items_first -> G[Items]'shared_info$declarationTable.s_first items_first 
+
+Summary dependency graph for Stmt
+G[Stmt]'shared_info -> G[Stmt]'shared_info$declarationTable.s_first G[Stmt]'shared_info$declarationTable!.s_first 
+G[Stmt]'shared_info$declarationTable.s_first -> G[Stmt]'shared_info$declarationTable.s_first G[Stmt]'shared_info$declarationTable!.s_first 
+G[Stmt]'shared_info$declarationTable -> G[Stmt]'shared_info$declarationTable.s_first G[Stmt]'shared_info$declarationTable!.s_first 
+G[Stmt]'shared_info$epsilon -> G[Stmt]'shared_info$declarationTable.s_first G[Stmt]'shared_info$declarationTable!.s_first 
+G[Stmt]'shared_info$declarationTable!.s_first -> G[Stmt]'shared_info$declarationTable.s_first G[Stmt]'shared_info$declarationTable!.s_first 
+G[Stmt]'shared_info$declarationTable! -> G[Stmt]'shared_info$declarationTable.s_first G[Stmt]'shared_info$declarationTable G[Stmt]'shared_info$declarationTable!.s_first 
+
+Summary dependency graph for Stmts
+G[Stmts]'shared_info -> G[Stmts]'shared_info$declarationTable.s_first G[Stmts]'shared_info$declarationTable!.s_first 
+G[Stmts]'shared_info$declarationTable.s_first -> G[Stmts]'shared_info$declarationTable.s_first G[Stmts]'shared_info$declarationTable!.s_first 
+G[Stmts]'shared_info$declarationTable -> G[Stmts]'shared_info$declarationTable.s_first G[Stmts]'shared_info$declarationTable!.s_first 
+G[Stmts]'shared_info$epsilon -> G[Stmts]'shared_info$declarationTable.s_first G[Stmts]'shared_info$declarationTable!.s_first 
+G[Stmts]'shared_info$declarationTable!.s_first -> G[Stmts]'shared_info$declarationTable.s_first G[Stmts]'shared_info$declarationTable!.s_first 
+G[Stmts]'shared_info$declarationTable! -> G[Stmts]'shared_info$declarationTable.s_first G[Stmts]'shared_info$declarationTable G[Stmts]'shared_info$declarationTable!.s_first 
+
+Summary dependency graph for contains_epsilon
+G[contains_epsilon]'shared_info -> result 
+result -> 
+s_set -> result 
+
+Summary dependency graph for black_dot
+G[black_dot]'shared_info -> result 
+result -> 
+s2 -> result 
+s1 -> result 
+indirect_circular_dependency
+fiber summary cycle involving Program.G[Program]'shared_info$declarationTable.s_first
+indirect_circular_dependency
+fiber summary cycle involving Program.G[Program]'shared_info$declarationTable!.s_first
+indirect_circular_dependency
+fiber summary cycle involving Items.G[Items]'shared_info$declarationTable.s_first
+indirect_circular_dependency
+fiber summary cycle involving Items.items_first
+indirect_circular_dependency
+fiber summary cycle involving Stmt.G[Stmt]'shared_info$declarationTable.s_first
+indirect_circular_dependency
+fiber summary cycle involving Stmt.G[Stmt]'shared_info$declarationTable!.s_first
+indirect_circular_dependency
+fiber summary cycle involving Stmts.G[Stmts]'shared_info$declarationTable.s_first
+indirect_circular_dependency
+fiber summary cycle involving Stmts.G[Stmts]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for stmt involving self.G[Stmt]'shared_info$declarationTable.s_first
+fiber 7 local cycle for stmt involving self.G[Stmt]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for stmt involving items.G[Items]'shared_info$declarationTable.s_first
+fiber 7 local cycle for stmt involving items.items_first
+fiber 7 local cycle for stmt involving temp
+fiber 7 local cycle for stmt involving s_obj$s_first
+fiber 7 local cycle for stmt involving s_obj$s_first!
+fiber 7 local cycle for program involving self.G[Program]'shared_info$declarationTable.s_first
+fiber 7 local cycle for program involving self.G[Program]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for program involving stmts.G[Stmts]'shared_info$declarationTable.s_first
+fiber 7 local cycle for program involving stmts.G[Stmts]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for none involving self.G[Items]'shared_info$declarationTable.s_first
+fiber 7 local cycle for none involving self.items_first
+fiber 7 local cycle for single involving self.G[Items]'shared_info$declarationTable.s_first
+fiber 7 local cycle for single involving self.items_first
+fiber 7 local cycle for single involving item_first_objs$s_first
+fiber 7 local cycle for single involving first$s_first
+fiber 7 local cycle for append involving self.G[Items]'shared_info$declarationTable.s_first
+fiber 7 local cycle for append involving self.items_first
+fiber 7 local cycle for append involving items1.G[Items]'shared_info$declarationTable.s_first
+fiber 7 local cycle for append involving items1.items_first
+fiber 7 local cycle for append involving items2.G[Items]'shared_info$declarationTable.s_first
+fiber 7 local cycle for append involving items2.items_first
+fiber 7 local cycle for none involving self.G[Stmts]'shared_info$declarationTable.s_first
+fiber 7 local cycle for none involving self.G[Stmts]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for single involving self.G[Stmts]'shared_info$declarationTable.s_first
+fiber 7 local cycle for single involving self.G[Stmts]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for single involving stmt.G[Stmt]'shared_info$declarationTable.s_first
+fiber 7 local cycle for single involving stmt.G[Stmt]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for append involving self.G[Stmts]'shared_info$declarationTable.s_first
+fiber 7 local cycle for append involving self.G[Stmts]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for append involving stmts1.G[Stmts]'shared_info$declarationTable.s_first
+fiber 7 local cycle for append involving stmts1.G[Stmts]'shared_info$declarationTable!.s_first
+fiber 7 local cycle for append involving stmts2.G[Stmts]'shared_info$declarationTable.s_first
+fiber 7 local cycle for append involving stmts2.G[Stmts]'shared_info$declarationTable!.s_first
+
+****** After closure of up/down attributes:
+
+Analysis state for FIRST_IMPL
+Augmented dependency graph for global dependencies
+ (FIRST_IMPL.G[Program]'shared_info,FIRST_IMPL.UP[Program]-0,FIRST_IMPL.G[Program]'shared_info$declarationTable,FIRST_IMPL.G[Program]'shared_info$epsilon,FIRST_IMPL.DOWN[Program]-0,FIRST_IMPL.G[Program]'shared_info$declarationTable!,FIRST_IMPL.program_first,declarationTable,UP[global dependencies]-0,epsilon)
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.UP[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.DOWN[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info->UP[global dependencies]-0:X?7_
+FIRST_IMPL.UP[Program]-0->FIRST_IMPL.DOWN[Program]-0:X?7_
+FIRST_IMPL.UP[Program]-0->UP[global dependencies]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.UP[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.DOWN[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->UP[global dependencies]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.UP[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.DOWN[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$epsilon->UP[global dependencies]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.UP[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.G[Program]'shared_info$declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.DOWN[Program]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->declarationTable:s_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->UP[global dependencies]-0:X?7_
+declarationTable->FIRST_IMPL.UP[Program]-0:X?7_
+declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable:s_
+declarationTable->FIRST_IMPL.DOWN[Program]-0:X?7_
+declarationTable->FIRST_IMPL.program_first:s?_
+declarationTable->UP[global dependencies]-0:X?7_
+UP[global dependencies]-0->FIRST_IMPL.DOWN[Program]-0:X?7_
+epsilon->FIRST_IMPL.UP[Program]-0:X?7_
+epsilon->FIRST_IMPL.G[Program]'shared_info$epsilon:s_
+epsilon->FIRST_IMPL.DOWN[Program]-0:X?7_
+epsilon->UP[global dependencies]-0:X?7_
+
+Augmented dependency graph for FIRST[].terminal
+ (self.G[Item]'shared_info,self.item_symbol,self.item_is_terminal)
+
+Augmented dependency graph for FIRST[].nonterminal
+ (self.G[Item]'shared_info,self.item_symbol,self.item_is_terminal)
+
+Augmented dependency graph for FIRST[].stmt
+ (self.G[Stmt]'shared_info,self.UP[Stmt]-0,self.G[Stmt]'shared_info$declarationTable,self.G[Stmt]'shared_info$epsilon,self.DOWN[Stmt]-0,self.G[Stmt]'shared_info$declarationTable!,items.G[Items]'shared_info,items.UP[Items]-0,items.G[Items]'shared_info$declarationTable,items.G[Items]'shared_info$epsilon,items.DOWN[Items]-0,(nil),s_obj,(nil),(nil))
+self.G[Stmt]'shared_info->self.UP[Stmt]-0:X?7_
+self.G[Stmt]'shared_info->self.DOWN[Stmt]-0:X?7_
+self.G[Stmt]'shared_info->items.G[Items]'shared_info:s_
+self.G[Stmt]'shared_info->items.UP[Items]-0:X?7_
+self.G[Stmt]'shared_info->items.DOWN[Items]-0:X?7_
+self.UP[Stmt]-0->self.DOWN[Stmt]-0:X?7_
+self.UP[Stmt]-0->items.DOWN[Items]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable->self.UP[Stmt]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable->self.DOWN[Stmt]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable->items.UP[Items]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable->items.G[Items]'shared_info$declarationTable:s(_)
+self.G[Stmt]'shared_info$declarationTable->items.DOWN[Items]-0:X?7_
+self.G[Stmt]'shared_info$epsilon->self.UP[Stmt]-0:X?7_
+self.G[Stmt]'shared_info$epsilon->self.DOWN[Stmt]-0:X?7_
+self.G[Stmt]'shared_info$epsilon->items.UP[Items]-0:X?7_
+self.G[Stmt]'shared_info$epsilon->items.G[Items]'shared_info$epsilon:s(_)
+self.G[Stmt]'shared_info$epsilon->items.DOWN[Items]-0:X?7_
+self.DOWN[Stmt]-0->items.DOWN[Items]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable!->self.UP[Stmt]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable!->self.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$declarationTable!->self.DOWN[Stmt]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable!->items.UP[Items]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable!->items.G[Items]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$declarationTable!->items.DOWN[Items]-0:X?7_
+items.G[Items]'shared_info->self.UP[Stmt]-0:X?7_
+items.G[Items]'shared_info->self.DOWN[Stmt]-0:X?7_
+items.G[Items]'shared_info->items.UP[Items]-0:X?7_
+items.G[Items]'shared_info->items.DOWN[Items]-0:X?7_
+items.UP[Items]-0->self.UP[Stmt]-0:X?7_
+items.UP[Items]-0->self.DOWN[Stmt]-0:X?7_
+items.UP[Items]-0->items.DOWN[Items]-0:X?7_
+items.G[Items]'shared_info$declarationTable->self.UP[Stmt]-0:X?7_
+items.G[Items]'shared_info$declarationTable->self.DOWN[Stmt]-0:X?7_
+items.G[Items]'shared_info$declarationTable->items.UP[Items]-0:X?7_
+items.G[Items]'shared_info$declarationTable->items.DOWN[Items]-0:X?7_
+items.G[Items]'shared_info$epsilon->self.UP[Stmt]-0:X?7_
+items.G[Items]'shared_info$epsilon->self.DOWN[Stmt]-0:X?7_
+items.G[Items]'shared_info$epsilon->items.UP[Items]-0:X?7_
+items.G[Items]'shared_info$epsilon->items.DOWN[Items]-0:X?7_
+s_obj->self.UP[Stmt]-0:X?7_
+s_obj->self.G[Stmt]'shared_info$declarationTable:s?_
+s_obj->self.DOWN[Stmt]-0:X?7_
+s_obj->self.G[Stmt]'shared_info$declarationTable!:s_
+s_obj->items.UP[Items]-0:X?7_
+s_obj->items.G[Items]'shared_info$declarationTable:s?_
+s_obj->items.DOWN[Items]-0:X?7_
+
+Augmented dependency graph for FIRST[].program
+ (self.G[Program]'shared_info,self.UP[Program]-0,self.G[Program]'shared_info$declarationTable,self.G[Program]'shared_info$epsilon,self.DOWN[Program]-0,self.G[Program]'shared_info$declarationTable!,self.program_first,stmts.G[Stmts]'shared_info,stmts.UP[Stmts]-0,stmts.G[Stmts]'shared_info$declarationTable,stmts.G[Stmts]'shared_info$epsilon,stmts.DOWN[Stmts]-0,stmts.G[Stmts]'shared_info$declarationTable!)
+self.G[Program]'shared_info->self.UP[Program]-0:X?7_
+self.G[Program]'shared_info->self.DOWN[Program]-0:X?7_
+self.G[Program]'shared_info->self.program_first:s_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info:s_
+self.G[Program]'shared_info->stmts.UP[Stmts]-0:X?7_
+self.G[Program]'shared_info->stmts.DOWN[Stmts]-0:X?7_
+self.UP[Program]-0->self.DOWN[Program]-0:X?7_
+self.UP[Program]-0->stmts.DOWN[Stmts]-0:X?7_
+self.G[Program]'shared_info$declarationTable->self.UP[Program]-0:X?7_
+self.G[Program]'shared_info$declarationTable->self.DOWN[Program]-0:X?7_
+self.G[Program]'shared_info$declarationTable->self.program_first:s_
+self.G[Program]'shared_info$declarationTable->stmts.UP[Stmts]-0:X?7_
+self.G[Program]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Program]'shared_info$declarationTable->stmts.DOWN[Stmts]-0:X?7_
+self.G[Program]'shared_info$epsilon->self.UP[Program]-0:X?7_
+self.G[Program]'shared_info$epsilon->self.DOWN[Program]-0:X?7_
+self.G[Program]'shared_info$epsilon->stmts.UP[Stmts]-0:X?7_
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Program]'shared_info$epsilon->stmts.DOWN[Stmts]-0:X?7_
+self.DOWN[Program]-0->stmts.DOWN[Stmts]-0:X?7_
+self.G[Program]'shared_info$declarationTable!->self.UP[Program]-0:X?7_
+self.G[Program]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$declarationTable!->self.DOWN[Program]-0:X?7_
+self.G[Program]'shared_info$declarationTable!->self.program_first:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.UP[Stmts]-0:X?7_
+self.G[Program]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.DOWN[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info->self.UP[Program]-0:X?7_
+stmts.G[Stmts]'shared_info->self.DOWN[Program]-0:X?7_
+stmts.G[Stmts]'shared_info->stmts.UP[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info->stmts.DOWN[Stmts]-0:X?7_
+stmts.UP[Stmts]-0->self.UP[Program]-0:X?7_
+stmts.UP[Stmts]-0->self.DOWN[Program]-0:X?7_
+stmts.UP[Stmts]-0->stmts.DOWN[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->self.UP[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->self.DOWN[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->stmts.UP[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->stmts.DOWN[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info$epsilon->self.UP[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$epsilon->self.DOWN[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$epsilon->stmts.UP[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info$epsilon->stmts.DOWN[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable!->self.UP[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->self.DOWN[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable!:s(_)
+stmts.G[Stmts]'shared_info$declarationTable!->self.program_first:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.UP[Stmts]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.DOWN[Stmts]-0:X?7_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].none
+ (self.G[Items]'shared_info,self.UP[Items]-0,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.DOWN[Items]-0)
+self.G[Items]'shared_info->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+self.UP[Items]-0->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].single
+ (<cond@75>,<match@73>,<match@71>,self.G[Items]'shared_info,self.UP[Items]-0,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.DOWN[Items]-0,item.G[Item]'shared_info,item.item_symbol,item.item_is_terminal,_,item_first_objs,(nil),first,(nil))
+<cond@75>-><match@73>:s_
+<cond@75>-><match@71>:s_
+<cond@75>->self.UP[Items]-0:X?7_
+<cond@75>->self.DOWN[Items]-0:X?7_
+<match@73>-><match@71>:s-01
+<match@73>->self.UP[Items]-0:X?7_
+<match@73>->self.DOWN[Items]-0:X?7_
+<match@71>->self.UP[Items]-0:X?7_
+<match@71>->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info-><match@73>:s-01
+self.G[Items]'shared_info-><match@71>:s?-01
+self.G[Items]'shared_info->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info->item.G[Item]'shared_info:s_
+self.G[Items]'shared_info->_:s_
+self.G[Items]'shared_info->item_first_objs:s_
+self.G[Items]'shared_info->first:s?_
+self.UP[Items]-0->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable-><match@73>:s-01
+self.G[Items]'shared_info$declarationTable-><match@71>:s?-01
+self.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->_:s_
+self.G[Items]'shared_info$declarationTable->item_first_objs:s_
+self.G[Items]'shared_info$declarationTable->first:s?_
+self.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+item.item_symbol-><match@73>:s-01
+item.item_symbol-><match@71>:s?-01
+item.item_symbol->self.UP[Items]-0:X?7_
+item.item_symbol->self.DOWN[Items]-0:X?7_
+item.item_symbol->_:s_
+item.item_symbol->item_first_objs:s_
+item.item_symbol->first:s?_
+item.item_is_terminal-><cond@75>:s_
+item.item_is_terminal-><match@73>:s?_
+item.item_is_terminal-><match@71>:s?_
+item.item_is_terminal->self.UP[Items]-0:X?7_
+item.item_is_terminal->self.DOWN[Items]-0:X?7_
+item_first_objs-><match@71>:s+02-01
+item_first_objs->self.UP[Items]-0:X?7_
+item_first_objs->self.DOWN[Items]-0:X?7_
+item_first_objs->first:s_
+first->self.UP[Items]-0:X?7_
+first->self.DOWN[Items]-0:X?7_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].append
+ (self.G[Items]'shared_info,self.UP[Items]-0,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.DOWN[Items]-0,items1.G[Items]'shared_info,items1.UP[Items]-0,items1.G[Items]'shared_info$declarationTable,items1.G[Items]'shared_info$epsilon,items1.DOWN[Items]-0,items2.G[Items]'shared_info,items2.UP[Items]-0,items2.G[Items]'shared_info$declarationTable,items2.G[Items]'shared_info$epsilon,items2.DOWN[Items]-0,black_dot(...):79.G[black_dot]'shared_info,black_dot(...):79.result,black_dot(...):79.s2,black_dot(...):79.s1)
+self.G[Items]'shared_info->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info->items1.G[Items]'shared_info:s_
+self.G[Items]'shared_info->items1.UP[Items]-0:X?7_
+self.G[Items]'shared_info->items1.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info->items2.G[Items]'shared_info:s_
+self.G[Items]'shared_info->items2.UP[Items]-0:X?7_
+self.G[Items]'shared_info->items2.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info->black_dot(...):79.G[black_dot]'shared_info:s_
+self.G[Items]'shared_info->black_dot(...):79.result:s?_,X?7_
+self.G[Items]'shared_info->black_dot(...):79.s2:s?_,X?7_
+self.G[Items]'shared_info->black_dot(...):79.s1:s?_,X?7_
+self.UP[Items]-0->self.DOWN[Items]-0:X?7_
+self.UP[Items]-0->items1.DOWN[Items]-0:X?7_
+self.UP[Items]-0->items2.DOWN[Items]-0:X?7_
+self.UP[Items]-0->black_dot(...):79.result:X?7_
+self.UP[Items]-0->black_dot(...):79.s2:X?7_
+self.UP[Items]-0->black_dot(...):79.s1:X?7_
+self.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->items1.UP[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->items1.G[Items]'shared_info$declarationTable:s(_)
+self.G[Items]'shared_info$declarationTable->items1.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->items2.UP[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->items2.G[Items]'shared_info$declarationTable:s(_)
+self.G[Items]'shared_info$declarationTable->items2.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_,X?7_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:s?_,X?7_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:s?_,X?7_
+self.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->items1.UP[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->items1.G[Items]'shared_info$epsilon:s(_)
+self.G[Items]'shared_info$epsilon->items1.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->items2.UP[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->items2.G[Items]'shared_info$epsilon:s(_)
+self.G[Items]'shared_info$epsilon->items2.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.s2:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.s1:s?_
+self.DOWN[Items]-0->items1.DOWN[Items]-0:X?7_
+self.DOWN[Items]-0->items2.DOWN[Items]-0:X?7_
+self.DOWN[Items]-0->black_dot(...):79.result:X?7_
+self.DOWN[Items]-0->black_dot(...):79.s2:X?7_
+self.DOWN[Items]-0->black_dot(...):79.s1:X?7_
+items1.G[Items]'shared_info->self.UP[Items]-0:X?7_
+items1.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info->items1.UP[Items]-0:X?7_
+items1.G[Items]'shared_info->items1.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info->items2.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info->black_dot(...):79.result:s?_,X?7_
+items1.G[Items]'shared_info->black_dot(...):79.s2:X?7_
+items1.G[Items]'shared_info->black_dot(...):79.s1:s?_,X?7_
+items1.UP[Items]-0->self.UP[Items]-0:X?7_
+items1.UP[Items]-0->self.DOWN[Items]-0:X?7_
+items1.UP[Items]-0->items1.DOWN[Items]-0:X?7_
+items1.UP[Items]-0->items2.DOWN[Items]-0:X?7_
+items1.UP[Items]-0->black_dot(...):79.result:X?7_
+items1.UP[Items]-0->black_dot(...):79.s2:X?7_
+items1.UP[Items]-0->black_dot(...):79.s1:X?7_
+items1.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->items1.UP[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->items1.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->items2.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_,X?7_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:X?7_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:s?_,X?7_
+items1.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->items1.UP[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->items1.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->items2.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.s2:X?7_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.s1:s?_
+items2.G[Items]'shared_info->self.UP[Items]-0:X?7_
+items2.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info->items1.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info->items2.UP[Items]-0:X?7_
+items2.G[Items]'shared_info->items2.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info->black_dot(...):79.result:s?_,X?7_
+items2.G[Items]'shared_info->black_dot(...):79.s2:s?_,X?7_
+items2.G[Items]'shared_info->black_dot(...):79.s1:X?7_
+items2.UP[Items]-0->self.UP[Items]-0:X?7_
+items2.UP[Items]-0->self.DOWN[Items]-0:X?7_
+items2.UP[Items]-0->items1.DOWN[Items]-0:X?7_
+items2.UP[Items]-0->items2.DOWN[Items]-0:X?7_
+items2.UP[Items]-0->black_dot(...):79.result:X?7_
+items2.UP[Items]-0->black_dot(...):79.s2:X?7_
+items2.UP[Items]-0->black_dot(...):79.s1:X?7_
+items2.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->items1.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->items2.UP[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->items2.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_,X?7_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:s?_,X?7_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:X?7_
+items2.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->items1.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->items2.UP[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->items2.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.s2:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.s1:X?7_
+black_dot(...):79.G[black_dot]'shared_info->black_dot(...):79.result:s?_
+black_dot(...):79.s2->black_dot(...):79.result:s?_
+black_dot(...):79.s1->black_dot(...):79.result:s?_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].none
+ (self.G[Stmts]'shared_info,self.UP[Stmts]-0,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.DOWN[Stmts]-0,self.G[Stmts]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_
+self.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:X?7_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].single
+ (self.G[Stmts]'shared_info,self.UP[Stmts]-0,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.DOWN[Stmts]-0,self.G[Stmts]'shared_info$declarationTable!,stmt.G[Stmt]'shared_info,stmt.UP[Stmt]-0,stmt.G[Stmt]'shared_info$declarationTable,stmt.G[Stmt]'shared_info$epsilon,stmt.DOWN[Stmt]-0,stmt.G[Stmt]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info:s_
+self.G[Stmts]'shared_info->stmt.UP[Stmt]-0:X?7_
+self.G[Stmts]'shared_info->stmt.DOWN[Stmt]-0:X?7_
+self.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+self.UP[Stmts]-0->stmt.DOWN[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->stmt.UP[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmt.DOWN[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->stmt.UP[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmt.DOWN[Stmt]-0:X?7_
+self.DOWN[Stmts]-0->stmt.DOWN[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->stmt.UP[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmt.DOWN[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info->self.UP[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info->self.DOWN[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info->stmt.UP[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info->stmt.DOWN[Stmt]-0:X?7_
+stmt.UP[Stmt]-0->self.UP[Stmts]-0:X?7_
+stmt.UP[Stmt]-0->self.DOWN[Stmts]-0:X?7_
+stmt.UP[Stmt]-0->stmt.DOWN[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->stmt.UP[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->stmt.DOWN[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info$epsilon->self.UP[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$epsilon->stmt.UP[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info$epsilon->stmt.DOWN[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable!->self.UP[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->self.DOWN[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.UP[Stmt]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.DOWN[Stmt]-0:X?7_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].append
+ (self.G[Stmts]'shared_info,self.UP[Stmts]-0,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.DOWN[Stmts]-0,self.G[Stmts]'shared_info$declarationTable!,stmts1.G[Stmts]'shared_info,stmts1.UP[Stmts]-0,stmts1.G[Stmts]'shared_info$declarationTable,stmts1.G[Stmts]'shared_info$epsilon,stmts1.DOWN[Stmts]-0,stmts1.G[Stmts]'shared_info$declarationTable!,stmts2.G[Stmts]'shared_info,stmts2.UP[Stmts]-0,stmts2.G[Stmts]'shared_info$declarationTable,stmts2.G[Stmts]'shared_info$epsilon,stmts2.DOWN[Stmts]-0,stmts2.G[Stmts]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info:s_
+self.G[Stmts]'shared_info->stmts1.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->stmts1.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info:s_
+self.G[Stmts]'shared_info->stmts2.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info->stmts2.DOWN[Stmts]-0:X?7_
+self.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+self.UP[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+self.UP[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->stmts1.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmts1.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->stmts2.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmts2.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts1.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmts1.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts2.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmts2.DOWN[Stmts]-0:X?7_
+self.DOWN[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+self.DOWN[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.UP[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info->stmts1.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info->stmts1.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.UP[Stmts]-0->self.UP[Stmts]-0:X?7_
+stmts1.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+stmts1.UP[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+stmts1.UP[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts1.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts1.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info->stmts2.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info->stmts2.DOWN[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->self.UP[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts2.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts2.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.DOWN[Stmts]-0:X?7_
+
+Augmented dependency graph for contains_epsilon
+ (contains_epsilon.G[contains_epsilon]'shared_info,contains_epsilon.result,contains_epsilon.s_set)
+contains_epsilon.G[contains_epsilon]'shared_info->contains_epsilon.result:s_
+contains_epsilon.s_set->contains_epsilon.result:s_
+
+Augmented dependency graph for black_dot
+ (<cond@103>,black_dot.G[black_dot]'shared_info,black_dot.result,black_dot.s2,black_dot.s1,contains_epsilon(...):99.G[contains_epsilon]'shared_info,contains_epsilon(...):99.result,contains_epsilon(...):99.s_set)
+<cond@103>->black_dot.result:s_
+black_dot.G[black_dot]'shared_info->black_dot.result:s_
+black_dot.G[black_dot]'shared_info->contains_epsilon(...):99.G[contains_epsilon]'shared_info:s_
+black_dot.G[black_dot]'shared_info->contains_epsilon(...):99.result:s?_
+black_dot.s2->black_dot.result:s_
+black_dot.s1->black_dot.result:s_
+black_dot.s1->contains_epsilon(...):99.result:s?_
+black_dot.s1->contains_epsilon(...):99.s_set:s_
+contains_epsilon(...):99.G[contains_epsilon]'shared_info->contains_epsilon(...):99.result:s?_
+contains_epsilon(...):99.s_set->contains_epsilon(...):99.result:s?_
+
+
+Summary dependency graph for Program
+G[Program]'shared_info -> UP[Program]-0 DOWN[Program]-0 program_first 
+UP[Program]-0 -> DOWN[Program]-0 
+G[Program]'shared_info$declarationTable -> UP[Program]-0 DOWN[Program]-0 program_first 
+G[Program]'shared_info$epsilon -> UP[Program]-0 DOWN[Program]-0 
+DOWN[Program]-0 -> 
+G[Program]'shared_info$declarationTable! -> UP[Program]-0 G[Program]'shared_info$declarationTable DOWN[Program]-0 program_first 
+program_first -> 
+
+Summary dependency graph for Item
+G[Item]'shared_info -> 
+item_symbol -> 
+item_is_terminal -> 
+
+Summary dependency graph for Items
+G[Items]'shared_info -> UP[Items]-0 DOWN[Items]-0 
+UP[Items]-0 -> DOWN[Items]-0 
+G[Items]'shared_info$declarationTable -> UP[Items]-0 DOWN[Items]-0 
+G[Items]'shared_info$epsilon -> UP[Items]-0 DOWN[Items]-0 
+DOWN[Items]-0 -> 
+
+Summary dependency graph for Stmt
+G[Stmt]'shared_info -> UP[Stmt]-0 DOWN[Stmt]-0 
+UP[Stmt]-0 -> DOWN[Stmt]-0 
+G[Stmt]'shared_info$declarationTable -> UP[Stmt]-0 DOWN[Stmt]-0 
+G[Stmt]'shared_info$epsilon -> UP[Stmt]-0 DOWN[Stmt]-0 
+DOWN[Stmt]-0 -> 
+G[Stmt]'shared_info$declarationTable! -> UP[Stmt]-0 G[Stmt]'shared_info$declarationTable DOWN[Stmt]-0 
+
+Summary dependency graph for Stmts
+G[Stmts]'shared_info -> UP[Stmts]-0 DOWN[Stmts]-0 
+UP[Stmts]-0 -> DOWN[Stmts]-0 
+G[Stmts]'shared_info$declarationTable -> UP[Stmts]-0 DOWN[Stmts]-0 
+G[Stmts]'shared_info$epsilon -> UP[Stmts]-0 DOWN[Stmts]-0 
+DOWN[Stmts]-0 -> 
+G[Stmts]'shared_info$declarationTable! -> UP[Stmts]-0 G[Stmts]'shared_info$declarationTable DOWN[Stmts]-0 
+
+Summary dependency graph for contains_epsilon
+G[contains_epsilon]'shared_info -> result 
+result -> 
+s_set -> result 
+
+Summary dependency graph for black_dot
+G[black_dot]'shared_info -> result 
+result -> 
+s2 -> result 
+s1 -> result 
+*** FINAL OAG ANALYSIS STATE ***
+Analysis state for FIRST_IMPL
+Augmented dependency graph for global dependencies
+ (FIRST_IMPL.G[Program]'shared_info,FIRST_IMPL.UP[Program]-0,FIRST_IMPL.G[Program]'shared_info$declarationTable,FIRST_IMPL.G[Program]'shared_info$epsilon,FIRST_IMPL.DOWN[Program]-0,FIRST_IMPL.G[Program]'shared_info$declarationTable!,FIRST_IMPL.program_first,declarationTable,UP[global dependencies]-0,epsilon)
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.UP[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.G[Program]'shared_info$declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.DOWN[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.G[Program]'shared_info$declarationTable!:s?_
+FIRST_IMPL.G[Program]'shared_info->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info->declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info->UP[global dependencies]-0:X?7_
+FIRST_IMPL.UP[Program]-0->FIRST_IMPL.DOWN[Program]-0:s?_
+FIRST_IMPL.UP[Program]-0->UP[global dependencies]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.UP[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.DOWN[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable->UP[global dependencies]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.UP[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.DOWN[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable!:s?_
+FIRST_IMPL.G[Program]'shared_info$epsilon->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$epsilon->declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info$epsilon->UP[global dependencies]-0:X?7_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.UP[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.G[Program]'shared_info$declarationTable:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.DOWN[Program]-0:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->FIRST_IMPL.program_first:s?_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->declarationTable:s_
+FIRST_IMPL.G[Program]'shared_info$declarationTable!->UP[global dependencies]-0:X?7_
+FIRST_IMPL.program_first->FIRST_IMPL.DOWN[Program]-0:s?_
+declarationTable->FIRST_IMPL.UP[Program]-0:s?_
+declarationTable->FIRST_IMPL.G[Program]'shared_info$declarationTable:s_
+declarationTable->FIRST_IMPL.DOWN[Program]-0:s?_
+declarationTable->FIRST_IMPL.program_first:s?_
+declarationTable->UP[global dependencies]-0:X?7_
+UP[global dependencies]-0->FIRST_IMPL.DOWN[Program]-0:X?7_
+epsilon->FIRST_IMPL.UP[Program]-0:s?_
+epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable:s?_
+epsilon->FIRST_IMPL.G[Program]'shared_info$epsilon:s_
+epsilon->FIRST_IMPL.DOWN[Program]-0:s?_
+epsilon->FIRST_IMPL.G[Program]'shared_info$declarationTable!:s?_
+epsilon->FIRST_IMPL.program_first:s?_
+epsilon->declarationTable:s?_
+epsilon->UP[global dependencies]-0:X?7_
+
+Augmented dependency graph for FIRST[].terminal
+ (self.G[Item]'shared_info,self.item_symbol,self.item_is_terminal)
+self.G[Item]'shared_info->self.item_symbol:s?_
+self.G[Item]'shared_info->self.item_is_terminal:s?_
+
+Augmented dependency graph for FIRST[].nonterminal
+ (self.G[Item]'shared_info,self.item_symbol,self.item_is_terminal)
+self.G[Item]'shared_info->self.item_symbol:s?_
+self.G[Item]'shared_info->self.item_is_terminal:s?_
+
+Augmented dependency graph for FIRST[].stmt
+ (self.G[Stmt]'shared_info,self.UP[Stmt]-0,self.G[Stmt]'shared_info$declarationTable,self.G[Stmt]'shared_info$epsilon,self.DOWN[Stmt]-0,self.G[Stmt]'shared_info$declarationTable!,items.G[Items]'shared_info,items.UP[Items]-0,items.G[Items]'shared_info$declarationTable,items.G[Items]'shared_info$epsilon,items.DOWN[Items]-0,(nil),s_obj,(nil),(nil))
+self.G[Stmt]'shared_info->self.UP[Stmt]-0:s?_
+self.G[Stmt]'shared_info->self.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info->self.DOWN[Stmt]-0:s?_
+self.G[Stmt]'shared_info->self.G[Stmt]'shared_info$declarationTable!:s?_
+self.G[Stmt]'shared_info->items.G[Items]'shared_info:s_
+self.G[Stmt]'shared_info->items.UP[Items]-0:s?_
+self.G[Stmt]'shared_info->items.G[Items]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info->items.DOWN[Items]-0:s?_
+self.UP[Stmt]-0->self.DOWN[Stmt]-0:s?_
+self.UP[Stmt]-0->items.DOWN[Items]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable->self.UP[Stmt]-0:s?_
+self.G[Stmt]'shared_info$declarationTable->self.DOWN[Stmt]-0:s?_
+self.G[Stmt]'shared_info$declarationTable->items.UP[Items]-0:s?_
+self.G[Stmt]'shared_info$declarationTable->items.G[Items]'shared_info$declarationTable:s(_)
+self.G[Stmt]'shared_info$declarationTable->items.DOWN[Items]-0:s?_
+self.G[Stmt]'shared_info$epsilon->self.UP[Stmt]-0:s?_
+self.G[Stmt]'shared_info$epsilon->self.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$epsilon->self.DOWN[Stmt]-0:s?_
+self.G[Stmt]'shared_info$epsilon->self.G[Stmt]'shared_info$declarationTable!:s?_
+self.G[Stmt]'shared_info$epsilon->items.UP[Items]-0:s?_
+self.G[Stmt]'shared_info$epsilon->items.G[Items]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$epsilon->items.G[Items]'shared_info$epsilon:s(_)
+self.G[Stmt]'shared_info$epsilon->items.DOWN[Items]-0:s?_
+self.DOWN[Stmt]-0->items.DOWN[Items]-0:X?7_
+self.G[Stmt]'shared_info$declarationTable!->self.UP[Stmt]-0:s?_
+self.G[Stmt]'shared_info$declarationTable!->self.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$declarationTable!->self.DOWN[Stmt]-0:s?_
+self.G[Stmt]'shared_info$declarationTable!->items.UP[Items]-0:s?_
+self.G[Stmt]'shared_info$declarationTable!->items.G[Items]'shared_info$declarationTable:s?_
+self.G[Stmt]'shared_info$declarationTable!->items.DOWN[Items]-0:s?_
+items.G[Items]'shared_info->self.UP[Stmt]-0:X?7_
+items.G[Items]'shared_info->self.DOWN[Stmt]-0:X?7_
+items.G[Items]'shared_info->items.UP[Items]-0:s?_
+items.G[Items]'shared_info->items.DOWN[Items]-0:s?_
+items.UP[Items]-0->self.UP[Stmt]-0:X?7_
+items.UP[Items]-0->self.DOWN[Stmt]-0:X?7_
+items.UP[Items]-0->items.DOWN[Items]-0:s?_
+items.G[Items]'shared_info$declarationTable->self.UP[Stmt]-0:X?7_
+items.G[Items]'shared_info$declarationTable->self.DOWN[Stmt]-0:X?7_
+items.G[Items]'shared_info$declarationTable->items.UP[Items]-0:s?_
+items.G[Items]'shared_info$declarationTable->items.DOWN[Items]-0:s?_
+items.G[Items]'shared_info$epsilon->self.UP[Stmt]-0:X?7_
+items.G[Items]'shared_info$epsilon->self.DOWN[Stmt]-0:X?7_
+items.G[Items]'shared_info$epsilon->items.UP[Items]-0:s?_
+items.G[Items]'shared_info$epsilon->items.DOWN[Items]-0:s?_
+s_obj->self.UP[Stmt]-0:s?_
+s_obj->self.G[Stmt]'shared_info$declarationTable:s?_
+s_obj->self.DOWN[Stmt]-0:s?_
+s_obj->self.G[Stmt]'shared_info$declarationTable!:s_
+s_obj->items.UP[Items]-0:s?_
+s_obj->items.G[Items]'shared_info$declarationTable:s?_
+s_obj->items.DOWN[Items]-0:s?_
+
+Augmented dependency graph for FIRST[].program
+ (self.G[Program]'shared_info,self.UP[Program]-0,self.G[Program]'shared_info$declarationTable,self.G[Program]'shared_info$epsilon,self.DOWN[Program]-0,self.G[Program]'shared_info$declarationTable!,self.program_first,stmts.G[Stmts]'shared_info,stmts.UP[Stmts]-0,stmts.G[Stmts]'shared_info$declarationTable,stmts.G[Stmts]'shared_info$epsilon,stmts.DOWN[Stmts]-0,stmts.G[Stmts]'shared_info$declarationTable!)
+self.G[Program]'shared_info->self.UP[Program]-0:s?_
+self.G[Program]'shared_info->self.G[Program]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info->self.DOWN[Program]-0:s?_
+self.G[Program]'shared_info->self.G[Program]'shared_info$declarationTable!:s?_
+self.G[Program]'shared_info->self.program_first:s_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info:s_
+self.G[Program]'shared_info->stmts.UP[Stmts]-0:s?_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info->stmts.DOWN[Stmts]-0:s?_
+self.G[Program]'shared_info->stmts.G[Stmts]'shared_info$declarationTable!:s?_
+self.UP[Program]-0->self.DOWN[Program]-0:s?_
+self.UP[Program]-0->stmts.DOWN[Stmts]-0:X?7_
+self.G[Program]'shared_info$declarationTable->self.UP[Program]-0:s?_
+self.G[Program]'shared_info$declarationTable->self.DOWN[Program]-0:s?_
+self.G[Program]'shared_info$declarationTable->self.program_first:s_
+self.G[Program]'shared_info$declarationTable->stmts.UP[Stmts]-0:s?_
+self.G[Program]'shared_info$declarationTable->stmts.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Program]'shared_info$declarationTable->stmts.DOWN[Stmts]-0:s?_
+self.G[Program]'shared_info$epsilon->self.UP[Program]-0:s?_
+self.G[Program]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$epsilon->self.DOWN[Program]-0:s?_
+self.G[Program]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable!:s?_
+self.G[Program]'shared_info$epsilon->self.program_first:s?_
+self.G[Program]'shared_info$epsilon->stmts.UP[Stmts]-0:s?_
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Program]'shared_info$epsilon->stmts.DOWN[Stmts]-0:s?_
+self.G[Program]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable!:s?_
+self.DOWN[Program]-0->stmts.DOWN[Stmts]-0:X?7_
+self.G[Program]'shared_info$declarationTable!->self.UP[Program]-0:s?_
+self.G[Program]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$declarationTable!->self.DOWN[Program]-0:s?_
+self.G[Program]'shared_info$declarationTable!->self.program_first:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.UP[Stmts]-0:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Program]'shared_info$declarationTable!->stmts.DOWN[Stmts]-0:s?_
+self.program_first->self.DOWN[Program]-0:s?_
+self.program_first->stmts.DOWN[Stmts]-0:X?3_
+stmts.G[Stmts]'shared_info->self.UP[Program]-0:X?7_,s?_
+stmts.G[Stmts]'shared_info->self.G[Program]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info->self.DOWN[Program]-0:X?7_,s?_
+stmts.G[Stmts]'shared_info->self.G[Program]'shared_info$declarationTable!:s?_
+stmts.G[Stmts]'shared_info->self.program_first:s?_
+stmts.G[Stmts]'shared_info->stmts.UP[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info->stmts.G[Stmts]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info->stmts.DOWN[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info->stmts.G[Stmts]'shared_info$declarationTable!:s?_
+stmts.UP[Stmts]-0->self.UP[Program]-0:X?7_
+stmts.UP[Stmts]-0->self.DOWN[Program]-0:X?7_
+stmts.UP[Stmts]-0->stmts.DOWN[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info$declarationTable->self.UP[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->self.DOWN[Program]-0:X?7_
+stmts.G[Stmts]'shared_info$declarationTable->stmts.UP[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info$declarationTable->stmts.DOWN[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info$epsilon->self.UP[Program]-0:X?7_,s?_
+stmts.G[Stmts]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$epsilon->self.DOWN[Program]-0:X?7_,s?_
+stmts.G[Stmts]'shared_info$epsilon->self.G[Program]'shared_info$declarationTable!:s?_
+stmts.G[Stmts]'shared_info$epsilon->self.program_first:s?_
+stmts.G[Stmts]'shared_info$epsilon->stmts.UP[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$epsilon->stmts.DOWN[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info$epsilon->stmts.G[Stmts]'shared_info$declarationTable!:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->self.UP[Program]-0:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->self.DOWN[Program]-0:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->self.G[Program]'shared_info$declarationTable!:s(_)
+stmts.G[Stmts]'shared_info$declarationTable!->self.program_first:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.UP[Stmts]-0:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.G[Stmts]'shared_info$declarationTable:s?_
+stmts.G[Stmts]'shared_info$declarationTable!->stmts.DOWN[Stmts]-0:s?_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].none
+ (self.G[Items]'shared_info,self.UP[Items]-0,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.DOWN[Items]-0)
+self.G[Items]'shared_info->self.UP[Items]-0:s?_
+self.G[Items]'shared_info->self.DOWN[Items]-0:s?_
+self.UP[Items]-0->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->self.UP[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->self.UP[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:s?_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].single
+ (<cond@75>,<match@73>,<match@71>,self.G[Items]'shared_info,self.UP[Items]-0,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.DOWN[Items]-0,item.G[Item]'shared_info,item.item_symbol,item.item_is_terminal,_,item_first_objs,(nil),first,(nil))
+<cond@75>-><match@73>:s_
+<cond@75>-><match@71>:s_
+<cond@75>->self.UP[Items]-0:X?7_
+<cond@75>->self.DOWN[Items]-0:X?7_
+<match@73>-><match@71>:s-01
+<match@73>->self.UP[Items]-0:X?7_
+<match@73>->self.DOWN[Items]-0:X?7_
+<match@71>->self.UP[Items]-0:X?7_
+<match@71>->self.DOWN[Items]-0:X?7_
+self.G[Items]'shared_info-><cond@75>:s?_
+self.G[Items]'shared_info-><match@73>:s-01,s?_
+self.G[Items]'shared_info-><match@71>:s?_
+self.G[Items]'shared_info->self.UP[Items]-0:s?_
+self.G[Items]'shared_info->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info->item.G[Item]'shared_info:s_
+self.G[Items]'shared_info->item.item_symbol:s?_
+self.G[Items]'shared_info->item.item_is_terminal:s?_
+self.G[Items]'shared_info->_:s_
+self.G[Items]'shared_info->item_first_objs:s_
+self.G[Items]'shared_info->first:s?_
+self.UP[Items]-0->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable-><match@73>:s-01
+self.G[Items]'shared_info$declarationTable-><match@71>:s?-01
+self.G[Items]'shared_info$declarationTable->self.UP[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->_:s_
+self.G[Items]'shared_info$declarationTable->item_first_objs:s_
+self.G[Items]'shared_info$declarationTable->first:s?_
+self.G[Items]'shared_info$epsilon->self.UP[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:s?_
+item.G[Item]'shared_info-><cond@75>:s?_
+item.G[Item]'shared_info-><match@73>:s?_
+item.G[Item]'shared_info-><match@71>:s?_
+item.G[Item]'shared_info->self.UP[Items]-0:X?3_
+item.G[Item]'shared_info->self.DOWN[Items]-0:X?3_
+item.G[Item]'shared_info->item.item_symbol:s?_
+item.G[Item]'shared_info->item.item_is_terminal:s?_
+item.G[Item]'shared_info->_:s?_
+item.G[Item]'shared_info->item_first_objs:s?_
+item.G[Item]'shared_info->first:s?_
+item.item_symbol-><match@73>:s-01
+item.item_symbol-><match@71>:s?-01
+item.item_symbol->self.UP[Items]-0:X?7_
+item.item_symbol->self.DOWN[Items]-0:X?7_
+item.item_symbol->_:s_
+item.item_symbol->item_first_objs:s_
+item.item_symbol->first:s?_
+item.item_is_terminal-><cond@75>:s_
+item.item_is_terminal-><match@73>:s?_
+item.item_is_terminal-><match@71>:s?_
+item.item_is_terminal->self.UP[Items]-0:X?7_
+item.item_is_terminal->self.DOWN[Items]-0:X?7_
+item_first_objs-><match@71>:s+02-01
+item_first_objs->self.UP[Items]-0:X?7_
+item_first_objs->self.DOWN[Items]-0:X?7_
+item_first_objs->first:s_
+first->self.UP[Items]-0:X?7_
+first->self.DOWN[Items]-0:X?7_
+
+Augmented dependency graph for FIRST[].Items$SEQUENCE[Item].append
+ (self.G[Items]'shared_info,self.UP[Items]-0,self.G[Items]'shared_info$declarationTable,self.G[Items]'shared_info$epsilon,self.DOWN[Items]-0,items1.G[Items]'shared_info,items1.UP[Items]-0,items1.G[Items]'shared_info$declarationTable,items1.G[Items]'shared_info$epsilon,items1.DOWN[Items]-0,items2.G[Items]'shared_info,items2.UP[Items]-0,items2.G[Items]'shared_info$declarationTable,items2.G[Items]'shared_info$epsilon,items2.DOWN[Items]-0,black_dot(...):79.G[black_dot]'shared_info,black_dot(...):79.result,black_dot(...):79.s2,black_dot(...):79.s1)
+self.G[Items]'shared_info->self.UP[Items]-0:s?_
+self.G[Items]'shared_info->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info->items1.G[Items]'shared_info:s_
+self.G[Items]'shared_info->items1.UP[Items]-0:s?_
+self.G[Items]'shared_info->items1.DOWN[Items]-0:s?_
+self.G[Items]'shared_info->items2.G[Items]'shared_info:s_
+self.G[Items]'shared_info->items2.UP[Items]-0:s?_
+self.G[Items]'shared_info->items2.DOWN[Items]-0:s?_
+self.G[Items]'shared_info->black_dot(...):79.G[black_dot]'shared_info:s_
+self.G[Items]'shared_info->black_dot(...):79.result:s?_,X?7_
+self.G[Items]'shared_info->black_dot(...):79.s2:s?_,X?7_
+self.G[Items]'shared_info->black_dot(...):79.s1:s?_,X?7_
+self.UP[Items]-0->self.DOWN[Items]-0:s?_
+self.UP[Items]-0->items1.DOWN[Items]-0:X?7_
+self.UP[Items]-0->items2.DOWN[Items]-0:X?7_
+self.UP[Items]-0->black_dot(...):79.result:X?7_
+self.UP[Items]-0->black_dot(...):79.s2:X?7_
+self.UP[Items]-0->black_dot(...):79.s1:X?7_
+self.G[Items]'shared_info$declarationTable->self.UP[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->items1.UP[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->items1.G[Items]'shared_info$declarationTable:s(_)
+self.G[Items]'shared_info$declarationTable->items1.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->items2.UP[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->items2.G[Items]'shared_info$declarationTable:s(_)
+self.G[Items]'shared_info$declarationTable->items2.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_,X?7_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:s?_,X?7_
+self.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:s?_,X?7_
+self.G[Items]'shared_info$epsilon->self.UP[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->items1.UP[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->items1.G[Items]'shared_info$epsilon:s(_)
+self.G[Items]'shared_info$epsilon->items1.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->items2.UP[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->items2.G[Items]'shared_info$epsilon:s(_)
+self.G[Items]'shared_info$epsilon->items2.DOWN[Items]-0:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.s2:s?_
+self.G[Items]'shared_info$epsilon->black_dot(...):79.s1:s?_
+self.DOWN[Items]-0->items1.DOWN[Items]-0:X?7_
+self.DOWN[Items]-0->items2.DOWN[Items]-0:X?7_
+self.DOWN[Items]-0->black_dot(...):79.result:X?7_
+self.DOWN[Items]-0->black_dot(...):79.s2:X?7_
+self.DOWN[Items]-0->black_dot(...):79.s1:X?7_
+items1.G[Items]'shared_info->self.UP[Items]-0:X?7_
+items1.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info->items1.UP[Items]-0:s?_
+items1.G[Items]'shared_info->items1.DOWN[Items]-0:s?_
+items1.G[Items]'shared_info->items2.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info->black_dot(...):79.result:s?_,X?7_
+items1.G[Items]'shared_info->black_dot(...):79.s2:X?7_
+items1.G[Items]'shared_info->black_dot(...):79.s1:s?_,X?7_
+items1.UP[Items]-0->self.UP[Items]-0:X?7_
+items1.UP[Items]-0->self.DOWN[Items]-0:X?7_
+items1.UP[Items]-0->items1.DOWN[Items]-0:s?_
+items1.UP[Items]-0->items2.DOWN[Items]-0:X?7_
+items1.UP[Items]-0->black_dot(...):79.result:X?7_
+items1.UP[Items]-0->black_dot(...):79.s2:X?7_
+items1.UP[Items]-0->black_dot(...):79.s1:X?7_
+items1.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->items1.UP[Items]-0:s?_
+items1.G[Items]'shared_info$declarationTable->items1.DOWN[Items]-0:s?_
+items1.G[Items]'shared_info$declarationTable->items2.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_,X?7_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:X?7_
+items1.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:s?_,X?7_
+items1.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->items1.UP[Items]-0:s?_
+items1.G[Items]'shared_info$epsilon->items1.DOWN[Items]-0:s?_
+items1.G[Items]'shared_info$epsilon->items2.DOWN[Items]-0:X?7_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.s2:X?7_
+items1.G[Items]'shared_info$epsilon->black_dot(...):79.s1:s?_
+items2.G[Items]'shared_info->self.UP[Items]-0:X?7_
+items2.G[Items]'shared_info->self.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info->items1.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info->items2.UP[Items]-0:s?_
+items2.G[Items]'shared_info->items2.DOWN[Items]-0:s?_
+items2.G[Items]'shared_info->black_dot(...):79.result:s?_,X?7_
+items2.G[Items]'shared_info->black_dot(...):79.s2:s?_,X?7_
+items2.G[Items]'shared_info->black_dot(...):79.s1:X?7_
+items2.UP[Items]-0->self.UP[Items]-0:X?7_
+items2.UP[Items]-0->self.DOWN[Items]-0:X?7_
+items2.UP[Items]-0->items1.DOWN[Items]-0:X?7_
+items2.UP[Items]-0->items2.DOWN[Items]-0:s?_
+items2.UP[Items]-0->black_dot(...):79.result:X?7_
+items2.UP[Items]-0->black_dot(...):79.s2:X?7_
+items2.UP[Items]-0->black_dot(...):79.s1:X?7_
+items2.G[Items]'shared_info$declarationTable->self.UP[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->self.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->items1.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$declarationTable->items2.UP[Items]-0:s?_
+items2.G[Items]'shared_info$declarationTable->items2.DOWN[Items]-0:s?_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.result:s?_,X?7_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.s2:s?_,X?7_
+items2.G[Items]'shared_info$declarationTable->black_dot(...):79.s1:X?7_
+items2.G[Items]'shared_info$epsilon->self.UP[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->self.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->items1.DOWN[Items]-0:X?7_
+items2.G[Items]'shared_info$epsilon->items2.UP[Items]-0:s?_
+items2.G[Items]'shared_info$epsilon->items2.DOWN[Items]-0:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.result:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.s2:s?_
+items2.G[Items]'shared_info$epsilon->black_dot(...):79.s1:X?7_
+black_dot(...):79.G[black_dot]'shared_info->black_dot(...):79.result:s?_
+black_dot(...):79.s2->black_dot(...):79.result:s?_
+black_dot(...):79.s1->black_dot(...):79.result:s?_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].none
+ (self.G[Stmts]'shared_info,self.UP[Stmts]-0,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.DOWN[Stmts]-0,self.G[Stmts]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!:s?_
+self.UP[Stmts]-0->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:s?_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].single
+ (self.G[Stmts]'shared_info,self.UP[Stmts]-0,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.DOWN[Stmts]-0,self.G[Stmts]'shared_info$declarationTable!,stmt.G[Stmt]'shared_info,stmt.UP[Stmt]-0,stmt.G[Stmt]'shared_info$declarationTable,stmt.G[Stmt]'shared_info$epsilon,stmt.DOWN[Stmt]-0,stmt.G[Stmt]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info:s_
+self.G[Stmts]'shared_info->stmt.UP[Stmt]-0:s?_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info->stmt.DOWN[Stmt]-0:s?_
+self.G[Stmts]'shared_info->stmt.G[Stmt]'shared_info$declarationTable!:s?_
+self.UP[Stmts]-0->self.DOWN[Stmts]-0:s?_
+self.UP[Stmts]-0->stmt.DOWN[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->stmt.UP[Stmt]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->stmt.G[Stmt]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmt.DOWN[Stmt]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info$epsilon->stmt.UP[Stmt]-0:s?_
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmt.DOWN[Stmt]-0:s?_
+self.G[Stmts]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable!:s?_
+self.DOWN[Stmts]-0->stmt.DOWN[Stmt]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmt.UP[Stmt]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmt.DOWN[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info->self.UP[Stmts]-0:X?7_,s?_
+stmt.G[Stmt]'shared_info->self.G[Stmts]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info->self.DOWN[Stmts]-0:X?7_,s?_
+stmt.G[Stmt]'shared_info->self.G[Stmts]'shared_info$declarationTable!:s?_
+stmt.G[Stmt]'shared_info->stmt.UP[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info->stmt.G[Stmt]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info->stmt.DOWN[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info->stmt.G[Stmt]'shared_info$declarationTable!:s?_
+stmt.UP[Stmt]-0->self.UP[Stmts]-0:X?7_
+stmt.UP[Stmt]-0->self.DOWN[Stmts]-0:X?7_
+stmt.UP[Stmt]-0->stmt.DOWN[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+stmt.G[Stmt]'shared_info$declarationTable->stmt.UP[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info$declarationTable->stmt.DOWN[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info$epsilon->self.UP[Stmts]-0:X?7_,s?_
+stmt.G[Stmt]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_,s?_
+stmt.G[Stmt]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!:s?_
+stmt.G[Stmt]'shared_info$epsilon->stmt.UP[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$epsilon->stmt.DOWN[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info$epsilon->stmt.G[Stmt]'shared_info$declarationTable!:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->self.UP[Stmts]-0:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->self.DOWN[Stmts]-0:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.UP[Stmt]-0:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.G[Stmt]'shared_info$declarationTable:s?_
+stmt.G[Stmt]'shared_info$declarationTable!->stmt.DOWN[Stmt]-0:s?_
+
+Augmented dependency graph for FIRST[].Stmts$SEQUENCE[Stmt].append
+ (self.G[Stmts]'shared_info,self.UP[Stmts]-0,self.G[Stmts]'shared_info$declarationTable,self.G[Stmts]'shared_info$epsilon,self.DOWN[Stmts]-0,self.G[Stmts]'shared_info$declarationTable!,stmts1.G[Stmts]'shared_info,stmts1.UP[Stmts]-0,stmts1.G[Stmts]'shared_info$declarationTable,stmts1.G[Stmts]'shared_info$epsilon,stmts1.DOWN[Stmts]-0,stmts1.G[Stmts]'shared_info$declarationTable!,stmts2.G[Stmts]'shared_info,stmts2.UP[Stmts]-0,stmts2.G[Stmts]'shared_info$declarationTable,stmts2.G[Stmts]'shared_info$epsilon,stmts2.DOWN[Stmts]-0,stmts2.G[Stmts]'shared_info$declarationTable!)
+self.G[Stmts]'shared_info->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info:s_
+self.G[Stmts]'shared_info->stmts1.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info->stmts1.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info:s_
+self.G[Stmts]'shared_info->stmts2.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info->stmts2.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable!:s?_
+self.UP[Stmts]-0->self.DOWN[Stmts]-0:s?_
+self.UP[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+self.UP[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->stmts1.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->stmts1.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmts1.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->stmts2.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable->stmts2.G[Stmts]'shared_info$declarationTable:s(_)
+self.G[Stmts]'shared_info$declarationTable->stmts2.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info$epsilon->stmts1.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmts1.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable!:s?_
+self.G[Stmts]'shared_info$epsilon->stmts2.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$epsilon:s(_)
+self.G[Stmts]'shared_info$epsilon->stmts2.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable!:s?_
+self.DOWN[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+self.DOWN[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+self.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts1.DOWN[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.UP[Stmts]-0:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+self.G[Stmts]'shared_info$declarationTable!->stmts2.DOWN[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_,s?_
+stmts1.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_,s?_
+stmts1.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!:s?_
+stmts1.G[Stmts]'shared_info->stmts1.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info->stmts1.DOWN[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable!:s?_
+stmts1.G[Stmts]'shared_info->stmts2.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info->stmts2.DOWN[Stmts]-0:X?7_,s?_
+stmts1.UP[Stmts]-0->self.UP[Stmts]-0:X?7_
+stmts1.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+stmts1.UP[Stmts]-0->stmts1.DOWN[Stmts]-0:s?_
+stmts1.UP[Stmts]-0->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts1.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts1.DOWN[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable->stmts2.DOWN[Stmts]-0:X?7_
+stmts1.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_,s?_
+stmts1.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_,s?_
+stmts1.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.DOWN[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable!:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts2.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$epsilon->stmts2.DOWN[Stmts]-0:X?7_,s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts1.DOWN[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.UP[Stmts]-0:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts1.G[Stmts]'shared_info$declarationTable!->stmts2.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info->self.UP[Stmts]-0:X?7_,s?_
+stmts2.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info->self.DOWN[Stmts]-0:X?7_,s?_
+stmts2.G[Stmts]'shared_info->self.G[Stmts]'shared_info$declarationTable!:s?_
+stmts2.G[Stmts]'shared_info->stmts1.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info->stmts1.DOWN[Stmts]-0:X?7_,s?_
+stmts2.G[Stmts]'shared_info->stmts2.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info->stmts2.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info->stmts2.G[Stmts]'shared_info$declarationTable!:s?_
+stmts2.UP[Stmts]-0->self.UP[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->self.DOWN[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.UP[Stmts]-0->stmts2.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable->self.UP[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->self.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts1.DOWN[Stmts]-0:X?7_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts2.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable->stmts2.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$epsilon->self.UP[Stmts]-0:X?7_,s?_
+stmts2.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$epsilon->self.DOWN[Stmts]-0:X?7_,s?_
+stmts2.G[Stmts]'shared_info$epsilon->self.G[Stmts]'shared_info$declarationTable!:s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts1.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts1.DOWN[Stmts]-0:X?7_,s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$epsilon->stmts2.G[Stmts]'shared_info$declarationTable!:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->self.G[Stmts]'shared_info$declarationTable!:s(_)
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts1.DOWN[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.UP[Stmts]-0:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.G[Stmts]'shared_info$declarationTable:s?_
+stmts2.G[Stmts]'shared_info$declarationTable!->stmts2.DOWN[Stmts]-0:s?_
+
+Augmented dependency graph for contains_epsilon
+ (contains_epsilon.G[contains_epsilon]'shared_info,contains_epsilon.result,contains_epsilon.s_set)
+contains_epsilon.G[contains_epsilon]'shared_info->contains_epsilon.result:s_
+contains_epsilon.s_set->contains_epsilon.result:s_
+
+Augmented dependency graph for black_dot
+ (<cond@103>,black_dot.G[black_dot]'shared_info,black_dot.result,black_dot.s2,black_dot.s1,contains_epsilon(...):99.G[contains_epsilon]'shared_info,contains_epsilon(...):99.result,contains_epsilon(...):99.s_set)
+<cond@103>->black_dot.result:s_
+black_dot.G[black_dot]'shared_info->black_dot.result:s_
+black_dot.G[black_dot]'shared_info->contains_epsilon(...):99.G[contains_epsilon]'shared_info:s_
+black_dot.G[black_dot]'shared_info->contains_epsilon(...):99.result:s?_
+black_dot.s2->black_dot.result:s_
+black_dot.s1->black_dot.result:s_
+black_dot.s1->contains_epsilon(...):99.result:s?_
+black_dot.s1->contains_epsilon(...):99.s_set:s_
+contains_epsilon(...):99.G[contains_epsilon]'shared_info->contains_epsilon(...):99.result:s?_
+contains_epsilon(...):99.s_set->contains_epsilon(...):99.result:s?_
+
+
+Summary dependency graph for Program
+G[Program]'shared_info -> UP[Program]-0 G[Program]'shared_info$declarationTable DOWN[Program]-0 G[Program]'shared_info$declarationTable! program_first 
+UP[Program]-0 -> DOWN[Program]-0 
+G[Program]'shared_info$declarationTable -> UP[Program]-0 DOWN[Program]-0 program_first 
+G[Program]'shared_info$epsilon -> UP[Program]-0 G[Program]'shared_info$declarationTable DOWN[Program]-0 G[Program]'shared_info$declarationTable! program_first 
+DOWN[Program]-0 -> 
+G[Program]'shared_info$declarationTable! -> UP[Program]-0 G[Program]'shared_info$declarationTable DOWN[Program]-0 program_first 
+program_first -> DOWN[Program]-0 
+
+Summary dependency graph for Item
+G[Item]'shared_info -> item_symbol item_is_terminal 
+item_symbol -> 
+item_is_terminal -> 
+
+Summary dependency graph for Items
+G[Items]'shared_info -> UP[Items]-0 DOWN[Items]-0 
+UP[Items]-0 -> DOWN[Items]-0 
+G[Items]'shared_info$declarationTable -> UP[Items]-0 DOWN[Items]-0 
+G[Items]'shared_info$epsilon -> UP[Items]-0 DOWN[Items]-0 
+DOWN[Items]-0 -> 
+
+Summary dependency graph for Stmt
+G[Stmt]'shared_info -> UP[Stmt]-0 G[Stmt]'shared_info$declarationTable DOWN[Stmt]-0 G[Stmt]'shared_info$declarationTable! 
+UP[Stmt]-0 -> DOWN[Stmt]-0 
+G[Stmt]'shared_info$declarationTable -> UP[Stmt]-0 DOWN[Stmt]-0 
+G[Stmt]'shared_info$epsilon -> UP[Stmt]-0 G[Stmt]'shared_info$declarationTable DOWN[Stmt]-0 G[Stmt]'shared_info$declarationTable! 
+DOWN[Stmt]-0 -> 
+G[Stmt]'shared_info$declarationTable! -> UP[Stmt]-0 G[Stmt]'shared_info$declarationTable DOWN[Stmt]-0 
+
+Summary dependency graph for Stmts
+G[Stmts]'shared_info -> UP[Stmts]-0 G[Stmts]'shared_info$declarationTable DOWN[Stmts]-0 G[Stmts]'shared_info$declarationTable! 
+UP[Stmts]-0 -> DOWN[Stmts]-0 
+G[Stmts]'shared_info$declarationTable -> UP[Stmts]-0 DOWN[Stmts]-0 
+G[Stmts]'shared_info$epsilon -> UP[Stmts]-0 G[Stmts]'shared_info$declarationTable DOWN[Stmts]-0 G[Stmts]'shared_info$declarationTable! 
+DOWN[Stmts]-0 -> 
+G[Stmts]'shared_info$declarationTable! -> UP[Stmts]-0 G[Stmts]'shared_info$declarationTable DOWN[Stmts]-0 
+
+Summary dependency graph for contains_epsilon
+G[contains_epsilon]'shared_info -> result 
+result -> 
+s_set -> result 
+
+Summary dependency graph for black_dot
+G[black_dot]'shared_info -> result 
+result -> 
+s2 -> result 
+s1 -> result 

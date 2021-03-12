@@ -384,17 +384,17 @@ end;
 end;
 
 
-class READ_ONLY_ORDERED_COLLECTION[ElemType] 
-    :: READ_ONLY_COLLECTION[ElemType]
+class READ_ONLY_ORDERED_COLLECTION[ElemType3] 
+    :: READ_ONLY_COLLECTION[ElemType3]
 begin
-  function nth(_ : Integer; _ : Result) : ElemType; -- starting at zero
-  function nth_from_end(_ : Integer; _ : Result) : ElemType;
-  function position(_ : ElemType; _ : Result) : Integer;
-  function position_from_end(_ : ElemType; _ : Result) : Integer;
+  function nth(_ : Integer; _ : Result) : ElemType3; -- starting at zero
+  function nth_from_end(_ : Integer; _ : Result) : ElemType3;
+  function position(_ : ElemType3; _ : Result) : Integer;
+  function position_from_end(_ : ElemType3; _ : Result) : Integer;
 end;
 
-class ORDERED_COLLECTION[ElemType]
-    :: READ_ONLY_ORDERED_COLLECTION[ElemType], COLLECTION[ElemType]
+class ORDERED_COLLECTION[ElemType2]
+    :: READ_ONLY_ORDERED_COLLECTION[ElemType2], COLLECTION[ElemType2]
 begin
   function subseq(_ : Result; _,_ : Integer) : Result;
   function subseq_from_end(_ : Result; _,_ : Integer) : Result;
@@ -479,30 +479,30 @@ class CONCATENATING[] begin
 end;
 [T :: CONCATENATING[]] (++) = T$concatenate;
   
-module LIST[ElemType :: BASIC[]] :: BASIC[],CONCATENATING[],
-                                    ORDERED_COLLECTION[ElemType] 
+module LIST[ElemType1 :: BASIC[]] :: BASIC[],CONCATENATING[],
+                                    ORDERED_COLLECTION[ElemType1] 
 begin
   -- function assert(_ : Result);
-  function cons(x : ElemType; l : Result) : Result := append(single(x),l);
-  constructor single(x : ElemType) : Result;
+  function cons(x : ElemType1; l : Result) : Result := append(single(x),l);
+  constructor single(x : ElemType1) : Result;
   constructor append(l1,l2 : Result) : Result;
   constructor none() : Result;
 
   function equal(l1,l2 : Result) : Boolean;
   concatenate = append;
-  function member(x : ElemType; l : Result) : Boolean;
+  function member(x : ElemType1; l : Result) : Boolean;
 
-  function nth(i : Integer; l : Result) : ElemType;
-  function nth_from_end(i : Integer; l : Result) : ElemType;
-  function position(x : ElemType; l : Result) : Integer;
-  function position_from_end(x : ElemType; l : Result) : Integer;
+  function nth(i : Integer; l : Result) : ElemType1;
+  function nth_from_end(i : Integer; l : Result) : ElemType1;
+  function position(x : ElemType1; l : Result) : Integer;
+  function position_from_end(x : ElemType1; l : Result) : Integer;
   function subseq(l : Result; start,finish : Integer) : Result;
   function subseq_from_end(l : Result; start,finish : Integer) : Result;
   function butsubseq(l : Result; start,finish : Integer) : Result;
   function butsubseq_from_end(l : Result; start,finish : Integer) : Result;
 
-  function {.}(l : ElemType...) : Result;
-  pattern {.}(l : ElemType...) : Result;
+  function {.}(l : ElemType1...) : Result;
+  pattern {.}(l : ElemType1...) : Result;
 end;
 
 class ABSTRACT_SET[ElemType] 

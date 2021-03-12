@@ -14,6 +14,15 @@ void schedule_summary_dependency_graph(PHY_GRAPH *phy_graph) {
   if (oag_debug & TOTAL_ORDER) {
     printf("Scheduling order for %s\n",decl_name(phy_graph->phylum));
   }
+
+    for (i=0; i < n; ++i) {
+      INSTANCE *in = &phy_graph->instances.array[i];
+      if (in->fibered_attr.attr != NULL) {
+        // printf("%d %s\n", i, decl_name(in->fibered_attr.attr));
+      }
+    }
+
+
   for (i=0; i < n; ++i)
     phy_graph->summary_schedule[i] = 0;
   while (done < n) {
@@ -21,6 +30,9 @@ void schedule_summary_dependency_graph(PHY_GRAPH *phy_graph) {
     /* find inherited instances for the phase. */
     for (i=0; i < n; ++i) {
       INSTANCE *in = &phy_graph->instances.array[i];
+      if (in->fibered_attr.attr != NULL) {
+        // printf("%d %s\n", i, decl_name(in->fibered_attr.attr));
+      }
       if (instance_direction(in) == instance_inward &&
 	  phy_graph->summary_schedule[i] == 0) {
 	for (j=0; j < n; ++j) {

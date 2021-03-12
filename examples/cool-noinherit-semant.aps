@@ -1,0 +1,940 @@
+with "cool-symbol";
+with "cool-tree";
+
+-- Semantic Analysis of COOL without inheritance
+
+-- If you make your environments as lists of pairs where the 
+-- first element of the pair is a symboil, then this function
+-- can be used to find things.  The "def" parameter gives the 
+-- default return value, used when there is no entry for the 
+-- given name.  You will need to use something "impossible"
+-- as the default value.
+[T :: BASIC[]; E :: PAIR[Symbol,T]; L :: LIST[E]]
+    function lookup(name : Symbol; l : L; def : T) : T 
+begin
+  case l begin
+    match L${} begin
+      result := def;
+    end;
+  else
+    f : E := first(l);
+    if E$fst(f) = name then
+      result := E$snd(f);
+    else
+      result := lookup(name,butfirst(l),def);
+    endif;
+  end;
+end;
+
+module SEMANT[T :: var COOL[]] extends T begin
+
+  any_sym : Symbol := make_symbol("Any");
+  integer_sym : Symbol := make_symbol("Int");
+  boolean_sym : Symbol := make_symbol("Boolean");
+  string_sym : Symbol := make_symbol("String");
+  this_sym : Symbol := make_symbol("this");
+  main_sym : Symbol := make_symbol("Main");
+  unit_sym : Symbol := make_symbol("Unit");
+  null_sym : Symbol := make_symbol("null");
+  native_sym : Symbol := make_symbol("native");
+  error_sym : Symbol := make_symbol("$error$");
+  
+  type Errors := LIST[String];
+  
+  -- call this function to create an error message.
+  -- use lineno(n) to get the line number of a node n.
+  function error(filename : String; ln : Integer; msg : String) : Errors
+      := Errors${filename ++ ":" ++ Integer$string(ln) ++ ": " ++ msg};
+	
+  -- we collect errors from everywhere:
+  attribute Program.program_errors : Errors;
+  attribute Classes.classes_errors : Errors;
+  attribute Class.class_errors : Errors;
+  attribute Features.features_errors : Errors;
+  attribute Feature.feature_errors : Errors;
+  attribute Formals.formals_errors : Errors;
+  attribute Formal.formal_errors : Errors;
+  attribute Expression.expr_errors : Errors;
+  attribute Expressions.exprs_errors : Errors;
+  pragma synthesized(program_errors,classes_errors,class_errors,
+		     features_errors,feature_errors,
+		     formals_errors,formal_errors,
+		     expr_errors,exprs_errors);
+  
+  -- to get the filename everywhere, we send it down in inherited attributes:
+  attribute Features.features_filename : String;
+  attribute Feature.feature_filename : String;
+  attribute Formals.formals_filename : String;
+  attribute Formal.formal_filename : String;
+  attribute Expressions.exprs_filename : String;
+  attribute Expression.expr_filename : String;
+  pragma inherited(features_filename,feature_filename,
+		   formals_filename,formal_filename,
+		   exprs_filename,expr_filename);
+  
+  type CoolType = Symbol; -- that is, we use symbols as types
+
+  -- Your code here! (more types and functions)
+  -- #(
+  type MethodSig := LIST[CoolType]; -- first is return type
+  type MethodEntry := PAIR[Symbol,MethodSig];
+  type MethodTable := LIST[MethodEntry];
+  type AttrEntry := PAIR[Symbol,CoolType];
+  type AttrTable := LIST[AttrEntry];
+  type ClassContents := PAIR[MethodTable,AttrTable];
+  type ClassEntry := PAIR[Symbol,ClassContents];
+  type ClassTable := LIST[ClassEntry];
+  
+  type CoolTypes = MethodSig;
+
+  no_method_sig : MethodSig := {};
+  fake_method_entry : MethodEntry := MethodEntry$pair(error_sym,no_method_sig);
+  no_class_contents : ClassContents := ClassContents$pair({fake_method_entry},{});
+  
+  function class_is_undefined(name : Symbol; ct : ClassTable) : Boolean :=
+      name /= native_sym and 
+      lookup(name,ct,no_class_contents) = no_class_contents;
+
+  attribute Features.features_class : Symbol;
+  attribute Feature.feature_class : Symbol;
+  pragma inherited(features_class,feature_class);
+
+  attribute Classes.classes_classtable : ClassTable;
+  attribute Class.class_classtable : ClassTable;
+  attribute Features.features_classtable : ClassTable;
+  attribute Feature.feature_classtable : ClassTable;
+  attribute Formals.formals_classtable : ClassTable;
+  attribute Formal.formal_classtable : ClassTable;
+  attribute Expressions.exprs_classtable : ClassTable;
+  attribute Expression.expr_classtable : ClassTable;
+  pragma inherited(classes_classtable,class_classtable,
+		   features_classtable,feature_classtable,
+		   formals_classtable,formal_classtable,
+		   exprs_classtable,expr_classtable);
+  
+  type Entry = AttrEntry;
+  type Environment = AttrTable;
+
+  attribute Classes.classes_classentries : ClassTable;
+  attribute Class.class_classentry : ClassEntry;
+  attribute Features.features_methods : MethodTable;
+  attribute Features.features_attrs : AttrTable;
+  attribute Feature.feature_methods : MethodTable;
+  attribute Feature.feature_attrs : AttrTable;
+  attribute Formals.formals_entries : Environment;
+  attribute Formal.formal_entry : Entry;
+  pragma synthesized(classes_classentries,class_classentry,
+		     features_methods,features_attrs,
+		     feature_methods,feature_attrs,
+		     formals_entries, formal_entry);
+  
+  function type_equal(t1,t2 : CoolType) : Boolean 
+      := t1 = t2 or t1 = error_sym or t2 = error_sym;
+  
+  function sig_equal(ts1,ts2 : MethodSig) : Boolean begin
+    if ts1 = ts2 then
+      result := true;
+    elsif ts1 = MethodSig${} or ts2 = {} then
+      result := false;
+    else 
+      result := type_equal(first(ts1),first(ts2)) or
+	  sig_equal(butfirst(ts1),butfirst(ts2));
+    endif;
+  end;
+  
+  -- #)
+
+  -- Program
+
+  match ?p:Program=program(?cls:Classes) begin
+    p.program_errors := cls.classes_errors;
+    -- Your code here
+    --#(
+    cls.classes_classtable := cls.classes_classentries;
+    --#)
+  end;
+
+
+  -- Classes
+
+  match ?cls:Classes=Classes$append(?cls1:Classes, ?cls2:Classes) begin
+    -- Your code here
+    -- #(
+    cls.classes_classentries := cls1.classes_classentries ++ cls2.classes_classentries;
+    cls1.classes_classtable := cls.classes_classtable;
+    cls2.classes_classtable := cls.classes_classtable;
+    -- #)
+    cls.classes_errors := cls1.classes_errors ++ cls2.classes_errors;
+  end;
+  match ?cls:Classes=Classes$single(?cl:Class) begin
+    -- Your code here
+    -- #(
+    cls.classes_classentries := {cl.class_classentry};
+    cl.class_classtable := cls.classes_classtable;
+    -- #)
+    cls.classes_errors := cl.class_errors;
+  end;
+  match ?cls:Classes=Classes$none() begin
+    -- Your code here
+    -- #(
+    cls.classes_classentries := {};
+    -- #)
+    cls.classes_errors := {};
+  end;
+
+
+  -- Class
+
+  match ?cl:Class=class_decl(?name:Symbol, ?,
+		              ?fs:Features, ?filename:Symbol) begin
+    -- Your code here
+    -- #(
+    contents : ClassContents := 
+	ClassContents$pair(fs.features_methods,fs.features_attrs);
+    cl.class_classentry := ClassEntry$pair(name,contents);
+    fs.features_classtable := cl.class_classtable;
+    fs.features_filename := Symbol$string(filename);
+    fs.features_class := name;
+    -- #)
+    -- Don't bother checking the parent class.
+    -- Don't check for duplicate class names, duplicate attr names, 
+    -- duplicate methods etc.
+
+    -- Check that the class has a constructor if it's called Main
+    -- It should have no parameters
+    missing_main_errors : Errors := {}; -- default empty
+    if name = main_sym then
+      -- Your code here:
+      -- #(
+      if lookup(main_sym,fs.features_methods,no_method_sig) /=
+	  MethodSig${main_sym} then
+	missing_main_errors := error(Symbol$string(filename),lineno(cl),"Main() not defined");
+      endif;
+      -- #)
+    endif;
+    cl.class_errors := missing_main_errors ++ fs.features_errors;
+  end;
+  
+  -- Features
+
+  match ?fs:Features=Features$append(?fs1:Features, ?fs2:Features) begin
+    -- Your code here
+    -- #(
+    fs.features_methods := fs1.features_methods ++ fs2.features_methods;
+    fs.features_attrs := fs1.features_attrs ++ fs2.features_attrs;
+    fs1.features_classtable := fs.features_classtable;
+    fs2.features_classtable := fs.features_classtable;
+    fs1.features_filename := fs.features_filename;
+    fs2.features_filename := fs.features_filename;
+    fs1.features_class := fs.features_class;
+    fs2.features_class := fs.features_class;
+    fs.features_errors := fs1.features_errors ++ fs2.features_errors;
+    -- #)
+  end;
+
+  match ?fs:Features=Features$single(?f:Feature) begin
+    -- Your code here
+    -- #(
+    fs.features_methods := f.feature_methods;
+    fs.features_attrs := f.feature_attrs;
+    f.feature_classtable := fs.features_classtable;
+    f.feature_filename := fs.features_filename;
+    f.feature_class := fs.features_class;
+    fs.features_errors := f.feature_errors;
+    -- #)
+  end;
+
+  match ?fs:Features=Features$none() begin
+    -- Your code here
+    -- #(
+    fs.features_methods := {};
+    fs.features_attrs := {};
+    fs.features_errors := {};
+    -- #)
+  end;
+  
+  -- #(
+  function entries_types(e : Environment) : CoolTypes begin
+    case e begin
+      match Environment$append(?e1,?e2) begin
+	result := CoolTypes$append(entries_types(e1),entries_types(e2));
+      end;
+      match Environment$single(Entry$pair(?,?ty)) begin
+	result := {ty};
+      end;
+    else
+      result := {};
+    end;
+  end;
+  --#)
+  -- Feature
+
+  match ?f:Feature=method(?, ?name:Symbol, ?fmls:Formals,
+                          ?rt_type:Symbol, ?e:Expression) begin
+    -- Your code here
+    -- #(
+    f.feature_attrs := {};
+    fmls.formals_filename := f.feature_filename;
+    fmls.formals_classtable := f.feature_classtable;
+    sig : MethodSig := {rt_type} ++ entries_types(fmls.formals_entries);
+    me : MethodEntry := MethodEntry$pair(name,sig);
+    f.feature_methods := {me};
+    
+    env : Environment := {Entry$pair(this_sym,f.feature_class)} ++
+	fmls.formals_entries ++
+	ClassContents$snd(lookup(f.feature_class,f.feature_classtable,
+				 no_class_contents));
+    
+    e.expr_env := env;
+    e.expr_filename := f.feature_filename;
+    e.expr_classtable := f.feature_classtable;
+    
+    rt_errors : Errors := {};
+    if class_is_undefined(rt_type,f.feature_classtable) then
+      rt_errors := error(f.feature_filename,lineno(f),
+			 "Undefined return type " ++ Symbol$string(rt_type) ++
+			     " in method " ++ Symbol$string(name) ++ ".");
+    endif;
+    
+    rv_errors : Errors := {};
+    if not type_equal(e.expr_type,rt_type) then
+      rv_errors := error(f.feature_filename,lineno(f),
+			 "Inferred return type " ++ 
+			     Symbol$string(e.expr_type) ++
+			     " of method " ++ Symbol$string(name) ++ 
+			     " does not conform to declared return type " ++
+			     symbol_name(rt_type) ++ ".");
+    endif;
+    
+    f.feature_errors := fmls.formals_errors ++
+	rt_errors ++ e.expr_errors ++ rv_errors;
+    -- #)
+  end;
+
+  match ?f:Feature=attr(?name:Symbol, ?ty:Symbol) begin
+    -- Your code here
+    -- #(
+    f.feature_methods := {};
+    f.feature_attrs := {AttrEntry$pair(name,ty)};
+    
+    aname : String := Symbol$string(name);
+    
+    this_errors : Errors := {};
+    if name = this_sym then
+      this_errors := error(f.feature_filename,lineno(f),
+			   "'this' cannot be the name of an attribute.");
+    endif;
+    
+    type_errors : Errors := {};
+    if class_is_undefined(ty,f.feature_classtable) then
+      type_errors := error(f.feature_filename,f.lineno,
+			   "Class " ++ Symbol$string(ty) ++ " of attribute " ++
+			       aname ++ " is undefined.");
+    endif;
+    f.feature_errors := this_errors ++ type_errors;
+    --#)
+  end;
+
+
+  -- Formals
+
+  match ?fmls:Formals=Formals$append(?fmls1:Formals, ?fmls2:Formals) begin
+    -- Your code here
+    -- #(
+    fmls.formals_errors := fmls1.formals_errors ++ fmls2.formals_errors;
+    fmls.formals_entries := fmls1.formals_entries ++ fmls2.formals_entries;
+    fmls1.formals_filename := fmls.formals_filename;
+    fmls2.formals_filename := fmls.formals_filename;
+    fmls1.formals_classtable := fmls.formals_classtable;
+    fmls2.formals_classtable := fmls.formals_classtable;
+    -- #)
+  end;
+
+  match ?fmls:Formals=Formals$single(?fml:Formal) begin
+    -- Your code here
+    -- #(
+    fmls.formals_errors := fml.formal_errors;
+    fmls.formals_entries := {fml.formal_entry};
+    fml.formal_filename := fmls.formals_filename;
+    fml.formal_classtable := fmls.formals_classtable;
+    -- #)
+  end;
+
+  match ?fmls:Formals=Formals$none() begin
+    -- Your code here
+    -- #(
+    fmls.formals_entries := {};
+    fmls.formals_errors := {};
+    -- #)
+  end;
+
+
+  -- Formal
+  match ?fml:Formal=formal(?name:Symbol, ?ty:Symbol) begin
+    -- Your code here
+    -- #(
+    fml.formal_entry := Entry$pair(name,ty);
+    
+    this_errors : Errors := {};
+    if name = this_sym then
+      this_errors := error(fml.formal_filename,fml.lineno,
+			   "'this' cannot be the name of a formal parameter.");
+    endif;
+    
+    type_errors : Errors := {};
+    if class_is_undefined(ty,fml.formal_classtable) then
+      type_errors := error(fml.formal_filename,fml.lineno,
+			   "Class " ++ Symbol$string(ty) ++ " of formal parameter "
+			       ++ Symbol$string(name) ++ " is undefined.");
+    endif;
+    
+    fml.formal_errors := this_errors ++ type_errors;
+    -- #)
+  end;
+
+  -- Expression
+  --#(
+  attribute Expression.expr_env : Environment;
+  attribute Expression.expr_type : CoolType;
+
+  pragma inherited(expr_env);
+  pragma synthesized(expr_type);
+  --#)
+
+  match ?e=variable(?s) begin
+    -- Your code here
+    -- #(
+    ty : CoolType := lookup(s,e.expr_env,error_sym);
+    
+    lookup_errors : Errors := {};
+    if ty = error_sym then
+      lookup_errors := error(e.expr_filename,e.lineno,
+			     "Identifier " ++ Symbol$string(s) ++ " undeclared");
+    endif;
+    e.expr_type := ty;
+    e.expr_errors := lookup_errors;
+    -- #)
+  end;
+  
+  match ?e=assign(?s,?v) begin
+    -- Your code here
+    -- #(
+    v.expr_env := e.expr_env;
+    v.expr_filename := e.expr_filename;
+    v.expr_classtable := e.expr_classtable;
+    
+    ty : CoolType := lookup(s,e.expr_env,error_sym);
+
+    lookup_errors : Errors := {};
+    if ty = error_sym then
+      lookup_errors := error(e.expr_filename,e.lineno,
+			     "Identifier " ++ Symbol$string(s) ++ " undeclared");
+    endif;
+    
+    this_errors : Errors := {};
+    if s = this_sym then
+      this_errors := error(e.expr_filename,e.lineno,
+			   "Cannot assign to 'this'");
+    endif;
+    
+    type_errors : Errors := {};
+    if not type_equal(v.expr_type,ty) then
+      
+      type_errors := error(e.expr_filename,e.lineno,
+			   "Inferred type " ++ Symbol$string(v.expr_type) ++
+			       " of assignment of " ++ 
+			       Symbol$string(s) ++ 
+			       " does not conform to identifier's declared type "++
+			       Symbol$string(ty));
+    endif;
+    e.expr_type := unit_sym;
+    e.expr_errors := lookup_errors ++ this_errors ++ type_errors ++ 
+	v.expr_errors;
+    --#)
+  end;
+  
+  match ?e=static_dispatch(?rec,?tn,?msym,?actuals) begin
+    -- This kind of node will appear in code, so you need to define attributes
+    -- but you don't need to check anything.
+    -- #(
+    rec.expr_env := e.expr_env;
+    rec.expr_filename := e.expr_filename;
+    rec.expr_classtable := e.expr_classtable;
+    actuals.exprs_env := e.expr_env;
+    actuals.exprs_filename := e.expr_filename;
+    actuals.exprs_classtable := e.expr_classtable;
+    
+    e.expr_type := error_sym;
+    e.expr_errors := rec.expr_errors ++ actuals.exprs_errors;
+    --#)
+  end;
+  
+  match ?e=dispatch(?rec,?msym,?actuals) begin
+    -- Don't make any effort to handle inheritance
+    --#(
+    rec.expr_env := e.expr_env;
+    rec.expr_filename := e.expr_filename;
+    rec.expr_classtable := e.expr_classtable;
+    actuals.exprs_env := e.expr_env;
+    actuals.exprs_filename := e.expr_filename;
+    actuals.exprs_classtable := e.expr_classtable;
+    
+    rt : CoolType := error_sym; -- the result type
+
+    null_errors : Errors := {};
+    method_errors : Errors := {};
+    if rec.expr_type = null_sym then
+      null_errors := error(e.expr_filename,e.lineno,"Dispatch on null.");
+    elsif rec.expr_type /= error_sym then
+      cc : ClassContents := lookup(rec.expr_type,e.expr_classtable,no_class_contents);
+      mt : MethodTable := ClassContents$fst(cc);
+      sig : MethodSig := lookup(msym,mt,no_method_sig);
+      if cc /= no_class_contents then
+	if sig = no_method_sig then
+	  method_errors :=  error(e.expr_filename,e.lineno,
+				  "Dispatch to undefined method " ++
+				      symbol_name(msym) ++ ".");
+	else
+	  rt := first(sig);
+	  method_errors := actuals_errors(e.expr_filename,e.lineno,
+					  butfirst(sig),actuals.exprs_types);
+	endif;
+      endif;
+    endif;
+    e.expr_type := rt;
+    e.expr_errors := rec.expr_errors ++ actuals.exprs_errors ++ null_errors ++
+	method_errors;
+    -- #)
+  end;
+    
+  match ?e=cond(?pred,?th,?el) begin
+    -- Your code here
+    -- #(
+    pred.expr_env := e.expr_env;
+    pred.expr_filename := e.expr_filename;
+    pred.expr_classtable := e.expr_classtable;
+    th.expr_env := e.expr_env;
+    th.expr_filename := e.expr_filename;
+    th.expr_classtable := e.expr_classtable;
+    el.expr_env := e.expr_env;
+    el.expr_filename := e.expr_filename;
+    el.expr_classtable := e.expr_classtable;
+    
+    e.expr_type := th.expr_type;
+    
+    pred_errors : Errors := {};
+    if not type_equal(pred.expr_type,boolean_sym) then
+      pred_errors := error(e.expr_filename,e.lineno,
+			   "Predicate of 'if' does not have type Boolean, rather "
+			       || pred.expr_type);
+    endif;
+    
+    join_errors : Errors := {};
+    if not type_equal(th.expr_type,el.expr_type) then
+      join_errors := error(e.expr_filename,e.lineno,
+			   "Branches of `if' should have same type");
+    endif;
+    
+    e.expr_errors := pred.expr_errors ++ pred_errors ++
+	th.expr_errors ++ el.expr_errors ++ join_errors;
+    -- #)
+  end;
+
+  match ?e=loop(?pred,?body) begin
+    -- Your code here
+    -- #(
+    pred.expr_env := e.expr_env;
+    pred.expr_filename := e.expr_filename;
+    pred.expr_classtable := e.expr_classtable;
+    body.expr_env := e.expr_env;
+    body.expr_filename := e.expr_filename;
+    body.expr_classtable := e.expr_classtable;
+    e.expr_type := unit_sym;
+    
+    pred_errors : Errors := {};
+    if not type_equal(pred.expr_type,boolean_sym) then
+      pred_errors := error(e.expr_filename,e.lineno,
+			   "Predicate of 'while' does not have type Boolean, rather "
+			       || pred.expr_type);
+    endif;
+    e.expr_errors := pred.expr_errors ++ pred_errors ++ body.expr_errors;
+    -- #)
+  end;
+
+  match ?e=block(?es) begin
+    -- Your code here
+    -- #(
+    es.exprs_env := e.expr_env;
+    es.exprs_filename := e.expr_filename;
+    es.exprs_classtable := e.expr_classtable;
+    e.expr_type := last(es.exprs_types);
+    e.expr_errors := es.exprs_errors;
+    -- #)
+  end;
+
+  match ?e=let(?s,?ts,?init,?body) begin
+    -- Your code here:
+    -- 1> check that the name is not 'this'
+    -- 2> check that the type is declared
+    -- 3> check that the initialization (if any) matches the type
+    --    (checked only if check #2 passes)
+    -- #(
+    init.expr_env := e.expr_env;
+    init.expr_filename := e.expr_filename;
+    init.expr_classtable := e.expr_classtable;
+    
+    new_env : Environment := {Entry$pair(s,ts)} ++ e.expr_env;
+    body.expr_env := new_env;
+    body.expr_filename := e.expr_filename;
+    body.expr_classtable := e.expr_classtable;
+    
+    e.expr_type := body.expr_type;
+
+    this_errors : Errors := {};
+    if s = this_sym then
+      this_errors := error(e.expr_filename,e.lineno,
+			   "'this' cannot be the name of a let-bound variable.");
+    endif;
+    
+    type_errors : Errors := {};
+    if class_is_undefined(ts,e.expr_classtable) then
+      type_errors := error(e.expr_filename,e.lineno,
+			   "Class " ++ Symbol$string(ts) ++ 
+			       " of let bound variable " ++ 
+			       Symbol$string(s) ++ " is undefined.");
+    elsif not type_equal(init.expr_type,ts) then
+      type_errors := error(e.expr_filename,init.lineno,
+			   "Inferred type " ++ Symbol$string(init.expr_type) ++
+			       " of initialization of " ++ 
+			       Symbol$string(s) ++ 
+			       " does not conform to identifier's declared type "++
+			       Symbol$string(ts));
+    endif;
+
+    e.expr_errors := this_errors ++ init.expr_errors ++
+	type_errors ++ body.expr_errors;
+    -- #)
+  end;
+  
+  -- The solution defines some helper functions here to factor
+  -- out the generation of errors in the following rules.
+  -- #(
+  function check_arithmetic(fnm : String;
+			    n : Integer;
+			    ty : CoolType;
+			    operand : String) : Errors
+  begin
+    if not type_equal(ty,integer_sym) then
+      result := error(fnm,n,operand ++ " should be Int");
+    else
+      result := Errors${};
+    endif;
+  end;
+  
+  function check_arithmetic2(fnm : String;
+			     n1 : Integer; ty1 : CoolType;
+			     n2 : Integer; ty2 : CoolType;
+			     op : String) : Errors :=
+      check_arithmetic(fnm,n1,ty1,"left operand of " ++ op) ++
+      check_arithmetic(fnm,n2,ty2,"right operand of " ++ op);
+  -- #)
+  match ?e=add(?e1,?e2) begin
+    -- Your code here
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e2.expr_env := e.expr_env;
+    e2.expr_filename := e.expr_filename;
+    e2.expr_classtable := e.expr_classtable;
+    e.expr_type := integer_sym;
+    e.expr_errors := e1.expr_errors ++ e2.expr_errors ++
+	check_arithmetic2(e.expr_filename,
+			  e1.lineno,e1.expr_type,
+			  e2.lineno,e2.expr_type,
+			  "'+'");
+    -- #)
+  end;
+
+  match ?e=sub(?e1,?e2) begin
+    -- Your code here (identical to the previous except for error messages)
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e2.expr_env := e.expr_env;
+    e2.expr_filename := e.expr_filename;
+    e2.expr_classtable := e.expr_classtable;
+    e.expr_type := integer_sym;
+    e.expr_errors := e1.expr_errors ++ e2.expr_errors ++
+	check_arithmetic2(e.expr_filename,
+			  e1.lineno,e1.expr_type,
+			  e2.lineno,e2.expr_type,
+			  "'-'");
+    --#)
+  end;
+
+  match ?e=mul(?e1,?e2) begin
+    -- Etc.
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e2.expr_env := e.expr_env;
+    e2.expr_filename := e.expr_filename;
+    e2.expr_classtable := e.expr_classtable;
+    e.expr_type := integer_sym;
+    e.expr_errors := e1.expr_errors ++ e2.expr_errors ++
+	check_arithmetic2(e.expr_filename,
+			  e1.lineno,e1.expr_type,
+			  e2.lineno,e2.expr_type,
+			  "'*'");
+    -- #)
+  end;
+
+  match ?e=div(?e1,?e2) begin
+    -- And so on
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e2.expr_env := e.expr_env;
+    e2.expr_filename := e.expr_filename;
+    e2.expr_classtable := e.expr_classtable;
+    e.expr_type := integer_sym;
+    e.expr_errors := e1.expr_errors ++ e2.expr_errors ++
+	check_arithmetic2(e.expr_filename,
+			  e1.lineno,e1.expr_type,
+			  e2.lineno,e2.expr_type,
+			  "'/'");
+    -- #)
+  end;
+
+  match ?e=neg(?e1) begin
+    -- Slightly simpler
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e.expr_type := integer_sym;
+    e.expr_errors := e1.expr_errors ++
+	check_arithmetic(e.expr_filename,
+			 e1.lineno,e1.expr_type,
+			 "operand of unary '-'");
+    -- #)
+  end;
+  
+  match ?e=lt(?e1,?e2) begin
+    -- Your code here
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e2.expr_env := e.expr_env;
+    e2.expr_filename := e.expr_filename;
+    e2.expr_classtable := e.expr_classtable;
+    e.expr_type := boolean_sym;
+    e.expr_errors := e1.expr_errors ++ e2.expr_errors ++
+	check_arithmetic2(e.expr_filename,
+			  e1.lineno,e1.expr_type,
+			  e2.lineno,e2.expr_type,
+			  "'<'");
+    -- #)
+  end;
+
+  match ?e=leq(?e1,?e2) begin
+    -- Almost the same as the last (except for error message)
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e2.expr_env := e.expr_env;
+    e2.expr_filename := e.expr_filename;
+    e2.expr_classtable := e.expr_classtable;
+    e.expr_type := boolean_sym;
+    e.expr_errors := e1.expr_errors ++ e2.expr_errors ++
+	check_arithmetic2(e.expr_filename,
+			  e1.lineno,e1.expr_type,
+			  e2.lineno,e2.expr_type,
+			  "'<='");
+    -- #)
+  end;
+  
+  match ?e=comp(?e1) begin
+    -- Simpler
+    -- #(
+    e1.expr_env := e.expr_env;
+    e1.expr_filename := e.expr_filename;
+    e1.expr_classtable := e.expr_classtable;
+    e.expr_type := boolean_sym;
+    
+    local_errors : Errors := {};
+    if not type_equal(e1.expr_type,boolean_sym) then
+      local_errors := error(e.expr_filename,e.lineno,
+			    "Operator of 'not' not Boolean");
+    endif;
+    e.expr_errors := e1.expr_errors ++ local_errors;
+    -- #)
+  end;
+
+  match ?e=int_lit(?) begin
+    -- Your code here
+    -- #(
+    e.expr_type := integer_sym;
+    e.expr_errors := {};
+    -- #)
+  end;
+
+  match ?e=bool_lit(?) begin
+    -- Your code here
+    -- #(
+    e.expr_type := boolean_sym;
+    e.expr_errors := {};
+    -- #)
+  end;
+
+  match ?e=string_lit(?) begin
+    -- Your code here
+    -- #(
+    e.expr_type := string_sym;
+    e.expr_errors := {};
+    -- #)
+  end;
+
+  match ?e=alloc(?ts) begin
+    -- Your code here (check that ts is defined)
+    -- #(
+    if class_is_undefined(ts,e.expr_classtable) then
+      e.expr_errors := error(e.expr_filename,e.lineno,
+			     "'new' used with undefined class " ++
+				 Symbol$string(ts));
+    else
+      e.expr_errors := {};
+    endif;
+    e.expr_type := ts;
+    -- #)
+  end;
+
+  match ?e=nil() begin
+    -- Your code here
+    -- #(
+    e.expr_type := null_sym;
+    e.expr_errors := {};
+    -- #)
+  end;
+
+  match ?e=unit() begin
+    -- Your code here
+    -- #(
+    e.expr_type := unit_sym;
+    e.expr_errors := {};
+    -- #)
+  end;
+
+  match ?e=no_expr() begin
+    -- Your code here
+    -- #(
+    e.expr_type := error_sym;
+    e.expr_errors := {};
+    -- #)
+  end;
+      
+  -- Expressions
+  -- actual parameters, and block contents
+  
+  --#(
+  attribute Expressions.exprs_env : Environment;
+  attribute Expressions.exprs_types : CoolTypes;
+  
+  pragma inherited(exprs_env);
+  pragma synthesized(exprs_types);
+  --#)
+  match ?es:Expressions=Expressions$append(?es1, ?es2) begin
+    -- Your code here
+    --#(
+    es1.exprs_env := es.exprs_env;
+    es1.exprs_classtable := es.exprs_classtable;
+    es1.exprs_filename := es.exprs_filename;
+    es2.exprs_env := es.exprs_env;
+    es2.exprs_classtable := es.exprs_classtable;
+    es2.exprs_filename := es.exprs_filename;
+    es.exprs_types := es1.exprs_types ++ es2.exprs_types;
+    es.exprs_errors := es1.exprs_errors ++ es2.exprs_errors;
+    --#)
+  end;
+  match ?es:Expressions=Expressions$single(?a:Expression) begin
+    -- Your code here
+    --#(
+    a.expr_env := es.exprs_env;
+    a.expr_classtable := es.exprs_classtable;
+    a.expr_filename := es.exprs_filename;
+    es.exprs_types := CoolTypes${a.expr_type};
+    es.exprs_errors := a.expr_errors;
+    --#)
+  end;
+  match ?es:Expressions=Expressions$none() begin
+    -- Your code here
+    --#(
+    es.exprs_types := CoolTypes${};
+    es.exprs_errors := {};
+    --#)
+  end;
+  
+  -- You'll need a recursive function to compare types of
+  -- actuals against the types of the formals.  It should
+  -- use first/butfirst
+  --#(
+  function actuals_errors(fnm: String; ln : Integer;
+			  fts : CoolTypes; ats : CoolTypes) 
+      : Errors
+  begin
+    if fts = ats then
+      result := Errors${};
+    elsif fts = CoolTypes${} then
+      result := error(fnm,ln,"Too many arguments");
+    elsif ats = CoolTypes${} then
+      result := error(fnm,ln,"Too few arguments");
+    elsif not type_equal(first(ats),first(fts)) then
+      result := Errors$append(error(fnm,ln,"Bad argument type"),
+	                      actuals_errors(fnm,ln,butfirst(fts),butfirst(ats)));
+    else
+      result := actuals_errors(fnm,ln,butfirst(fts),butfirst(ats));
+    endif;
+  end;
+  --#)
+
+  -- Case
+
+  match ?e=typecase(?expr,?cases) begin
+    -- This won't occur.  You may wish to add rules
+    -- to avoid warnings, but this is optional.
+    -- #( 
+    expr.expr_env := e.expr_env;
+    expr.expr_classtable := e.expr_classtable;
+    expr.expr_filename := e.expr_filename;
+    e.expr_type := error_sym;
+    e.expr_errors := expr.expr_errors;
+    -- #)
+  end;
+  
+  match ?c=branch(?s,?ts,?body) begin
+    -- This won't occur.  You may wish to add rules
+    -- to avoid warnings, but this is optional.
+    -- #( 
+    body.expr_env := {};
+    body.expr_classtable := {};
+    body.expr_filename := "who nows?";
+    -- #)
+  end;
+
+  match ?cs:Cases=Cases$append(?cs1:Cases, ?cs2:Cases) begin
+    -- This won't occur.
+  end;
+  match ?cs:Cases=Cases$single(?c:Case) begin
+    -- This won't occur.
+  end;
+  match ?cs:Cases=Cases$none() begin
+    -- This won't occur.
+  end;
+
+end; -- of SEMANT

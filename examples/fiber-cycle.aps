@@ -17,10 +17,7 @@ module FIBER_CYCLE[T :: var SIMPLE[]] extends T begin
     foo1 : Foo := e1.expr_foo;
     foo2 : Foo := e2.expr_foo;
 
-    foo1.foo_inherited := foo2.foo_synthesized;
-    foo2.foo_inherited := foo1.foo_synthesized;
-    
-    s.total := foo1.foo_synthesized + foo2.foo_synthesized;
+    s.total := e1.expr_foo.foo_synthesized + e2.expr_foo.foo_synthesized;
   end;
   
   match ?e:Expr=intconstant(?i:Integer) begin

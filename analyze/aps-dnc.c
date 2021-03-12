@@ -2475,7 +2475,13 @@ DEPENDENCY analysis_state_cycle(STATE *s) {
     PHY_GRAPH *phy_graph = &s->phy_graphs[i];
     int n = phy_graph->instances.length;
     for (j=0; j < n; ++j) {
+      if (phy_graph->instances.array[j].fibered_attr.attr == NULL) {
+        // continue;
+      }
       DEPENDENCY k1 = phy_graph->mingraph[j*n+j];
+      // if (phy_graph->mingraph[j*n+j] == 21) {
+      //   printf("bad decl: %s\n", decl_name(phy_graph->instances.array[j].node));
+      // }
       kind = dependency_join(kind,k1);
     }
   }
@@ -2483,6 +2489,9 @@ DEPENDENCY analysis_state_cycle(STATE *s) {
     AUG_GRAPH *aug_graph = &s->aug_graphs[i];
     int n = aug_graph->instances.length;
     for (j=0; j < n; ++j) {
+      if (aug_graph->instances.array[j].fibered_attr.attr == NULL) {
+        // continue;
+      }
       DEPENDENCY k1 = edgeset_kind(aug_graph->graph[j*n+j]);
       kind = dependency_join(kind,k1);
     }
@@ -2850,6 +2859,18 @@ void print_cycles(STATE *s, FILE *stream) {
 	fprintf(stream,"fiber ");
 	/* fall through */
       default:
+      {
+        char buffer1[1000];
+        FILE* f = fmemopen(buffer1, sizeof(buffer1), "w");
+        print_instance(&aug_graph->instances.array[j],f);
+        fclose(f);
+
+        if (!strcmp(buffer1, "this.(nil)")) {
+          int line = tnode_line_number(aug_graph->instances.array[j].node);
+          printf("Bad stuff %d\n", line);
+          print_instance(&aug_graph->instances.array[j],stdout);
+        }
+      }
 	fprintf(stream,"%d local cycle for %s involving ", (edgeset_kind(aug_graph->graph[j*n+j])),
 		aug_graph_name(aug_graph));
 	print_instance(&aug_graph->instances.array[j],stdout);

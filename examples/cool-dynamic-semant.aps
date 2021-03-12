@@ -1,0 +1,1162 @@
+-- Note from 2015, not yet fixed in 2018
+-- !! Type_lub shouldn't stackoverflow on cyclic things
+--    use a set of supertypes instead as a circular attribute.
+--    Detect real circularity.
+-- !! Didn't explain inheritablep
+-- 	and it doesn't seem right anyway.
+-- check for case problems in order (we now have ordered cases)
+-- harmonize error messages with coolc and with noinherit-semant.aps
+
+-- Cool semantic checker written in APS
+-- Using collections/ circular things
+-- This code requires dynamic scheduling.
+-- Fall 2018
+--
+-- The following line is for the students: ##
+-- (Partial solution only)
+
+with "cool-symbol";
+with "cool-tree";
+with "table";
+
+module COOL_SEMANT[T :: var COOL[]] extends T begin
+  
+  -- -----------------------------------------
+  -- Define Symbol constants for basic classes
+  -- -----------------------------------------
+
+  Any    : Symbol := make_symbol("Any");
+  Int    : Symbol := make_symbol("Int");
+  Bool   : Symbol := make_symbol("Boolean");
+  Str    : Symbol := make_symbol("String");
+  This   : Symbol := make_symbol("this");
+  Native : Symbol := make_symbol("native");
+  Main   : Symbol := make_symbol("Main");
+  Unit   : Symbol := make_symbol("Unit");
+  Nothing: Symbol := make_symbol("Nothing");
+  Null   : Symbol := make_symbol("Null");
+
+  null	 : Symbol := make_symbol("null");
+  empty  : Symbol := make_symbol("");
+  errorType : Symbol := empty;
+  
+  -- ---------------------
+  -- class table
+  -- ---------------------
+  
+  type ClassReference := remote Class;
+
+  -- Your code here (types and global for class table)
+  --#(
+  type ClassReferences := BAG[ClassReference];
+  type ClassTable := TABLE[Symbol,ClassReferences];
+
+  var collection class_table : ClassTable;
+  --#)
+  
+  -- Look up a class in the class table and return it.
+  -- If there are multiple classes with this name, return an arbitrary choice.
+  -- if there are no classes with this name, return nil.
+  -- The function is "var" because it depends on attribute values 
+  -- (the class table, in particular).
+  var function find_class(name : Symbol) : ClassReference begin
+    -- Your code here
+    --#(
+    case ClassTable$select(class_table,name) begin
+      match ClassTable$table_entry(?,ClassReferences${?cl,...}) begin
+	result := cl;
+      end;
+    else
+      result := Class$nil;
+    end;
+    --#)
+  end;
+  
+  -- Return the superclass of this type or "empty" if none available
+  var function class_parent(name : Symbol) : Symbol begin
+    --Your code here
+    --#(
+    cl : ClassReference := find_class(name);
+    if cl = Class$nil then
+      result := empty;
+    else
+      case cl begin
+	match class_decl(?,?parent,?,?) begin
+	  result := parent;
+	end;
+      end;
+    endif;
+    --#)
+  end;
+
+  type Messages := BAG[String];
+  var collection messages : Messages;
+
+  
+  -- -------------------
+  -- Circularity Testing
+  -- -------------------
+
+  -- Your code here
+  circular attribute Class.class_is_circular : AndLattice; --##
+  pragma synthesized(class_is_circular);
+  
+
+  -- ------------------
+  -- Feature Tables
+  -- ------------------
+  -- Your code here
+  --#(
+  -- ------------------
+  -- Class for features
+  -- ------------------
+  
+  attribute Features.features_class : ClassReference := Class$nil;
+  attribute Feature.feature_class : ClassReference;
+  
+  pragma inherited(features_class,feature_class);
+
+  -- ----------------
+  -- Attribute table
+  -- ----------------
+  type FeatureRemote := remote Feature;
+  type FeatureReferences := BAG[FeatureRemote];
+  type AttrTable := TABLE[Symbol,FeatureReferences];
+
+  collection attribute Class.class_attr_table : AttrTable;
+  pragma synthesized(class_attr_table);
+
+  -- -------------
+  -- Method table
+  -- -------------
+
+  type MethodTable := TABLE[Symbol, FeatureReferences];
+  
+  collection attribute Class.class_meth_table : MethodTable;
+  pragma synthesized(class_meth_table);
+  --#)
+
+  -- ---------------------
+  -- Environment & Types
+  -- ---------------------
+  type CoolType = Symbol; -- that is, we use symbols as types
+  type CoolTypes := MULTISET[CoolType];
+
+  type Contour := TABLE[Symbol,CoolTypes];
+  
+  phylum ScopeObject;
+  type ScopeObjectRemote := remote ScopeObject;
+  constructor scope(filename : String; enclosing : ScopeObjectRemote) 
+      : ScopeObject;
+  type Scope := remote ScopeObject;  
+  collection attribute ScopeObject.table : Contour;
+
+  type Environment = Scope;
+  
+  function env_filename(e : Environment) : String begin
+    case e begin
+      match scope(?fn,?) begin
+	result := fn;
+      end;
+    else
+      result := "<none>";
+    end;
+  end;
+  function make_scope(encl : Environment) : Scope begin
+    result := scope(env_filename(encl),encl);
+  end;
+
+  function message(env : Environment; n : Integer; s : String) : Messages 
+      := {env.env_filename || ":" || n || ": " || s};
+
+  attribute Class.class_env : Environment;
+  
+  attribute Formals.formals_env : Environment;
+  attribute Formal.formal_env : Environment;
+
+  -- The environment defaults to nil for Expressions trees left to die,
+  -- after not being used because of classes with native constructors.
+  -- This affects the generation of errors for assign and variable (q.v.)
+  attribute Expressions.exprs_env : Environment := Scope$nil;
+  attribute Expression.expr_env : Environment;
+  
+  pragma synthesized(class_env);
+  pragma inherited(formals_env,formal_env,expr_env,exprs_env);
+
+  -- ---------------------
+  -- CoolTypeList definition
+  -- ---------------------
+
+  type CoolTypeList := LIST[CoolType];
+
+  attribute Expression.expr_type : CoolType;  
+  attribute Expressions.exprs_type : CoolTypeList;
+  pragma synthesized(expr_type, exprs_type);
+  
+  attribute Formal.formal_type : CoolType;
+  attribute Formals.formals_types : CoolTypeList;
+  pragma synthesized(formal_type,formals_types);
+
+  -- Your code here
+  -- attributes for cases
+  -- #(
+  attribute Case.case_env : Environment;
+  attribute Cases.cases_env : Environment;
+  attribute Case.case_cases : CoolTypes;
+  attribute Cases.cases_cases : CoolTypes;
+  attribute Cases.cases_type : CoolType;
+  attribute Case.case_type : CoolType;
+
+  pragma inherited(case_env,cases_env);
+  pragma synthesized(case_cases,cases_cases);
+  pragma synthesized(cases_type,case_type);
+  -- #)
+  
+  
+  match ?p=program(?) begin
+    -- check for the existence of "Main" with a no-arg constructor
+    main_class : ClassReference := find_class(Main);
+    if main_class = Class$nil then
+      messages :> { "No Main class defined" };
+    else
+      main_constructor : Feature := meth_lookup(Main,Main);
+      if main_constructor = Feature$nil then
+	-- This check obviated by the parser (all classes have constructors)
+	messages :> message(main_class.class_env,main_class.lineno,
+			    "class Main does not have a constructor");
+      else
+	case main_constructor begin
+	  match method(?,?,?fs,?,?) begin
+	    if length(fs) > 0 then
+	      messages :> message(main_class.class_env,fs.lineno,
+				  "Main constructor incorrectly has parameters");
+	    endif;
+	  end;
+	end;
+      endif;
+    endif;
+  end;
+
+  function not_inheritable(pcl : Class) : Boolean := false begin
+    -- aps does not have short-circuiting operators ("and" is strict)
+    if pcl /= Class$nil then
+      if not pcl.inheritablep then
+	result := true;
+      endif;
+    endif;
+  end;
+
+  -- -------------
+  -- class match
+  -- -------------
+  match ?cl : Class = class_decl(?name : Symbol,?parent : Symbol,
+				 ?features : Features, ?filename : Symbol) 
+  begin
+    cl.class_env := scope(Symbol$name(filename),Environment$nil);
+
+    -- Your code here
+
+    -- add to class table
+    -- check for cyclic inheritance using a circular attribute
+    -- #(
+    pcl : ClassReference := Class$nil;
+    if name = Any then
+      cl.class_is_circular := false;
+    elsif name = Nothing or name = Null then
+      cl.class_is_circular := false;
+      messages :> message(cl.class_env,cl.lineno,
+			  "class " || name || " may not be defined");
+    else
+      pcl := find_class(parent);
+      if pcl = Class$nil then
+	-- Your code here
+	--#(
+	messages :> message(cl.class_env,cl.lineno,               
+			    "superclass not defined: " || parent);
+	--#)
+	cl.class_is_circular := false;
+      else
+	cl.class_is_circular := pcl.class_is_circular;
+      endif;
+    endif;
+    --#)
+    -- check for special typed, multiple definition, circular inheritance,
+    -- and inheriting from something you cannot inherit from,
+    --#(
+    
+    class_table :> ClassTable$table_entry(name,{cl});
+    if find_class(name) /= cl then
+      messages :> message(cl.class_env,cl.lineno,
+			  "class " || name || " is multiply defined");
+    endif;
+
+    if cl.class_is_circular then
+      messages :> message(cl.class_env,cl.lineno,
+			  "class " || name || 
+			      " is involved in circular inheritance");
+    endif;
+    
+    if parent = Nothing or parent = Null or
+	not_inheritable(pcl) then
+      messages :> message(cl.class_env,cl.lineno,
+			  "cannot inherit from " || parent);
+    endif;
+    
+    -- Obviated by parser
+    if meth_lookup(name,name) = Feature$nil then
+      messages :> message(cl.class_env,cl.lineno,
+			  "Warning: No constructor defined for class " ||
+			      name);
+    endif;
+
+    if not cl.class_is_circular and pcl /= Class$nil then
+      cl.class_env.table :> pcl.class_env.table;
+    endif;
+
+    features.features_class := cl;
+    --#)
+  end;
+
+  -- ----------------
+  -- Features match
+  -- ----------------
+  match ?feas : Features = Features$append(?fs1,?fs2 : Features) begin
+    -- Your code here
+    --#(
+    fs1.features_class := feas.features_class;
+    fs2.features_class := feas.features_class;
+    --#)
+  end;
+  
+  match ?feas : Features = Features$single(?f : Feature) begin
+    -- Your code here
+    --#(
+    f.feature_class := feas.features_class;
+    --#)
+  end;
+
+  match ?feas : Features = Features$none() begin
+    -- Your code here (solution has nothing)
+  end;
+
+  -- -----------
+  -- attr match
+  -- -----------
+  match ?f : Feature = attr(?name : Symbol,?of_type : Symbol) begin
+    cl : ClassReference; -- my class: must be assigned!
+    -- Your code here
+    --#(
+    cl := f.feature_class;
+    cl.class_env.table :> Contour$table_entry(name,{of_type});
+    cl.class_attr_table :> AttrTable$table_entry(name,{f});
+    --#)
+    
+    if name = This then
+      messages :> message(cl.class_env,f.lineno,
+			  "'this' cannot be the name of an attribute.");
+    endif;
+    if of_type = Nothing then
+      messages :> message(cl.class_env,f.lineno,
+			  "Fields may not be given 'Nothing' type.");
+    elsif of_type /= Native and of_type /= Null and 
+	  find_class(of_type) = Class$nil then
+      messages :> message(cl.class_env,f.lineno,
+			  "Class " || of_type || " of attribute " || 
+			      name || " is undefined.");
+    endif;
+
+    -- check for illegal overriding:
+    --#(
+    case cl begin
+      match class_decl(?,?parent,?,?) begin
+	pcl : ClassReference := find_class(parent);
+	if pcl /= Class$nil and
+	    env_lookup(name,pcl.class_env) /= errorType then
+	  messages :> message(cl.class_env,f.lineno,
+			      "overriding feature " || name);
+	endif;
+      end;
+    end;
+    --#)
+    -- TODO
+    
+    -- check for duplicates
+    --#(
+    case AttrTable$select(cl.class_attr_table,name) begin
+      match AttrTable$table_entry(?,FeatureReferences${?ff,...}) begin
+	if ff /= f then
+	  messages :> message(cl.class_env,f.lineno,
+			      "duplicate feature " || name);
+	endif;
+      end;
+    end;
+    --#)
+    --TODO
+  end;
+
+  -- -------------
+  -- method match
+  -- -------------
+  match ?f : Feature = method(?override : Boolean,
+			      ?name : Symbol,?formals : Formals,
+                              ?ret_type : Symbol, ?expr : Expression) 
+  begin
+    cl : ClassReference; -- must be assigned!
+    -- Your code here
+    cl := f.feature_class; --##
+    cl.class_meth_table :> MethodTable$table_entry(name,{f}); --##
+    
+    -- check ret_type is valid
+    if ret_type /= Null and ret_type /= Nothing and 
+	  find_class(ret_type) = Class$nil then
+      messages :> message(cl.class_env,f.lineno,
+			  "Undefined return type " || ret_type ||
+			      " in method " || name || ".");
+    endif;
+    
+    -- check for illegal overriding:
+    --#(
+    case cl begin
+      match class_decl(?cn,?parent,?,?) begin
+	c.table :> Contour$table_entry(This,{cn});
+	if cn /= Any then
+	  superm : Feature := meth_lookup(name,parent);
+	  if superm /= Feature$nil then
+	    if not override then
+	      messages :> message(c,f.lineno,
+				  "implicit overriding of " || name);
+	    endif;
+	    if not methods_match(superm,f) then
+	      messages :> message(c,f.lineno,
+				  "error overriding method " || name);
+	    endif;
+	  else
+	    if override then
+	      messages :> message(c,f.lineno,
+				  "nothing to override for " || name);
+	    endif;
+	  endif;
+	endif;
+      end;
+    end;
+    --#)
+    --TODO
+    
+    -- check for duplicates:
+    --#(
+    case MethodTable$select(cl.class_meth_table,name) begin
+      match MethodTable$table_entry(?,FeatureReferences${?ff,...}) begin
+	if f /= ff then
+	  messages :> message(c,f.lineno,
+			      "duplicate method definition " || name);
+	endif;
+      end;
+    end;
+    --#)
+    -- TODO
+    
+    -- new scope;
+    c : Scope := make_scope(cl.class_env);
+    
+    -- Passing environment 
+    formals.formals_env := c; 
+    expr.expr_env := c; 
+    
+    -- checking return value:
+    if not type_leq(expr.expr_type,ret_type) then
+      messages :> message(c,f.lineno,
+			  "Inferred return type " || expr.expr_type || 
+			      " of method " || name || 
+			      " does not conform to declared return type " || 
+			      ret_type || ".");
+    endif;
+  end;
+
+  -- ---------------
+  -- Formals match
+  -- ---------------
+  match ?fmls : Formals = Formals$none() begin
+    fmls.formals_types := {};
+  end;
+
+  match ?fmls : Formals = Formals$single(?f : Formal) begin
+    f.formal_env := fmls.formals_env;
+    fmls.formals_types := {f.formal_type};
+  end;
+
+  match ?fmls : Formals = Formals$append(?fmls1,?fmls2 : Formals) begin
+    fmls1.formals_env := fmls.formals_env; 
+    fmls2.formals_env := fmls.formals_env;
+    fmls.formals_types := fmls1.formals_types ++ fmls2.formals_types;
+  end;
+
+  -- -------------
+  -- Formal match
+  -- -------------
+  match ?f : Formal = formal(?n : Symbol,?of_type: Symbol) begin
+    --Your code here
+    --#(
+    f.formal_env.table :> Contour$table_entry(n,{of_type});
+    f.formal_type := of_type;
+    --#)
+
+    -- Obviated by parser, but left in for historical purposes
+    if n = This then
+      messages :> message(f.formal_env,f.lineno,
+			  "'self' cannot be the name of a formal parameter.");
+    endif;
+
+    if of_type /= Native and find_class(of_type) = Class$nil then
+      messages :> message(f.formal_env,f.lineno,
+			  "Class " || of_type || " of formal parameter " ||
+			      n || " is undefined.");
+    endif;
+    
+    -- check for duplicates
+    --#(
+    case Contour$select(f.formal_env.table,n) begin
+      match Contour$table_entry(?,?fs) begin
+	if length(fs) >= 2 then
+	  messages :> message(f.formal_env,f.lineno,
+			      "duplicate formal " || n);
+	endif;
+      end;
+    end;
+    --#)
+    -- TODO
+  end;
+
+  -- -------------------
+  -- ASSIGN expression
+  -- -------------------
+  match ?asgn : Expression = assign(?name : Symbol, ?expr: Expression) begin
+    expr.expr_env := asgn.expr_env;
+    asgn.expr_type := Unit;
+    
+    -- obviated by parser, but left in for historical reasons
+    if name = This then
+      messages :> message(expr.expr_env,asgn.lineno,
+			  "Cannot assign to 'this'.");
+    endif;
+
+    if asgn.expr_env /= Environment$nil then
+      sh : CoolType := env_lookup(name,asgn.expr_env);
+      if type_equal(sh,errorType) then
+	messages :> message(expr.expr_env, asgn.lineno,
+			    "Assignment to undeclared variable " || name || 
+				".");
+      elsif not type_leq(expr.expr_type,sh) then
+	messages :> message(expr.expr_env, asgn.lineno,
+			    "Type " || expr.expr_type || 
+				" of assigned expression does not conform" ||
+				" to declared type " || sh || 
+				" of identifier " || name || "."); 
+      endif;
+    endif;
+  end;
+
+  -- ---------------
+  -- IF expression
+  -- ---------------
+  match ?cond_expr : Expression = cond(?pred : Expression,
+				       ?then_exp : Expression,
+				       ?else_exp : Expression) begin
+    pred.expr_env := cond_expr.expr_env;
+    then_exp.expr_env := cond_expr.expr_env;
+    else_exp.expr_env := cond_expr.expr_env;
+
+    cond_expr.expr_type := type_lub(then_exp.expr_type,else_exp.expr_type);
+    
+    if (not type_equal(pred.expr_type,Bool)) then
+      messages :> message(pred.expr_env, pred.lineno,
+			  "Predicate for 'if' has type " || pred.expr_type ||
+			      " instead of Boolean.");
+    endif;
+  end;
+
+  -- ----------------
+  -- LOOP expression 
+  -- ----------------
+  match ?l : Expression = loop  (?pred : Expression,
+                                 ?body : Expression) begin
+    pred.expr_env := l.expr_env;
+    body.expr_env := l.expr_env;
+    l.expr_type := Unit;
+    
+    if (not type_equal(pred.expr_type,Bool)) then
+      messages :> message(pred.expr_env, pred.lineno,
+			  "Predicate for 'while' is " || pred.expr_type ||
+			      " instead of Boolean");
+    endif;
+  end;
+  
+  -- -----------------
+  -- BLOCK expression 
+  -- -----------------
+  match ?bl : Expression = block (?body : Expressions) begin
+    body.exprs_env := bl.expr_env;
+    if body.length = 0 then
+      bl.expr_type := Unit;
+    else
+      bl.expr_type := last(body.exprs_type);	
+    endif;
+  end;
+
+  -- -------------------
+  -- EXPRESSIONS match
+  -- -------------------
+  match ?exprs : Expressions = Expressions$single(?e : Expression) begin
+    e.expr_env := exprs.exprs_env;
+    exprs.exprs_type := CoolTypeList$single(e.expr_type);
+  end;
+
+  match ?exprs : Expressions = Expressions$append(?es1,?es2 : Expressions) 
+  begin
+    es1.exprs_env := exprs.exprs_env;
+    es2.exprs_env := exprs.exprs_env;
+    exprs.exprs_type := CoolTypeList$append(es1.exprs_type,es2.exprs_type);
+  end;
+
+  match ?exprs : Expressions = Expressions$none() begin
+    exprs.exprs_type := CoolTypeList$none();
+  end;
+
+  match ?exprs : Classes = Classes$single(?e : Class) begin
+
+  end;
+
+  match ?exprs : Classes = Classes$append(?e1, ?e2 : Classes) begin
+
+  end;
+
+  match ?exprs : Classes = Classes$none() begin
+
+  end;
+
+  -- -----------
+  -- LET match
+  -- -----------
+  match ?let_exp : Expression = let(?id : Symbol,
+				    ?of_type : Symbol,
+				    ?init : Expression,
+				    ?body : Expression) 
+  begin
+    init.expr_env := let_exp.expr_env;
+    c : Scope := make_scope(let_exp.expr_env);
+    c.table :> Contour$table_entry(id,{of_type});
+    body.expr_env := c;
+    let_exp.expr_type := body.expr_type;
+    
+    -- Obviated by parser, but left in for historical reasons:
+    if id = This then
+      messages :> message(let_exp.expr_env,let_exp.lineno,
+			  "'this' cannot be bound as a local variable.");
+    endif;
+    
+    -- new to Cool 2009 and later
+    if env_lookup(id,let_exp.expr_env) /= errorType then
+      messages :> message(let_exp.expr_env,let_exp.lineno,
+			  "cannot shadow with a local variable.");
+    endif;
+
+    if of_type /= Nothing and of_type /= Null and
+	find_class(of_type) = Class$nil then
+      messages :> message(let_exp.expr_env,let_exp.lineno,"Class " || 
+			      of_type || " of local identifier " ||
+			      id || " is undefined.");
+    elsif not type_leq(init.expr_type,of_type) then
+      messages :> message(let_exp.expr_env,let_exp.lineno,
+			  "Inferred type " || init.expr_type || 
+			      " of initialization of " || id || 
+			      " does not conform to identifier's declared" ||
+			      " type " || of_type || ".");
+    endif;
+  end;
+
+  function check_int_arguments(env : Environment; lno : Integer; op : String;
+			       t1 : CoolType; t2 : CoolType) : Messages 
+  begin
+    if not type_equal(t1,Int) or not type_equal(t2,Int) then
+      result := message(env,lno,"non-Integer arguments: " || t1 || " " || 
+			    op || " " || t2);
+    else
+      result := {};
+    endif;
+  end;
+
+  -- ---------------
+  -- ADD expression
+  -- ---------------
+  match ?p : Expression = add (?e1 : Expression,
+			       ?e2 : Expression) begin
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+    p.expr_type := Int;
+    messages :> check_int_arguments(p.expr_env, e2.lineno,"+",
+				    e1.expr_type,e2.expr_type);
+  end;
+
+  -- ---------------
+  -- SUB expression
+  -- ---------------
+  match ?p : Expression = sub (?e1 : Expression,
+                               ?e2 : Expression) begin
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+    p.expr_type := Int;
+
+    messages :> check_int_arguments(p.expr_env, e2.lineno,"-",
+				    e1.expr_type,e2.expr_type);
+  end;
+
+  -- ---------------
+  -- MUL expression
+  -- ---------------
+  match ?p : Expression = mul (?e1 : Expression,
+                               ?e2 : Expression) begin
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+    p.expr_type := Int;
+
+    messages :> check_int_arguments(p.expr_env, e2.lineno,"*",
+				    e1.expr_type,e2.expr_type);
+  end;
+  
+  -- ------------------
+  -- DIV expression
+  -- ------------------
+  match ?p : Expression = div (?e1 : Expression,
+			       ?e2 : Expression) begin
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+    p.expr_type := Int;
+
+    messages :> check_int_arguments(p.expr_env, e2.lineno,"/",
+				    e1.expr_type,e2.expr_type);
+  end;
+
+  -- ---------------
+  -- NEG expression
+  -- ---------------
+  match ?p : Expression = neg (?e : Expression) begin
+    e.expr_env := p.expr_env;
+    p.expr_type := Int;
+
+    if (not type_equal(e.expr_type,Int)) then
+      messages :> message(p.expr_env, e.lineno,
+			  "Argument of unary '-' has type " || e.expr_type ||
+			      " instead of Integer.");
+    endif;
+  end;
+
+  -- ---------------
+  -- LT expression
+  -- ---------------
+  match ?p : Expression = lt (?e1 : Expression,
+                              ?e2 : Expression) begin
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+    p.expr_type := Bool;
+
+    messages :> check_int_arguments(p.expr_env, e2.lineno,"<",
+				    e1.expr_type,e2.expr_type);
+  end;
+
+  -- ---------------
+  -- LEQ expression
+  -- ---------------
+  match ?p : Expression = leq (?e1 : Expression,
+                               ?e2 : Expression) begin
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+    p.expr_type := Bool;
+
+    messages :> check_int_arguments(p.expr_env, e2.lineno,"<=",
+				    e1.expr_type,e2.expr_type);
+  end;
+
+  -- ---------------
+  -- COMP expression
+  -- ---------------
+  match ?p : Expression = comp (?e : Expression) begin
+    e.expr_env := p.expr_env;
+    p.expr_type := Bool;
+
+    if (not type_equal(e.expr_type,Bool)) then
+      messages :> message(p.expr_env, e.lineno,
+			  "Argument of 'not' has type " || e.expr_type ||
+			      " instead of Boolean.");
+    endif;
+  end;
+
+  -- ----------
+  -- INT_LIT
+  -- ----------
+  match ?e : Expression = int_lit(?token : Symbol) begin
+    e.expr_type := Int;
+  end;
+
+  -- ----------
+  -- STR_LIT
+  -- ----------
+  match ?e : Expression = string_lit(?token : Symbol) begin
+    e.expr_type := Str;
+  end;
+
+  -- ----------
+  -- BOOL_LIT
+  -- ----------
+  match ?e : Expression = bool_lit(?val : Boolean) begin
+    e.expr_type := Bool;
+  end;
+
+  -- ----------
+  -- NEW match
+  -- ----------
+  match ?new_exp : Expression = alloc(?type_name : Symbol) begin
+    if find_class(type_name) = Class$nil then
+      messages :> message(new_exp.expr_env, new_exp.lineno,
+			  "'new' used with undefined class " || type_name || 
+			      ".");
+    endif;
+    new_exp.expr_type := type_name;
+  end;
+
+  -- --------------
+  -- Object match
+  -- --------------
+  match ?obj : Expression = variable(?name : Symbol) begin
+    sh : CoolType := env_lookup(name,obj.expr_env);
+    obj.expr_type := sh;
+    if obj.expr_env /= Environment$nil and type_equal(sh,errorType) then
+      messages :> message(obj.expr_env,obj.lineno,
+			  "Undeclared identifier " || name || ".");
+    endif;
+  end;
+
+  -- ----------------
+  --  BRANCH match
+  -- ----------------
+  match ?br : Case = branch(?name : Symbol,
+                            ?of_type : Symbol,
+                            ?expr: Expression) begin
+    -- #(
+    c : Scope := make_scope(br.case_env);
+    c.table :> Contour$table_entry(name,{of_type});
+    expr.expr_env := c;
+    br.case_type := expr.expr_type;
+    br.case_cases := {of_type};
+
+    if of_type /= Null and find_class(of_type) = Class$nil then
+      messages :> message(br.case_env, br.lineno,
+			  "Class " || of_type || 
+			      " of case branch is undefined.");
+    endif;
+    -- the following check is obviated by the parser
+    if name = This then
+      messages :> message(br.case_env, br.lineno,
+			  "'this' cannot be the name of a case variable.");
+    endif;
+    -- #)
+    -- Your code here
+  end;
+
+  -- ------------------
+  -- TYPECASE expression
+  -- ------------------
+  match ?ty : Expression = typecase(?expr : Expression,
+				    ?cases : Cases) begin
+    -- #(
+    expr.expr_env := ty.expr_env;
+    cases.cases_env := ty.expr_env;
+    ty.expr_type := cases.cases_type;
+    -- #)
+    -- Your code here
+  end;
+
+  -- ------------
+  -- CASES match
+  -- ------------
+  match ?cs : Cases = Cases$single(?c : Case) begin
+    -- #(
+    c.case_env := cs.cases_env;
+    cs.cases_type := c.case_type;
+    cs.cases_cases := c.case_cases;
+    -- #)
+    -- Your code here
+  end;
+
+  match ?cs :Cases = Cases$append (?c1,?c2 : Cases) begin
+    -- #(
+    c1.cases_env := cs.cases_env;
+    c2.cases_env := cs.cases_env;
+    cs.cases_type := type_lub(c1.cases_type,c2.cases_type);
+    cs.cases_cases := c1.cases_cases \/ c2.cases_cases;
+    overlaps : CoolTypes := c1.cases_cases /\ c2.cases_cases;
+    if overlaps /= {} then
+      messages :> message(cs.cases_env, cs.lineno,
+			  "Duplicate when branches on " || 
+			      overlaps || " in case statement.");
+    endif;
+    -- #)
+    -- Your code here
+  end;
+
+  match ?cs : Cases = Cases$none() begin
+    -- #(
+    cs.cases_type := errorType; 
+    cs.cases_cases := {};
+    -- #)
+    -- Your code here
+  end;
+
+  -- ----------------
+  -- DISPATCH match
+  -- ----------------
+  match ?d : Expression = dispatch (?expr : Expression,
+                                    ?name : Symbol,
+                                    ?actuals : Expressions) begin
+    expr.expr_env := d.expr_env;
+    actuals.exprs_env := d.expr_env;
+    
+    method_binding : Feature := Feature$nil;
+
+    if type_equal(expr.expr_type,Null) then
+      messages :> message(expr.expr_env, d.lineno,"Dispatch on null");
+    elsif expr.expr_type /= Null and
+	not type_equal(expr.expr_type,errorType) then
+      method_binding := meth_lookup(name,expr.expr_type);
+      if method_binding = Feature$nil then
+	messages :> message(d.expr_env, d.lineno,
+			    "Dispatch on undefined method " || name);
+      endif;
+    endif;
+    
+    if method_binding = Feature$nil then
+      d.expr_type := errorType;
+    else
+      case method_binding begin
+	match method(?,?,?fs,?rt,?) begin
+	  d.expr_type := rt;
+	  messages :> check_arguments(d.expr_env,Symbol$string(name),d.lineno,
+				      actuals.exprs_type,fs.formals_types);
+	end; -- match
+      end; -- case
+    endif;
+  end;
+  
+  -- -------------------------------------
+  -- Check conformance of arguments and 
+  -- formals in a method dispatch
+  -- -------------------------------------
+  var function check_arguments(env:Environment; meth_name : String;
+			       lno : Integer; 
+			       arg_types, formal_types : CoolTypeList) : Messages
+  begin
+    if arg_types = formal_types then
+      result := {};
+    elsif arg_types = {} then
+      result := message(env, lno,"Method " || meth_name ||
+			    " called with too few actual parameters.");
+    elsif formal_types = {} then
+      result := message(env, lno,"Method " || meth_name ||
+			    " called with too many actual parameters.");
+    elsif not type_leq(first(arg_types),first(formal_types)) then
+      result := message(env, lno,"In call of method " || meth_name || 
+			    ", type " || first(arg_types) || 
+			    " of parameter does not conform to declared" ||
+			    " type " || first(formal_types) || ".");
+    else
+      result := check_arguments(env,meth_name,lno,
+				butfirst(arg_types),
+				butfirst(formal_types));
+    endif;
+  end;
+
+  -- -----------------------
+  -- STATIC DISPATCH match
+  -- -----------------------
+  match ?d : Expression = static_dispatch (?expr : Expression,
+					   ?type_name : Symbol,
+					   ?name : Symbol,
+					   ?actuals : Expressions) begin
+    expr.expr_env := d.expr_env;
+    actuals.exprs_env := d.expr_env;
+    
+    method_binding : Feature := Feature$nil;
+    
+    -- we don't make an error message for an undeclare type_name
+    -- because the three ways that static_dispatch appears in Cool
+    -- also let it be checked elsewhere too.
+
+    if not type_leq(expr.expr_type,type_name) then
+      messages :> message(d.expr_env, d.lineno,
+			  "Type mismatch on static dispatch: "
+			      || expr.expr_type || " /<= " || type_name);
+    endif;
+    if find_class(type_name) /= Class$nil then 
+      method_binding := meth_lookup(name,type_name);
+      if method_binding = Feature$nil then
+	messages :> message(d.expr_env, d.lineno,
+			    "Dispatch on undefined method " || name);
+      endif;
+    endif;
+    
+    if method_binding = Feature$nil then
+      d.expr_type := errorType;
+    else
+      case method_binding begin
+	match method(?,?,?fs,?rt,?) begin
+	  d.expr_type := rt;
+	  messages :> check_arguments(d.expr_env,Symbol$string(name),d.lineno,
+				      actuals.exprs_type,fs.formals_types);
+	end; -- match
+      end; -- case
+    endif;
+  end;
+
+  --  --------------
+  --  no_expr match
+  --  --------------
+  match ?e : Expression = no_expr() begin
+    e.expr_type := errorType;
+  end;
+
+  --  --------------
+  --  null match
+  --  --------------
+  match ?e : Expression = nil() begin
+    e.expr_type := Null;
+  end;
+
+  --  --------------
+  --  unit match
+  --  --------------
+  match ?e : Expression = unit() begin
+    e.expr_type := Unit;
+  end;
+
+  
+  -- ---------------------------------------
+  -- Compute least upper bound of two types
+  -- ---------------------------------------
+  var function type_lub (s1 : CoolType; s2 : CoolType): CoolType begin
+    -- Your code here
+    --#(
+    if type_equal(s1,errorType) then
+      result := s2;
+    elsif type_equal(s2,errorType) then
+      result := s1;
+    elsif type_leq(s1,s2) then
+      result := s2;
+    elsif type_leq(s2,s1) then
+      result := s1;
+    elsif s1 = Null or s2 = Null then
+      result := Any;
+    else
+      result := type_lub(class_parent(s1),class_parent(s2));
+    endif;    
+    --#)
+  end;
+
+  -- ----------------------
+  -- Compare LEQ two types
+  -- ----------------------
+  var function type_leq (s1 : CoolType; s2 : CoolType) : Boolean begin
+    -- Your code here
+    --#(
+    if type_equal(s1,errorType) or type_equal(s2,errorType) then
+      result := true;
+    elsif type_equal(s1,Nothing) then
+      result := true;
+    elsif (type_equal(s2,Any) or type_equal(s1,s2)) then
+      result := true;
+    elsif type_equal(s2,Nothing) then
+      result := false;
+    elsif s1 = Null then
+      result := not (s2 in CoolTypes${Int,Bool,Unit});
+    elsif s1 = Any or s2 = Null then
+      result := false;
+    else
+      result := type_leq(class_parent(s1),s2);
+    endif;
+    --#)
+  end;
+  
+  -- ----------------------
+  -- Compare EQ two types
+  -- ----------------------
+  function type_equal(s1,s2 : CoolType) : Boolean := s1 = s2 or s1 = errorType;
+
+  -- ------------------------ 
+  -- Look up a method name 
+  -- ------------------------
+  var function meth_lookup(meth_name : Symbol;
+			   class_name : Symbol) : Feature
+  begin
+    cl : ClassReference := find_class(class_name);
+    if cl = Class$nil then
+      result := Feature$nil;
+    else
+      -- Your code here
+      --#(
+      case MethodTable$select(cl.class_meth_table,meth_name) begin
+	match MethodTable$table_entry(?,FeatureReferences${?me,...}) begin
+	  result := me;
+	end;
+      else
+	if cl.class_is_circular or class_name = Any then
+	  result := Feature$nil; -- don't dare to lookup at superclass
+	else
+	  result := meth_lookup(meth_name,class_parent(class_name));
+	endif;
+      end;
+      --#)
+    endif;
+  end;
+
+  -- ------------------------------
+  -- Look up a name in Environment
+  -- return a shape (Type) if found
+  -- errorType : otherwise.
+  -- ------------------------------
+  var function env_lookup(n : Symbol; env : Environment) : CoolType begin
+    if env = Environment$nil then
+      result := errorType;
+    else
+      case Contour$select(env.table,n) begin
+	match Contour$table_entry(?,CoolTypes${?s,...}) begin
+	  result := s;
+	end;
+      else
+	case env begin
+	  match scope(?,?enclosing) begin
+	    result := env_lookup(n,enclosing);
+	  end;
+	  -- APS in SCALA can't match nil
+	else
+	  result := errorType;
+	end;
+      end;
+    endif;
+  end;
+  
+  -- ------------------------------------
+  -- Check whether an overriding is legal
+  -- ------------------------------------
+  var function methods_match(old,new : Feature) : Boolean begin
+    --Your code here
+    --#(
+    case old begin
+      match method(?,?,?oldfs,?oldrt,?) begin
+	case new begin
+	  match method(?,?,?newfs,?newrt,?) begin
+	    result := type_leq(newrt,oldrt) 
+		and oldfs.formals_types = newfs.formals_types;
+	  end;
+	end;
+      end;
+    end;
+    --#)
+  end;
+end;

@@ -78,6 +78,7 @@ static void set_instance_index(Declarations ds)
   }
 }
 
+static void *sig_bind(void* untyped_scope_ref, void* untyped);
 
 static void pop_type_contour()
 {
@@ -134,8 +135,8 @@ static SCOPE add_env_item(SCOPE old, Declaration d) {
 	while (old && old->type_env == current_type_env) {
 	  if (old->name == name &&
 	      (old->namespaces & new_entry->namespaces) != 0) {
-	    aps_error(d,"Duplicate declaration (previously seen line %d)",
-		      tnode_line_number(old->decl));
+	    aps_error(d,"Duplicate declaration (previously seen line %d) %s",
+		      tnode_line_number(old->decl), decl_name(old->decl));
 	  }
 	  old = old->next;
 	}
@@ -243,6 +244,8 @@ static SCOPE inst_services(TypeEnvironment use_type_env,
 			   TypeActuals tacts,
 			   SCOPE services)
 {
+  traverse_Signature(sig_bind, &services, some_class_decl_parent(class_decl));
+
   TypeEnvironment saved = current_type_env;
   Declaration tf;
   /* Signature psig = some_class_decl_parent(class_decl); */
@@ -262,6 +265,8 @@ static SCOPE inst_services(TypeEnvironment use_type_env,
    *
    * services = signature_services(tdecl,psig,services); 
    */
+
+
   traverse_Block(get_public_bindings,&services,
 		 some_class_decl_contents(class_decl));  
   pop_type_contour(); /* not actually necessary */
@@ -414,8 +419,8 @@ static void bind_Use_by_name(Use u, Symbol name, int namespaces, SCOPE scope)
 static void bind_Use(Use u, int namespaces, SCOPE scope) {
   switch (Use_KEY(u)) {
   case KEYuse:
-    bind_Use_by_name(u,use_name(u),namespaces,scope);
-    break;
+      bind_Use_by_name(u,use_name(u),namespaces,scope);
+      break;
   case KEYqual_use:
     do_bind(scope,qual_use_from(u));
     {
@@ -491,6 +496,27 @@ static void *get_public_bindings(void *scopep, void *node) {
   return scopep;
 }
 
+static void *sig_bind(void* scope_ref, void* untyped) {
+  switch (ABSTRACT_APS_tnode_phylum(untyped))
+  {
+    case KEYSignature:
+    {
+      Signature sig = (Signature)untyped;
+      switch (Signature_KEY(sig))
+      {
+        case KEYsig_inst:
+        {
+          Use use = class_use_use(sig_inst_class(sig));
+          Declaration parent_mdecl = USE_DECL(use);          
+          traverse_Block(get_public_bindings, scope_ref, some_class_decl_contents(parent_mdecl));  
+        }
+      }
+    }
+  }
+
+  return scope_ref;
+}
+
 static void *do_bind(void *vscope, void *node) {
   SCOPE scope=(SCOPE)vscope;
   /* sanity check: */
@@ -533,7 +559,7 @@ static void *do_bind(void *vscope, void *node) {
 	{ new_scope = bind_Declarations(new_scope,
 					module_decl_type_formals(d));
 	  traverse_Signature(do_bind,new_scope,module_decl_parent(d));
-	  new_scope = bind_Declarations(new_scope,
+    new_scope = bind_Declarations(new_scope,
 					module_decl_value_formals(d));
 	  new_scope=add_env_item(new_scope,module_decl_result_type(d));
 	  traverse_Declaration(do_bind,new_scope,
@@ -645,7 +671,7 @@ static void *do_bind(void *vscope, void *node) {
       if (Use_info(u)->use_decl == NULL) {
 	Symbol name =
 	  (Use_KEY(u) == KEYqual_use) ? qual_use_name(u) : use_name(u);
-	aps_error(u,"no binding for %s",symbol_name(name));
+	aps_error(u,"no binding for %s %d",symbol_name(name), Use_KEY(u));
       }
     }
     break;

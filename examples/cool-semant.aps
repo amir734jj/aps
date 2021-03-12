@@ -1,0 +1,1049 @@
+with "cool-symbol";
+with "cool-tree";
+with "table";
+
+[E :: PRINTABLE[]; C :: READ_ONLY_COLLECTION[E]] 
+function collection_to_string(c : C) : String begin
+  case c begin
+    match C$append(?c1,?c2) begin
+      s1 : String := collection_to_string(c1);
+      s2 : String := collection_to_string(c2);
+      if s1 = "" then result := s2;
+      elsif s2 = "" then result := s1;
+      else result := s1 ++ "," ++ s2;
+      endif;
+    end;
+    match C$single(?e) begin
+      result := E$string(e);
+    end;
+    match C$none() begin
+      result := "";
+    end;
+  else
+    result := "<error>";
+  end;
+end;
+
+
+-- Semantic Analysis of COOL
+
+module SEMANT[T :: var COOL[]] extends T begin
+
+  object_sym : Symbol := make_symbol("Any");
+  integer_sym : Symbol := make_symbol("Int");
+  boolean_sym : Symbol := make_symbol("Boolean");
+  string_sym : Symbol := make_symbol("String");
+  this_sym : Symbol := make_symbol("this");
+  main_sym : Symbol := make_symbol("Main");
+  unit_sym : Symbol := make_symbol("Unit");
+  void_sym : Symbol := make_symbol("_void");
+  native_sym : Symbol := make_symbol("native");
+  error_sym : Symbol := make_symbol("$error$");
+  
+  --pragma fiber_untracked(object_sym, integer_sym, boolean_sym,
+  --			 string_sym, this_sym, void_sym, error_sym);
+
+  type Errors := BAG[String];
+  var collection errors : Errors;
+  
+  function error(env : Environment; ln : Integer; msg : String) : Errors
+  begin
+    case env begin
+      match class_contour(?filename) begin
+	result := 
+	    Errors${Symbol$string(filename) ++ ":" ++ 
+			Integer$string(ln) ++ ": " ++ msg};
+      end;
+      match contour() begin
+	result := error(env.enclosing,ln,msg);
+      end;
+    else
+      result := Errors${"?" ++ ":" ++ Integer$string(ln) ++ ": " ++ msg};
+    end;
+  end;
+
+  
+  phylum CoolClassPhylum;
+  type CoolClass := remote CoolClassPhylum;
+  type CoolClasses := SET[CoolClass];
+  type ClassTable := TABLE[Symbol,CoolClasses];
+
+  var collection class_table : ClassTable;
+
+  function lookup_class(n : Symbol) lc_result : CoolClass
+  begin
+    case ClassTable$select(class_table,n) begin
+      match ClassTable$table_entry(?,CoolClasses${?first,...}) begin
+	lc_result := first;
+      end;
+    else
+      lc_result := CoolClass$nil;
+    end;
+  end;
+
+  constructor cool_class(name : Symbol; filename : Symbol) : CoolClassPhylum;
+
+  attribute CoolClassPhylum.parent_class : remote CoolClass;
+  collection attribute CoolClassPhylum.local_methods : MethodTable;
+  attribute CoolClassPhylum.class_env : Environment;
+  attribute CoolClassPhylum.class_is_basic : Boolean;
+  attribute CoolClassPhylum.class_is_inheritable : Boolean;
+  attribute CoolClassPhylum.defined_ancestry : Boolean;
+  
+  pragma fiber_cyclic(parent_class);
+  
+  function class_name(cl : CoolClass) : Symbol begin
+    case cl begin
+      match cool_class(?n,?) begin
+	result := n;
+      end;
+    else
+      result := error_sym;
+    end;
+  end;
+
+
+  phylum CoolMethodPhylum;
+  type CoolMethod := remote CoolMethodPhylum;
+  type CoolMethods := BAG[CoolMethod];
+
+  constructor cool_method() : CoolMethodPhylum;
+  
+  -- attribute CoolMethodPhylum.method_class : CoolClass;
+  attribute CoolMethodPhylum.method_env : Environment;
+  attribute CoolMethodPhylum.formal_types : CoolTypes;
+  attribute CoolMethodPhylum.return_type : CoolType;
+  
+  type MethodTable := TABLE[Symbol,CoolMethods];
+  
+  function lookup_method(c1 : CoolClass; mn : Symbol) : CoolMethod
+  begin
+    if c1 == CoolClass$nil then
+      result := CoolMethod$nil;
+    else
+      case MethodTable$select(c1.local_methods,mn) begin
+	match MethodTable$table_entry(?,CoolMethods${?m,...}) begin
+	  result := m;
+	end;
+      else
+	if c1.defined_ancestry then
+	  result := lookup_method(c1.parent_class,mn);
+	else
+	  result := CoolMethod$nil;
+	endif;
+      end;
+    endif;
+  end;
+  
+  function lookup_method_local(c : CoolClass; mn : Symbol) : CoolMethod
+  begin
+    case MethodTable$select(c.local_methods,mn) begin
+      match MethodTable$table_entry(?,CoolMethods${?m,...}) begin
+	result := m;
+      end;
+    else
+      result := CoolMethod$nil;
+    end;
+  end;
+  
+  
+  -- Environments
+
+  phylum Contour;
+  type Environment := remote Contour;
+  constructor class_contour(filename : Symbol) : Contour;
+  constructor contour() : Contour;
+
+  collection attribute Contour.locals : ObjectTable;
+  attribute Contour.enclosing : Environment;
+  
+  pragma fiber_cyclic(enclosing);
+
+  -- Object Tables
+
+  phylum CoolObjectPhylum;
+  type CoolObject := remote CoolObjectPhylum;
+  type CoolObjects := BAG[CoolObject];
+  
+  constructor attr_object(name : Symbol) : CoolObjectPhylum;
+  constructor this_object() : CoolObjectPhylum;
+  constructor formal_object(name : Symbol) : CoolObjectPhylum;
+  constructor local_object(name : Symbol) : CoolObjectPhylum;
+  
+  attribute CoolObjectPhylum.object_type : CoolType;
+  -- attribute CoolObjectPhylum.attr_class : CoolClass := nil;
+  
+  type ObjectTable := TABLE[Symbol,CoolObjects];
+
+  
+  function lookup_object(name : Symbol; env : Environment) : CoolObject
+  begin
+    if env == Environment$nil then
+      result := CoolObject$nil;
+    else
+      case ObjectTable$select(env.locals,name) begin
+        match ObjectTable$table_entry(?,{?o,...}) begin
+          result := o;
+        end;
+      else
+        result := lookup_object(name,env.enclosing);
+      end;
+    endif;
+  end;
+
+
+  -- Types
+
+  type CoolType;
+  constructor reference_type(name : Symbol) : CoolType;
+  constructor void_type() : CoolType;
+  constructor error_type() : CoolType;
+  
+  a_void_type : CoolType := void_type();
+  an_error_type : CoolType := error_type();
+  an_integer_type : CoolType := reference_type(integer_sym);
+  a_boolean_type : CoolType := reference_type(boolean_sym);
+  a_string_type : CoolType := reference_type(string_sym);
+  an_object_type : CoolType := reference_type(object_sym);
+  a_unit_type : CoolType := reference_type(unit_sym);
+
+  --pragma fiber_untracked(a_void_type, an_error_type, an_integer_type,
+  --			 a_boolean_type, a_string_type, an_object_type);
+
+  type CoolTypes := LIST[CoolType];
+  
+  function make_type(name : Symbol) : CoolType begin
+    if name == void_sym then
+      result := a_void_type;
+    elsif name == error_sym then
+      result := an_error_type;
+    else
+      result := reference_type(name);
+    endif;
+  end;
+  
+  function lookup_type(ty : CoolType) : CoolClass begin
+    case ty begin
+      match reference_type(?name) begin
+	result := lookup_class(name);
+      end;
+    else
+      result := CoolClass$nil;
+    end;
+  end;
+  
+  function type_string(t : CoolType) : String begin
+    case t begin
+      match void_type() begin
+	result := "void";
+      end;
+      match error_type() begin
+	result := "error";
+      end;
+      match reference_type(?s) begin
+	result := symbol_name(s);
+      end;
+    else
+      result := "???";
+    end;
+  end;
+
+  function type_equal(t1,t2 : CoolType) : Boolean 
+      := t1 = t2 or t1 = an_error_type or t2 = an_error_type;
+  
+  function type_lub(t1,t2 : CoolType) : CoolType begin
+    if t1 = an_error_type or t1 = t2 or t2 = an_object_type then
+      result := t2;
+    elsif t2 = an_error_type or t1 = an_object_type then
+      result := t1;
+    elsif t1 = a_void_type then
+      if t2 = an_integer_type or t2 = a_boolean_type or t2 = a_string_type then
+	result := an_object_type;
+      else
+	result := t2;
+      endif;
+    elsif t2 = a_void_type then
+      result := type_lub(t2,t1);
+    else
+      result := make_type(class_name(class_lub(lookup_type(t1),
+					       lookup_type(t2))));
+    endif;
+  end;
+  
+  function class_lub(c1, c2 : CoolClass) : CoolClass begin
+    if c1 == c2 or class_leq(c1,c2) then
+      result := c2;
+    elsif class_leq(c2,c1) then
+      result := c1;
+    elsif c1.defined_ancestry and c2.defined_ancestry then
+      result := class_lub(c1.parent_class,c2.parent_class);
+    else
+      result := lookup_class(object_sym);
+    endif;
+  end;
+
+  function type_leq(t1,t2 : CoolType) : Boolean begin
+    if t1 = an_error_type or t2 = an_error_type or
+	t1 = t2 or t2 = an_object_type then
+      result := true;
+    elsif t1 = a_void_type then
+      if t2 = an_integer_type or t2 = a_boolean_type or t2 = a_string_type then
+	result := false;
+      else
+	result := true;
+      endif;
+    elsif t2 = a_void_type then
+      result := false;
+    else
+      result := class_leq(lookup_type(t1),lookup_type(t2));
+    endif;
+  end;
+  
+  function class_leq(c1,c2 : CoolClass) : Boolean begin
+    if c1 == c2 or c1 == CoolClass$nil or c2 == CoolClass$nil then
+      result := true;
+    elsif c1.parent_class == CoolClass$nil then
+      result := false;
+    elsif c1.defined_ancestry then
+      result := class_leq(c1.parent_class,c2);
+    else
+      result := false;
+    endif;
+  end;
+  
+  function type_eq(t1,t2 : CoolType) : Boolean
+      := t1 = t2 or t1 = an_error_type or t2 = an_error_type;
+
+
+  -- Program
+
+  match ?p:Program=program(?cls:Classes) begin
+    if lookup_class(main_sym) == CoolClass$nil then
+      errors :> {"No Main class defined"};
+    endif;
+  end;
+
+
+  -- Classes
+
+  match ?cls:Classes=Classes$append(?cls1:Classes, ?cls2:Classes) begin
+  end;
+  match ?cls:Classes=Classes$single(?cl:Class) begin
+  end;
+  match ?cls:Classes=Classes$none() begin
+  end;
+
+
+  -- Class
+
+  match ?cl:Class=class_decl(?name:Symbol, ?parent:Symbol,
+                          ?fs:Features, ?filename : Symbol) begin
+    c : CoolClassPhylum := cool_class(name,filename);
+    ce : Contour := class_contour(filename);
+    cs : CoolObjectPhylum := this_object();
+    inherit_ok : Boolean := determine_ancestry(c,CoolClasses${});
+    pc : CoolClass := lookup_class(parent);
+
+    c.parent_class := pc;
+    c.defined_ancestry := inherit_ok;
+    c.class_env := ce;
+    c.class_is_inheritable := cl.inheritablep;
+    
+    if inherit_ok and pc /== CoolClass$nil then
+      ce.enclosing := pc.class_env;
+    endif;
+    
+    cs.object_type := make_type(name);
+    class_table :> ClassTable$table_entry(name,CoolClasses${c});
+    
+    ce.locals :> ObjectTable$table_entry(this_sym,CoolObjects${cs});
+
+    fs.features_class := c;
+
+    -- useful local definition:
+    cname : String := Symbol$string(name);
+
+    -- errors:
+    
+    -- already defined ?
+    dup : CoolClass := lookup_class(name);
+    if dup /== c then
+      if dup.class_is_basic then
+	errors :> error(ce,cl.lineno,
+			"Redefinition of basic class " ++ cname);
+      else
+	errors :> error(ce,cl.lineno,
+			"Class " ++ cname ++ " was previously defined.");
+      endif;
+    endif;
+	
+    -- undefined parent class
+    if name /= object_sym and pc == CoolClass$nil then
+      errors :> error(ce,cl.lineno,
+		      "Class " ++ cname ++
+			  " inherits from an undefined class " ++
+			  Symbol$string(parent));
+    endif;
+    
+    -- inheriting from Boolean, Integer, String or Array
+    if c.parent_class /== CoolClass$nil and 
+	not pc.class_is_inheritable then
+      errors :> error(ce,cl.lineno,
+		      "Class " ++ cname ++ 
+			  " cannot inherit class " ++
+			  Symbol$string(parent));
+    endif;
+    
+    -- involved in circular inheritance
+    if not inherit_ok then
+      errors :> error(ce,cl.lineno,
+		      "Class " ++ cname ++ 
+			  ", or an ancestor of " ++ cname ++
+			  ", is involved in an inheritance cycle.");
+    endif;
+    
+    -- Main needs a constructor
+    if name == main_sym  and lookup_method_local(c,main_sym) == CoolMethod$nil then
+      errors :> error(ce,cl.lineno,"Class Main must have a constructor");
+    endif;
+  end;
+  
+  function determine_ancestry(c : CoolClass; visited : CoolClasses) : Boolean
+  begin
+    if c in visited then
+      result := false;
+    elsif c.parent_class == CoolClass$nil then
+      result := true;
+    else
+      result := determine_ancestry(c.parent_class,visited \/ CoolClasses${c});
+    endif;
+  end;
+  
+  
+  -- Features/Feature Attributes
+
+  attribute Features.features_class : CoolClass := CoolClass$nil;
+  attribute Feature.feature_class : CoolClass := CoolClass$nil;
+  
+  pragma inherited(features_class,feature_class);
+  
+  -- Features
+
+  match ?fs:Features=Features$append(?fs1:Features, ?fs2:Features) begin
+    fs1.features_class := fs.features_class;
+    fs2.features_class := fs.features_class;
+  end;
+
+  match ?fs:Features=Features$single(?f:Feature) begin
+    f.feature_class := fs.features_class;
+  end;
+
+  match ?fs:Features=Features$none() begin
+  end;
+
+
+  -- Feature
+
+  match ?f:Feature=method(?override, ?name:Symbol, ?fmls:Formals,
+                          ?rt_type:Symbol, ?e:Expression) begin
+    m : CoolMethodPhylum := cool_method();
+    mc : Contour := contour();
+      
+    cl : CoolClass := f.feature_class;
+    
+    rt : CoolType := make_type(rt_type);
+
+    -- m.method_class := cl;
+    m.method_env := mc;
+    m.formal_types := fmls.formals_types;
+    m.return_type := rt;
+    
+    mc.enclosing := cl.class_env;
+
+    cl.local_methods :> MethodTable$table_entry(name,CoolMethods${m});
+    
+    mname : String := Symbol$string(name);
+    
+    if lookup_method_local(cl,name) /== m then
+      errors :> error(mc,f.lineno,
+		      "Method " ++ mname ++ " is multiply defined.");
+    endif;
+    
+    overrides : CoolMethod := CoolMethod$nil;
+    clx : CoolClass := cl;
+    p : CoolClass := clx.parent_class;
+  
+    if p /== CoolClass$nil then
+      overrides := lookup_method(p,name);
+
+      if overrides /= CoolMethod$nil and not override then
+        errors :> error(mc,f.lineno,"Missing 'override' tag for " ++ mname);
+      elsif overrides == CoolMethod$nil and override then
+        errors :> error(mc,f.lineno,"Nothing to override for for " ++ mname);
+      endif;	   
+      
+      if overrides /= CoolMethod$nil and 
+	 overrides.formal_types /= fmls.formals_types then
+	errors :> error(mc,f.lineno,
+			"Incompatible formal parameters in redefined method "
+			    ++ mname);
+      endif;
+      
+      if overrides /= CoolMethod$nil and not type_leq(rt,overrides.return_type) then
+	  errors :> error(mc,f.lineno,
+			  "In redefined method " ++ mname ++ 
+			      ", return type " ++ symbol_name(rt_type) ++ 
+			      " is not a subtype of original return type " ++ 
+			      type_string(overrides.return_type) ++ ".");
+      endif;
+    endif;
+    
+    if lookup_class(rt_type) == CoolClass$nil then
+      errors :> error(mc,f.lineno,
+		      "Undefined return type " ++ Symbol$string(rt_type) ++ 
+			  " in method " ++ mname ++ ".");
+    endif;
+    
+    if not type_leq(e.expr_type,rt) then
+      errors :> error(mc,f.lineno,
+		      "Inferred return type " ++ type_string(e.expr_type) ++
+			  " of method " ++ mname ++ 
+			  " does not conform to declared return type " ++
+			  symbol_name(rt_type) ++ ".");
+    endif;
+    
+    -- check that Main has no parameters
+    if name = main_sym and
+	fmls.formals_types /= {} 
+    then
+	errors :> error(mc,f.lineno,
+			"Constructor Main should not have any parameters");
+    endif;
+
+    fmls.formals_method := m;
+    e.expr_env := mc;
+  end;
+
+  match ?f:Feature=attr(?name:Symbol, ?ty:Symbol) begin
+    cl : CoolClass := f.feature_class;
+    env : Environment := cl.class_env;  
+
+    a : CoolObjectPhylum := attr_object(name);
+    -- a.attr_class := cl;
+    a.object_type := make_type(ty);
+    
+    aname : String := Symbol$string(name);
+
+    if name == this_sym then
+      errors :> error(env,f.lineno,
+		      "'this' cannot be the name of an attribute.");
+    else
+      env.locals :> 
+	  ObjectTable$table_entry(name,CoolObjects${a});
+    
+      case ObjectTable$select(env.locals,name) begin
+	match ObjectTable$table_entry(?,{?a2,...}) begin
+	  if a /= a2 then
+	    errors :> error(env,f.lineno,
+			    "Attribute " ++ aname ++ 
+				" is multiply defined in class.");
+	  endif;
+	end;
+      end;
+    
+      if cl.parent_class /== CoolClass$nil and
+	  lookup_object(name,cl.parent_class.class_env) /== CoolObject$nil then
+	errors :> error(env,f.lineno,
+			"Attribute " ++ aname ++ 
+			    " is an attribute of an inherited class.");
+      endif;
+    endif;
+
+    if ty /= native_sym and lookup_class(ty) == CoolClass$nil then
+      errors :> error(env,f.lineno,
+		      "Class " ++ Symbol$string(ty) ++ " of attribute " ++
+			  aname ++ " is undefined.");
+    endif;
+  end;
+
+
+  -- Formals/Formal Attributes
+
+  attribute Formals.formals_method : CoolMethod;
+  attribute Formal.formal_method : CoolMethod;
+  attribute Formals.formals_types : CoolTypes;
+  attribute Formal.formal_type : CoolType;
+  
+  pragma inherited(formals_method,formal_method);
+  pragma synthesized(formals_types,formal_type);
+
+
+  -- Formals
+
+  match ?fmls:Formals=Formals$append(?fmls1:Formals, ?fmls2:Formals) begin
+    fmls.formals_types := fmls1.formals_types ++ fmls2.formals_types;
+    fmls1.formals_method := fmls.formals_method;
+    fmls2.formals_method := fmls.formals_method;
+  end;
+
+  match ?fmls:Formals=Formals$single(?fml:Formal) begin
+    fmls.formals_types := CoolTypes${fml.formal_type};
+    fml.formal_method := fmls.formals_method;
+  end;
+
+  match ?fmls:Formals=Formals$none() begin
+    fmls.formals_types := CoolTypes${};
+  end;
+
+
+  -- Formal
+  match ?fml:Formal=formal(?name:Symbol, ?ty:Symbol) begin
+    fo : CoolObjectPhylum := formal_object(name);
+    fo.object_type := make_type(ty);
+    
+    fname : String := Symbol$string(name);
+    
+    env : Environment := fml.formal_method.method_env;
+
+    if name == this_sym then
+      errors :> error(env,fml.lineno,
+		      "'this' cannot be the name of a formal parameter.");
+    else
+      env.locals :> ObjectTable$table_entry(name,CoolObjects${fo});
+      
+      case ObjectTable$select(env.locals,name) begin
+	match ObjectTable$table_entry(?,{?x,...}) begin
+	  if fo /= x then
+	    errors :> error(env,fml.lineno,
+			    "Formal parameter " ++ fname ++
+				" is multiply defined." );
+	  endif;
+	end;
+      end;
+    endif;
+
+    if lookup_class(ty) == CoolClass$nil then
+      errors :> error(env,fml.lineno,
+		      "Class " ++ Symbol$string(ty) ++ " of formal parameter "
+			  ++ fname ++ " is undefined.");
+    endif;
+    
+    -- Synthesized
+    fml.formal_type := make_type(ty);
+  end;
+
+  -- Expression
+    
+  attribute Expression.expr_env : Environment;
+  attribute Expression.expr_type : CoolType;
+
+  pragma inherited(expr_env);
+  pragma synthesized(expr_type);
+
+  match ?e=variable(?s) begin
+    o : CoolObject := lookup_object(s,e.expr_env);
+    ename : String := symbol_name(s);
+    if o == CoolObject$nil then
+      errors :> error(e.expr_env,e.lineno,
+		      "Identifier " ++ ename ++ " undeclared");
+      e.expr_type := an_error_type;
+    else
+      e.expr_type := o.object_type;
+    endif;
+  end;
+  
+  match ?e=assign(?s,?v) begin
+    v.expr_env := e.expr_env;
+    o : CoolObject := lookup_object(s,e.expr_env);
+    ename : String := symbol_name(s);
+    if o == CoolObject$nil then
+      errors :> error(e.expr_env,e.lineno,
+		      "Identifier " ++ ename ++ " undeclared");
+    elsif s == this_sym then
+      errors :> error(e.expr_env,e.lineno,
+		      "Cannot assign to 'this'");
+    elsif not type_leq(v.expr_type,o.object_type) then
+      errors :> error(e.expr_env,e.lineno,
+		      "Inferred type " ++ type_string(v.expr_type) ++
+			  " of assignment of " ++ 
+			  Symbol$string(s) ++ 
+			  " does not conform to identifier's declared type "++
+			  type_string(o.object_type));
+    endif;
+    e.expr_type := a_void_type;
+  end;
+  
+  match ?e=static_dispatch(?rec,?tn,?msym,?actuals) begin
+    rec.expr_env := e.expr_env;
+    actuals.exprs_env := e.expr_env;
+    
+    if rec.expr_type = a_void_type then
+      errors :> error(e.expr_env,e.lineno,"Dispatch on void.");
+    endif;
+    
+    st : CoolType := make_type(tn);
+    sc : CoolClass := lookup_type(st);
+    
+    if sc == CoolClass$nil then
+      errors :> error(e.expr_env,e.lineno,
+		      "Static dispatch uses undefined class " ++
+			  symbol_name(tn));
+    elsif not type_leq(rec.expr_type,st) then
+      errors :> error(e.expr_env,e.lineno,
+		      "Static dispatch uses incompatible class " ++
+			  symbol_name(tn));
+    endif;
+    
+    
+    if sc /== CoolClass$nil then
+      m : CoolMethod := lookup_method(sc,msym);
+      if m == CoolMethod$nil then
+	errors :> error(e.expr_env,e.lineno,
+			"Static dispatch to undefined method " ++
+			    symbol_name(msym) ++ ".");
+      else
+	e.expr_type := m.return_type;
+	errors :> actuals_errors(e.expr_env,e.lineno,
+				 m.formal_types,actuals.exprs_types);
+      endif;
+    endif;
+  end;
+  
+  match ?e=dispatch(?rec,?msym,?actuals) begin
+    rec.expr_env := e.expr_env;
+    actuals.exprs_env := e.expr_env;
+    
+    if rec.expr_type = a_void_type then
+      errors :> error(e.expr_env,e.lineno,"Dispatch on void.");
+    endif;
+    
+    rc : CoolClass := lookup_type(rec.expr_type);
+    
+    if rc /== CoolClass$nil then
+      m : CoolMethod := lookup_method(rc,msym);
+      if m == CoolMethod$nil then
+	errors :> error(e.expr_env,e.lineno,
+			"Dispatch to undefined method " ++
+			    symbol_name(msym) ++ ".");
+      else
+	e.expr_type := m.return_type;
+	errors :> actuals_errors(e.expr_env,e.lineno,
+				 m.formal_types,actuals.exprs_types);
+      endif;
+    endif;
+  end;
+    
+  match ?e=cond(?pred,?th,?el) begin
+    pred.expr_env := e.expr_env;
+    th.expr_env := e.expr_env;
+    el.expr_env := e.expr_env;
+    e.expr_type := type_lub(th.expr_type,el.expr_type);
+    
+    if not type_eq(pred.expr_type,a_boolean_type) then
+      errors :> error(e.expr_env,e.lineno,
+		      "Predicate of 'if' does not have type Boolean, rather "
+                      || pred.expr_type);
+    endif;
+  end;
+
+  match ?e=loop(?pred,?body) begin
+    pred.expr_env := e.expr_env;
+    body.expr_env := e.expr_env;
+    e.expr_type := a_unit_type;
+    
+    if not type_eq(pred.expr_type,a_boolean_type) then
+      errors :> error(e.expr_env,e.lineno,
+		      "Predicate of 'while' does not have type Boolean.");
+    endif;
+  end;
+
+  match ?e=typecase(?expr,?cases) begin
+    expr.expr_env := e.expr_env;
+    cases.cases_env := e.expr_env;
+    e.expr_type := cases.cases_type;
+  end;
+  
+  match ?e=block(?es) begin
+    es.exprs_env := e.expr_env;
+    e.expr_type := last(es.exprs_types);
+  end;
+
+  match ?e=let(?s,?ts,?init,?body) begin
+    lc : Contour := contour();
+    env : Environment := lc;
+    lc.enclosing := e.expr_env;
+
+    lo : CoolObjectPhylum := local_object(s);
+    lt : CoolType := make_type(ts);
+    lo.object_type := lt;
+
+    if s == this_sym then
+      errors :> error(env,e.lineno,
+		      "'this' cannot be the name of a let-bound variable.");
+    else
+      lc.locals :> ObjectTable$table_entry(s,CoolObjects${lo});
+    endif;
+    
+    if lookup_class(ts) == CoolClass$nil then
+      errors :> error(env,e.lineno,
+		      "Class " ++ Symbol$string(ts) ++ 
+			  " of let bound variable " ++ 
+			  Symbol$string(s) ++ " is undefined.");
+    elsif not type_leq(init.expr_type,lt) then
+      errors :> error(env,init.lineno,
+		      "Inferred type " ++ type_string(init.expr_type) ++
+			  " of initialization of " ++ 
+			  Symbol$string(s) ++ 
+			  " does not conform to identifier's declared type "++
+			  Symbol$string(ts));
+    endif;
+
+    init.expr_env := e.expr_env;
+    body.expr_env := env;
+    e.expr_type := body.expr_type;
+  end;
+
+  function check_arithmetic(env : Environment;
+			    n : Integer;
+			    ty : CoolType;
+			    operand : String) : Errors
+  begin
+    if not type_leq(ty,an_integer_type) then
+      result := error(env,n,operand ++ " should be Integer");
+    else
+      result := Errors${};
+    endif;
+  end;
+  
+  function check_arithmetic2(env : Environment;
+			     n1 : Integer; ty1 : CoolType;
+			     n2 : Integer; ty2 : CoolType;
+			     op : String) : Errors
+      := Errors$combine(check_arithmetic(env,n1,ty1,"left operand of " ++ op),
+			check_arithmetic(env,n2,ty2,
+					 "right operand of " ++ op));
+  
+  match ?e=add(?e1,?e2) begin
+    e1.expr_env := e.expr_env;
+    e2.expr_env := e.expr_env;
+    e.expr_type := an_integer_type;
+    errors :> check_arithmetic2(e.expr_env,
+				e1.lineno,e1.expr_type,
+				e2.lineno,e2.expr_type,
+				"'+'");
+  end;
+
+  match ?e=sub(?e1,?e2) begin
+    e1.expr_env := e.expr_env;
+    e2.expr_env := e.expr_env;
+    e.expr_type := an_integer_type;
+    errors :> check_arithmetic2(e.expr_env,
+				e1.lineno,e1.expr_type,
+				e2.lineno,e2.expr_type,
+				"'-'");
+  end;
+
+  match ?e=mul(?e1,?e2) begin
+    e1.expr_env := e.expr_env;
+    e2.expr_env := e.expr_env;
+    e.expr_type := an_integer_type;
+    errors :> check_arithmetic2(e.expr_env,
+				e1.lineno,e1.expr_type,
+				e2.lineno,e2.expr_type,
+				"'*'");
+  end;
+
+  match ?e=div(?e1,?e2) begin
+    e1.expr_env := e.expr_env;
+    e2.expr_env := e.expr_env;
+    e.expr_type := an_integer_type;
+    errors :> check_arithmetic2(e.expr_env,
+				e1.lineno,e1.expr_type,
+				e2.lineno,e2.expr_type,
+				"'/'");
+  end;
+
+  match ?e=neg(?e1) begin
+    e1.expr_env := e.expr_env;
+    e.expr_type := an_integer_type;
+    errors :> check_arithmetic(e.expr_env,
+			       e1.lineno,e1.expr_type,
+			       "operand of unary '-'");
+  end;
+  
+  match ?e=lt(?e1,?e2) begin
+    e1.expr_env := e.expr_env;
+    e2.expr_env := e.expr_env;
+    e.expr_type := a_boolean_type;
+    errors :> check_arithmetic2(e.expr_env,
+				e1.lineno,e1.expr_type,
+				e2.lineno,e2.expr_type,
+				"'<'");
+  end;
+
+  match ?e=leq(?e1,?e2) begin
+    e1.expr_env := e.expr_env;
+    e2.expr_env := e.expr_env;
+    e.expr_type := a_boolean_type;
+    errors :> check_arithmetic2(e.expr_env,
+				e1.lineno,e1.expr_type,
+				e2.lineno,e2.expr_type,
+				"'<='");
+  end;
+  
+  match ?e=comp(?e1) begin
+    e1.expr_env := e.expr_env;
+    e.expr_type := a_boolean_type;
+    if not type_leq(e1.expr_type,a_boolean_type) then
+      errors :> error(e.expr_env,e.lineno,
+		      "Operator of 'not' not Boolean");
+    endif;
+  end;
+
+  match ?e=int_lit(?) begin
+    e.expr_type := an_integer_type;
+  end;
+
+  match ?e=bool_lit(?) begin
+    e.expr_type := a_boolean_type;
+  end;
+
+  match ?e=string_lit(?) begin
+    e.expr_type := a_string_type;
+  end;
+
+  match ?e=alloc(?ts) begin
+    if lookup_class(ts) == CoolClass$nil then
+      errors :> error(e.expr_env,e.lineno,
+		      "'new' used with undefined class " ++
+			  Symbol$string(ts));
+      e.expr_type := an_error_type;
+    else
+      e.expr_type := make_type(ts);
+    endif;
+  end;
+
+  match ?e=unit() begin
+    e.expr_type := a_unit_type;
+  end;
+
+  match ?e=nil() begin
+    e.expr_type := a_void_type;
+  end;
+
+  match ?e=no_expr() begin
+    e.expr_type := an_error_type;
+  end;
+      
+  -- Expressions
+    
+  attribute Expressions.exprs_env : Environment;
+  attribute Expressions.exprs_types : CoolTypes;
+  
+  pragma inherited(exprs_env);
+  pragma synthesized(exprs_types);
+
+  match ?es:Expressions=Expressions$append(?es1, ?es2) begin
+    es1.exprs_env := es.exprs_env;
+    es2.exprs_env := es.exprs_env;
+    es.exprs_types := es1.exprs_types ++ es2.exprs_types;
+  end;
+  match ?es:Expressions=Expressions$single(?a:Expression) begin
+    a.expr_env := es.exprs_env;
+    es.exprs_types := CoolTypes${a.expr_type};
+  end;
+  match ?es:Expressions=Expressions$none() begin
+    es.exprs_types := CoolTypes${};
+  end;
+
+  function actuals_errors(env : Environment; ln : Integer;
+			  fts : CoolTypes; ats : CoolTypes) 
+      : Errors
+  begin
+    if fts = ats then
+      result := Errors${};
+    elsif fts = CoolTypes${} then
+      result := error(env,ln,"Too many arguments");
+    elsif ats = CoolTypes${} then
+      result := error(env,ln,"Too few arguments");
+    elsif not type_leq(first(ats),first(fts)) then
+      result := Errors$append(error(env,ln,"Bad argument type"),
+	                      actuals_errors(env,ln,butfirst(fts),butfirst(ats)));
+    else
+      result := actuals_errors(env,ln,butfirst(fts),butfirst(ats));
+    endif;
+  end;
+
+
+  -- Case
+
+  attribute Case.case_env : Environment;
+  attribute Case.case_type : CoolType;
+  attribute Case.case_casetype : Symbol;
+  
+  pragma inherited(case_env);
+  pragma synthesized(case_type,case_casetype);
+  
+  match ?c=branch(?s,?ts,?body) begin
+    bc : Contour := contour();
+    env : Environment := bc;
+    bc.enclosing := c.case_env;
+
+    lo : CoolObjectPhylum := local_object(s);
+    lt : CoolType := make_type(ts);
+    lo.object_type := lt;
+
+    if s == this_sym then
+      errors :> error(env,c.lineno,
+		      "'this' cannot be the name of a case variable.");
+    else
+      bc.locals :> ObjectTable$table_entry(s,CoolObjects${lo});
+    endif;
+    
+    if ts /= void_sym and lookup_class(ts) == CoolClass$nil then
+      errors :> error(env,c.lineno,
+		      "Class " ++ Symbol$string(ts) ++ 
+			  " of case variable " ++ 
+			  Symbol$string(s) ++ " is undefined.");
+    endif;
+
+    body.expr_env := env;
+    c.case_type := body.expr_type;
+    c.case_casetype := ts;
+  end;
+
+
+  -- Cases
+  type SymbolSet := SET[Symbol];
+
+  attribute Cases.cases_env : Environment;
+  attribute Cases.cases_type : CoolType;
+  attribute Cases.cases_types : SymbolSet;
+  
+  pragma inherited(cases_env);
+  pragma synthesized(cases_type,cases_types);
+
+  match ?cs:Cases=Cases$append(?cs1:Cases, ?cs2:Cases) begin
+    cs1.cases_env := cs.cases_env;
+    cs2.cases_env := cs.cases_env;
+    cs.cases_type := type_lub(cs1.cases_type,cs2.cases_type);
+    cs.cases_types := cs1.cases_types \/ cs2.cases_types;
+    overlaps : SymbolSet := cs1.cases_types /\ cs2.cases_types;
+    if overlaps /= SymbolSet${} then
+      errors :> error(cs.cases_env,cs.lineno,
+		      "Duplicate branches for " ++
+			  collection_to_string(overlaps) ++
+			  " in case statement.");
+    endif;
+  end;
+  match ?cs:Cases=Cases$single(?c:Case) begin
+    c.case_env := cs.cases_env;
+    cs.cases_type := c.case_type;
+    cs.cases_types := SymbolSet${c.case_casetype};
+  end;
+  match ?cs:Cases=Cases$none() begin
+    cs.cases_type := an_error_type;
+    cs.cases_types := SymbolSet${};
+  end;
+
+end; -- of SEMANT

@@ -1,0 +1,107 @@
+INFO  started: Metals version 0.8.4 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+INFO  time: initialize in 2.07s
+WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+Apr 20, 2020 3:29:50 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Apr 20, 2020 3:29:51 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Apr 20, 2020 3:29:51 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Apr 20, 2020 3:29:52 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Apr 20, 2020 3:29:53 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+INFO  started: Metals version 0.8.4 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+INFO  time: initialize in 1.41s
+WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+INFO  started: Metals version 0.8.4 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+INFO  time: initialize in 1.61s
+WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+May 04, 2020 2:30:11 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 2:30:12 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 2:55:55 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 3:02:50 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 3:02:51 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 3:08:44 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 3:08:44 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 3:16:55 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 04, 2020 3:16:57 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+INFO  started: Metals version 0.8.4 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+INFO  time: initialize in 1.52s
+WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+INFO  shutting down Metals
+2020.05.11 15:04:13 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.05.11 15:04:15 INFO  time: initialize in 1.35s
+2020.05.11 15:04:16 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+May 11, 2020 3:23:44 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 11, 2020 3:35:31 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 11, 2020 3:35:31 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 11, 2020 3:35:48 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+May 11, 2020 3:38:32 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+2020.05.18 14:32:12 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.05.18 14:32:14 INFO  time: initialize in 1.77s
+2020.05.18 14:32:19 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+May 18, 2020 2:35:42 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+2020.05.25 12:50:32 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.05.25 12:50:33 INFO  time: initialize in 1.17s
+2020.05.25 12:50:37 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.06.01 14:00:13 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.01 14:00:14 INFO  time: initialize in 0.95s
+2020.06.01 14:00:19 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+Jun 01, 2020 2:20:26 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+2020.06.08 14:00:03 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.08 14:00:05 INFO  time: initialize in 1.68s
+2020.06.08 14:00:09 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+Jun 08, 2020 2:08:37 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Jun 08, 2020 2:21:27 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+2020.06.15 14:01:45 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.15 14:01:47 INFO  time: initialize in 1.23s
+2020.06.15 14:01:48 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.06.16 07:10:55 INFO  shutting down Metals
+2020.06.18 20:39:39 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.18 20:39:40 INFO  time: initialize in 1.75s
+2020.06.18 20:39:45 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.06.28 19:22:55 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.28 19:22:57 INFO  time: initialize in 1.14s
+2020.06.28 19:22:57 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.06.28 19:23:54 INFO  shutting down Metals
+2020.06.28 19:24:02 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.28 19:24:04 INFO  time: initialize in 1.21s
+2020.06.28 19:24:04 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.06.28 19:31:36 INFO  shutting down Metals
+2020.06.28 19:34:04 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.28 19:34:06 INFO  time: initialize in 2.1s
+2020.06.28 19:34:12 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.06.29 14:03:10 INFO  started: Metals version 0.9.0 in workspace '/home/hesamian/amir-pc/workspace/github/aps'
+2020.06.29 14:03:12 INFO  time: initialize in 1.75s
+2020.06.29 14:03:16 WARN  no build tool detected in workspace '/home/hesamian/amir-pc/workspace/github/aps'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+Jun 29, 2020 3:40:00 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Jun 29, 2020 3:40:07 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Jun 29, 2020 3:40:07 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Jun 29, 2020 3:40:08 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Jun 29, 2020 3:45:08 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification
+Jun 29, 2020 3:53:53 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTraceNotification

@@ -11,7 +11,7 @@ APSCLIB= ${PROJECT-DIR}/lib/aps-lib.o
 
 all : apsc aps-ag.a
 
-CFLAGS= -I${PROJECT-DIR}/parse -g
+CFLAGS= -g -I${PROJECT-DIR}/parse -g
 apsc : ${APSCOBJS} ${APSCLIB}
 	${CC} ${CFLAGS} -o apsc ${APSCOBJS} ${APSCLIB}
 
