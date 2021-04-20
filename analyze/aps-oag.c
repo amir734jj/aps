@@ -303,6 +303,40 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
   return cto_node;
 }
 
+static bool condition_is_impossible(CONDITION* cond)
+{
+  return cond->positive & cond->negative;
+}
+
+static bool ready_to_go(AUG_GRAPH *aug_graph, CTO_NODE* schedule)
+{
+  // TODO: returns true if the attributes part of that group are ready to go or impossible
+  return false;
+}
+
+static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph,
+			CTO_NODE* prev,
+			CONDITION cond,
+			int remaining, CHILD_PHASE* instance_group)
+{
+  CTO_NODE* cto_node = 0;
+  int i;
+  int n = aug_graph->instances.length;
+
+  printf("Scheduling\n");
+
+  for (i=0; i < n; ++i) {
+
+    INSTANCE *in = &aug_graph->instances.array[i];
+
+
+    print_instance(in, stdout);
+    printf("\n");
+  }
+
+  return NULL;
+}
+
 void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   int n = aug_graph->instances.length;
   int i;
@@ -325,6 +359,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   cond.negative = 0;
 
   aug_graph->total_order = schedule_rest(aug_graph,0,cond,n);
+  schedule_visits(aug_graph, 0, cond, n, NULL);
 }
 
 void compute_oag(Declaration module, STATE *s) {
