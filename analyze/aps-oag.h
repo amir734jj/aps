@@ -33,6 +33,8 @@ extern int oag_debug;
 #define KEY_SCHEDULE_GROUP3 4
 #define KEY_SCHEDULE_GROUP4 8
 
+typedef short KEY_SCHEDULE_GROUP;
+
 typedef struct child_phase_type CHILD_PHASE;
 
 struct child_phase_type

@@ -303,38 +303,167 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
   return cto_node;
 }
 
+// Instance group exogenous linkedlist
+typedef struct instance_group_item_type INSTANCE_GROUP_ITEM;
+
+struct instance_group_item_type
+{ 
+  INSTANCE* instance;
+  INSTANCE_GROUP_ITEM* next;
+};
+
+// Scheduling groups
+// 1) <-ph,nch> inh attr of parent
+// 2) <+ph,nch> syn attr of parent
+// 3) <ph,ch>   all attrs of child
+// 4) <0,0>     for all locals and conditionals
+typedef struct instance_groups {
+  INSTANCE_GROUP_ITEM* group1;
+  INSTANCE_GROUP_ITEM* group2;
+  INSTANCE_GROUP_ITEM* group3;
+  INSTANCE_GROUP_ITEM* group4;
+} INSTANCE_GROUPS;
+
+static INSTANCE_GROUP_ITEM* get_group_item(INSTANCE_GROUPS* instance_groups, KEY_SCHEDULE_GROUP group_key)
+{
+  switch (group_key)
+  {
+  case KEY_SCHEDULE_GROUP1:
+    return instance_groups->group1;
+  case KEY_SCHEDULE_GROUP2:
+    return instance_groups->group2;
+  case KEY_SCHEDULE_GROUP3:
+    return instance_groups->group3;
+  case KEY_SCHEDULE_GROUP4:
+    return instance_groups->group4;
+  }
+}
+
+/*
+ * Returns boolean indicating if condition is impossible
+ * @param cond
+ * @return true is condition is impossible or false if possible
+ */
 static bool condition_is_impossible(CONDITION* cond)
 {
   return cond->positive & cond->negative;
 }
 
-static bool ready_to_go(AUG_GRAPH *aug_graph, CTO_NODE* schedule)
+static bool ready_to_go(AUG_GRAPH *aug_graph, int* schedule, INSTANCE_GROUP_ITEM* instance_group)
 {
-  // TODO: returns true if the attributes part of that group are ready to go or impossible
-  return false;
+  // TODO: how to test if groups is ready to go?
 }
 
-static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph,
-			CTO_NODE* prev,
-			CONDITION cond,
-			int remaining, CHILD_PHASE* instance_group)
+static KEY_SCHEDULE_GROUP schedule_group(INSTANCE* instance)
 {
-  CTO_NODE* cto_node = 0;
-  int i;
-  int n = aug_graph->instances.length;
-
-  printf("Scheduling\n");
-
-  for (i=0; i < n; ++i) {
-
-    INSTANCE *in = &aug_graph->instances.array[i];
-
-
-    print_instance(in, stdout);
-    printf("\n");
+  if (if_rule_p(instance->fibered_attr.attr))
+  {
+    return KEY_SCHEDULE_GROUP4;
   }
 
-  return NULL;
+  switch (instance_direction(instance))
+  {
+  case instance_local:
+    return KEY_SCHEDULE_GROUP4;
+  case instance_inward:
+    return KEY_SCHEDULE_GROUP2;
+  case instance_outward:
+    return KEY_SCHEDULE_GROUP1;
+  }
+}
+
+// When trying to add the next thing(s) to a CTO, we don’t select an attribute which is part of a group unless *all* the attributes part of that group are ready to go.
+// Maybe a helper function for “ready to go” would be useful, but it will need to take the “schedule” array as well as the dependency graph.
+// If the attribute that is ready is part of a group: check to see if any earlier attributes in same group (in which case reject)
+//    or if any later attributes in the same group are NOT ready yet (in case reject), otherwise: we found a group to schedule!
+// If it’s a child group, arrange the inherited first, then a child visit marker and then the synthesized
+// If it’s a parent group, 
+// if it’s inherited attributes, they should be first, this means we have a phase change.
+// This means we start in phase 0 before the parent inherited attributes.
+// If a synthesized group, its the end of a phase, schedule and phase change and update child phase.
+// Maybe we won’t need a child_phase array because all the children attributes are labeled by their phase anyway.
+static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, CHILD_PHASE* instance_group)
+{
+  CTO_NODE* cto_node = 0;
+  int i, j;
+  int n = aug_graph->instances.length;
+  int* schedule = alloca(n);
+
+  // Step1) create scheduling groups
+  INSTANCE_GROUPS* instance_groups = (INSTANCE_GROUPS*)alloca(sizeof(struct instance_groups));
+  instance_groups->group1 = NULL;
+  instance_groups->group2 = NULL;
+  instance_groups->group3 = NULL;
+  instance_groups->group4 = NULL;
+
+  for (i = 0; i < n; i++)
+  {
+    INSTANCE *instance = &aug_graph->instances.array[i];
+
+    KEY_SCHEDULE_GROUP group_key = schedule_group(instance);
+    INSTANCE_GROUP_ITEM* instance_group_item = (INSTANCE_GROUP_ITEM*) alloca(sizeof(struct instance_group_item_type));
+    instance_group_item->instance = instance;
+
+    switch (group_key)
+    {
+    case KEY_SCHEDULE_GROUP1:
+      instance_group_item->next = instance_groups->group1;
+      instance_groups->group1 = instance_group_item;
+      break;
+    case KEY_SCHEDULE_GROUP2:
+      instance_group_item->next = instance_groups->group2;
+      instance_groups->group2 = instance_group_item;
+      break;
+    case KEY_SCHEDULE_GROUP3:
+      instance_group_item->next = instance_groups->group3;
+      instance_groups->group3 = instance_group_item;
+      break;
+    case KEY_SCHEDULE_GROUP4:
+      instance_group_item->next = instance_groups->group4;
+      instance_groups->group4 = instance_group_item;
+      break;
+    }
+  }
+
+  for (i = 0; i < n; i++)
+  {
+    INSTANCE *instance = &aug_graph->instances.array[i];
+
+    KEY_SCHEDULE_GROUP group_key = schedule_group(instance);
+
+    if (oag_debug & PROD_ORDER_DEBUG)
+    {
+      print_instance(instance, stdout);
+      printf("\n");
+    }
+
+    for (j = 0; j < n; j++)
+    {
+      // edges from j to i
+      EDGESET edges = aug_graph->graph[j * n + i];
+
+      if (aug_graph->schedule[j] != 0)
+      {
+        /* j is scheduled already, so we can ignore its dependencies */
+        continue;
+      }
+
+      /* Look at all dependencies from j to i */
+      while (edges != NULL)
+      {
+        // TODO
+
+        edges = edges->rest;
+      }
+
+      if (ready_to_go(aug_graph, schedule, get_group_item(instance_groups, group_key)))
+      {
+        // TODO: schedule the attribute
+      }
+    }
+  }
+
+  return cto_node;
 }
 
 void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
