@@ -374,69 +374,96 @@ static bool instance_ready_to_go(AUG_GRAPH* aug_graph, INSTANCE* outer_instance)
   return true;
 }
 
-static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, int remaining, CHILD_PHASE* instance_group)
+static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, int remaining, CHILD_PHASE* instance_group, INSTANCE_GROUP_ITEM** group_linkedlist)
 {
-  CTO_NODE* cto_node = 0;
+  CTO_NODE* cto_node = NULL;
   int i, j;
-  int group_key;
   int n = aug_graph->instances.length;
 
-  if (remaining == 0)
-  {
-    return prev;
-  }
+  // if (remaining == 0)
+  // {
+  //   return prev;
+  // }
   
-  if (instance_group == NULL)
-  {
-    instance_group = (CHILD_PHASE *)malloc(sizeof(CHILD_PHASE));
-    instance_group->ph = -1;
-    instance_group->ch = n; // Ask Dr. Boyland about this
-  }
+  // if (instance_group == NULL)
+  // {
+  //   instance_group = (CHILD_PHASE *)malloc(sizeof(CHILD_PHASE));
+  //   instance_group->ph = -1;
+  //   instance_group->ch = n; // Ask Dr. Boyland about this
+
+  //   // Step1) create scheduling groups
+  //   group_linkedlist = alloca(4 * sizeof(INSTANCE_GROUP_ITEM *));
+  //   group_linkedlist[0] = NULL;
+  //   group_linkedlist[1] = NULL;
+  //   group_linkedlist[2] = NULL;
+  //   group_linkedlist[3] = NULL;
+
+  //   // Step2) fill in scheduling groups
+  //   for (i = 0; i < n; i++)
+  //   {
+  //     // Very wrong here... I need a dictionary of dictionary
+  //     INSTANCE *instance = &aug_graph->instances.array[i];
+  //     int group_key = schedule_group(instance);
+  //     INSTANCE_GROUP_ITEM* instance_group_item = malloc(sizeof(INSTANCE_GROUP_ITEM));
+  //     instance_group_item->instance = instance;
+  //     instance_group_item->next = group_linkedlist[group_key];
+
+  //     group_linkedlist[group_key] = &instance_group_item;
+  //   }
+  // }
+
+  printf("AUG graph instances:\n");
 
   for (i = 0; i < n; i++)
   {
     INSTANCE *instance = &aug_graph->instances.array[i];
 
-    /* If already scheduled, then ignore. */
-    if (aug_graph->schedule[i] != 0) continue;
+    printf("%s\t", instance_is_synthesized_attr(instance) ? "synth" : "inher");
+    print_instance(instance, stdout);
+    printf("\n");
 
-    /* check to see if makes sense
-     * (No need to schedule something that
-     * occurs only in a different condition branch.)
-     */
-    CONDITION icond = instance_condition(instance);
-    if ((cond.positive|icond.positive) & (cond.negative|icond.negative)) continue;
+    // /* If already scheduled, then ignore. */
+    // if (aug_graph->schedule[i] != 0) continue;
 
-    aug_graph->schedule[i] = 1; // temporary set it as scheduled
+    // /* check to see if makes sense
+    //  * (No need to schedule something that
+    //  * occurs only in a different condition branch.)
+    //  */
+    // CONDITION icond = instance_condition(instance);
+    // if ((cond.positive|icond.positive) & (cond.negative|icond.negative)) continue;
 
-    // If edgeset condition is not impossible then go ahead with scheduling
-    if (instance_ready_to_go(aug_graph, instance))
-    {
-      cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
-      cto_node->cto_prev = prev;
-      cto_node->cto_instance = instance;
+    // aug_graph->schedule[i] = 1; // temporary set it as scheduled
 
-      aug_graph->schedule[i] = 1;
-      if (if_rule_p(instance->fibered_attr.attr))
-      {
-        int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
-        cond.negative |= cmask;
-        cto_node->cto_if_false = schedule_visits(aug_graph, cto_node, cond, remaining-1, instance_group);
-        cond.negative &= ~cmask;
-        cond.positive |= cmask;
-        cto_node->cto_if_true = schedule_visits(aug_graph, cto_node, cond, remaining-1, instance_group);
-        cond.positive &= ~cmask;
-      }
-      else
-      {
-        cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, remaining-1, instance_group);
-      }
-    }
-    else
-    {
-      aug_graph->schedule[i] = 0;
-    }
+    // // If edgeset condition is not impossible then go ahead with scheduling
+    // if (instance_ready_to_go(aug_graph, instance))
+    // {
+    //   cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+    //   cto_node->cto_prev = prev;
+    //   cto_node->cto_instance = instance;
+
+    //   aug_graph->schedule[i] = 1;
+    //   if (if_rule_p(instance->fibered_attr.attr))
+    //   {
+    //     int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
+    //     cond.negative |= cmask;
+    //     cto_node->cto_if_false = schedule_visits(aug_graph, cto_node, cond, remaining-1, instance_group, group_linkedlist);
+    //     cond.negative &= ~cmask;
+    //     cond.positive |= cmask;
+    //     cto_node->cto_if_true = schedule_visits(aug_graph, cto_node, cond, remaining-1, instance_group, group_linkedlist);
+    //     cond.positive &= ~cmask;
+    //   }
+    //   else
+    //   {
+    //     cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, remaining-1, instance_group, group_linkedlist);
+    //   }
+    // }
+    // else
+    // {
+    //   aug_graph->schedule[i] = 0; // instance is not ready to gop
+    // }
   }
+
+  printf("\n");
 
   return cto_node;
 }
@@ -463,7 +490,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   cond.negative = 0;
 
   aug_graph->total_order = schedule_rest(aug_graph,0,cond,n);
-  schedule_visits(aug_graph, NULL, cond, n, NULL);
+  schedule_visits(aug_graph, NULL, cond, n, NULL, NULL);
 }
 
 void compute_oag(Declaration module, STATE *s) {
