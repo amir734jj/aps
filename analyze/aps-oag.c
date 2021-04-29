@@ -460,7 +460,10 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
 	   aug_graph_name(aug_graph));
   }
 
-  CHILD_PHASE* instance_groups = (CHILD_PHASE*) alloca(n * sizeof(CHILD_PHASE));
+  size_t instance_groups_size = n * sizeof(CHILD_PHASE);
+  CHILD_PHASE* instance_groups = (CHILD_PHASE*) alloca(instance_groups_size);
+  memset(instance_groups, (int)0, instance_groups_size);
+
   for (i = 0; i < n; i++)
   {
     INSTANCE *in = &(aug_graph->instances.array[i]);
@@ -481,14 +484,9 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
       instance_groups[i].ph = (short) ph;
       instance_groups[i].ch = (short) ch;
     }
-    else
-    {
-      instance_groups[i].ph = (short) 0;
-      instance_groups[i].ch = (short) 0;
-    }
   }
 
-  // if (oag_debug & DEBUG_ORDER)
+  if (oag_debug & DEBUG_ORDER)
   {
     for (i = 0; i < n; i++)
     {
