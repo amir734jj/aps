@@ -330,30 +330,42 @@ static int instance_schedule_group_key(CHILD_PHASE* phase)
   }
 }
 
+#define CONDITION_IS_IMPOSSIBLE(cond) (cond.positive & cond.negative)
+#define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
+
 /**
  * Test whether previous groups have been scheduled or not
  * @param aug_graph Augmented dependency graph
+ * @param cond current condition
  * @param instance_group single CHILD_PHASE
- * @param group_key
+ * @param i index to test
  */
-static bool group_ready_to_go(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_group, int group_key)
+static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, int i)
 {
-  int i;
+  int j;
   int n = aug_graph->instances.length;
-  for (i = 0; i < n; i++)
+  EDGESET edges;
+
+  for (j = 0; j < n; j++)
   {
-    // Check if instance of the same group has already been scheduled
-    if (instance_schedule_group_key(&(instance_group[i])) < group_key && aug_graph->schedule[i] == 0)
+    int index = j * n + i;
+
+    /* Look at all dependencies from j to i */
+    for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
     {
-      return false;
+      /* If the merge condition is impossible, ignore this edge */
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
+
+      /* Dependency is not scheduled yet. Instance is not ready yet */
+      if (aug_graph->schedule[i] == 0)
+      {
+        return false;
+      }
     }
   }
 
   return true;
 }
-
-#define CONDITION_IS_IMPOSSIBLE(cond) (cond.positive & cond.negative)
-#define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
 
 /**
  * Recursive scheduling function
@@ -368,7 +380,6 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
   int i;
   int n = aug_graph->instances.length;
   CTO_NODE* cto_node = NULL;
-  bool any_change = false;
   
   /* If nothing more to do, we are done. */
   if (remaining == 0) return NULL;
@@ -392,7 +403,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (group_ready_to_go(aug_graph, instance_groups, instance_schedule_group_key(&instance_group)))
+    if (group_ready_to_go(aug_graph, cond, instance_groups, i))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
@@ -441,8 +452,8 @@ int attribute_schedule(PHY_GRAPH *phy_graph, FIBERED_ATTRIBUTE* key)
 
 void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   int n = aug_graph->instances.length;
-  int i;
   CONDITION cond;
+  int i;
 
   (void)close_augmented_dependency_graph(aug_graph);
 
@@ -505,9 +516,9 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   for (i=0; i < n; ++i) {
     aug_graph->schedule[i] = 0; /* This means: not scheduled yet */
   }
+
   cond.positive = 0;
   cond.negative = 0;
-
   aug_graph->total_order = schedule_visits(aug_graph, NULL, cond, instance_groups, n);
 }
 
