@@ -305,16 +305,6 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
   return cto_node;
 }
 
-/*
- * Returns boolean indicating if condition is impossible
- * @param cond
- * @return true is condition is impossible or false if possible
- */
-static bool condition_is_impossible(CONDITION* cond)
-{
-  return cond->positive & cond->negative;
-}
-
 // Scheduling groups
 // 1) <-ph,nch> inh attr of parent
 // 2) <+ph,nch> syn attr of parent
@@ -362,6 +352,9 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_group,
   return true;
 }
 
+#define CONDITION_IS_IMPOSSIBLE(cond) (cond.positive & cond.negative)
+#define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
+
 /**
  * Recursive scheduling function
  * @param aug_graph Augmented dependency graph
@@ -381,7 +374,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
   if (remaining == 0) return NULL;
 
   /* Outer condition is impossible, its a dead-end branch */
-  if (condition_is_impossible(&cond)) return NULL;
+  if (CONDITION_IS_IMPOSSIBLE(cond)) return NULL;
 
   for (i = 0; i < n; i++)
   {
@@ -393,7 +386,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     * occurs only in a different condition branch.)
     */
     CONDITION icond = instance_condition(instance);
-    if ((cond.positive|icond.positive) & (cond.negative|icond.negative)) continue;
+    if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, icond)) continue;
 
     /* instance is already scheduled */
     if (aug_graph->schedule[i] != 0) continue;
