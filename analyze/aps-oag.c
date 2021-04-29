@@ -320,7 +320,7 @@ static bool condition_is_impossible(CONDITION* cond)
 // 2) <+ph,nch> syn attr of parent
 // 3) <ph,ch>   all attrs of child
 // 4) <0,0>     for all locals and conditionals
-static int instance_schedule_group(CHILD_PHASE* phase)
+static int instance_schedule_group_key(CHILD_PHASE* phase)
 {
   if (phase->ch == -1 && phase->ph < 0)
   {
@@ -353,7 +353,7 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_group,
   for (i = 0; i < n; i++)
   {
     // Check if instance of the same group has already been scheduled
-    if (instance_schedule_group(&(instance_group[i])) < group_key && aug_graph->schedule[i] == 0)
+    if (instance_schedule_group_key(&(instance_group[i])) < group_key && aug_graph->schedule[i] == 0)
     {
       return false;
     }
@@ -399,7 +399,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (group_ready_to_go(aug_graph, instance_groups, instance_schedule_group(&instance_group)))
+    if (group_ready_to_go(aug_graph, instance_groups, instance_schedule_group_key(&instance_group)))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
@@ -505,7 +505,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
       {
         PHY_GRAPH *npg = Declaration_info(in->node)->node_phy_graph;
         int ph = attribute_schedule(npg,&(in->fibered_attr));
-        printf("<%d,%d> (#%d)\n", group.ph, group.ch, instance_schedule_group(&group));
+        printf("<%d,%d> (#%d)\n", group.ph, group.ch, instance_schedule_group_key(&group));
       }
     }
   }
