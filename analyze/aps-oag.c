@@ -321,38 +321,44 @@ static bool instance_is_synthesized_attr(INSTANCE *i)
 }
 
 // Scheduling groups
-// 0) <-ph,nch> inh attr of parent
-// 1) <+ph,nch> syn attr of parent
-// 2) <ph,ch>   all attrs of child
-// 3) <0,0>     for all locals and conditionals
+// 1) <-ph,nch> inh attr of parent
+// 2) <+ph,nch> syn attr of parent
+// 3) <ph,ch>   all attrs of child
+// 4) <0,0>     for all locals and conditionals
 static int instance_schedule_group(CHILD_PHASE* phase)
 {
   if (phase->ch == -1 && phase->ph < 0)
   {
-    return 0;
+    return 1;
   }
   else if (phase->ch == -1 && phase->ph > 0)
   {
-    return 1;
+    return 2;
   }
-  else if (!phase->ph && !phase->ch)
+  else if (!phase->ph && !phase->ch)  // locals
   {
-    return 3;
+    return 4;
   }
   else
   {
-    return 2;
+    return 3;
   }
 }
 
-static bool instance_ready_to_go(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_group, int group_key)
+/**
+ * Test whether previous groups have been scheduled or not
+ * @param aug_graph Augmented dependency graph
+ * @param instance_group single CHILD_PHASE
+ * @param group_key
+ */
+static bool group_ready_to_go(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_group, int group_key)
 {
-  int j;
+  int i;
   int n = aug_graph->instances.length;
-  for (j = 0; j < n; j++)
+  for (i = 0; i < n; i++)
   {
     // Check if instance of the same group has already been scheduled
-    if (instance_schedule_group(&(instance_group[j])) < group_key && aug_graph->schedule[j] == 0)
+    if (instance_schedule_group(&(instance_group[i])) < group_key && aug_graph->schedule[i] == 0)
     {
       return false;
     }
@@ -390,7 +396,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (instance_ready_to_go(aug_graph, instance_groups, instance_schedule_group(&instance_group)))
+    if (group_ready_to_go(aug_graph, instance_groups, instance_schedule_group(&instance_group)))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
