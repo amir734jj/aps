@@ -398,7 +398,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
       cto_node->cto_prev = prev;
       cto_node->cto_instance = instance;
 
-      aug_graph->schedule[i] = 1; // instance has been scheduled
+      aug_graph->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
       if (if_rule_p(instance->fibered_attr.attr))
       {
