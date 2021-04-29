@@ -357,7 +357,7 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
       if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
 
       /* Dependency is not scheduled yet. Instance is not ready yet */
-      if (aug_graph->schedule[i] == 0)
+      if (aug_graph->schedule[j] == 0)
       {
         return false;
       }
