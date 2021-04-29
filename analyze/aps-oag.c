@@ -367,6 +367,14 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_group,
   return true;
 }
 
+/**
+ * Recursive scheduling function
+ * @param aug_graph Augmented dependency graph
+ * @param prev previous CTO node
+ * @param cond current CONDITION
+ * @param instance_groups array of <ph,ch> indexed by INSTANCE index
+ * @param remaining count of remaining instances to schedule
+ */
 static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, CHILD_PHASE* instance_groups, int remaining)
 {
   int i;
