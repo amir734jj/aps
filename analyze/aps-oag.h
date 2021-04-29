@@ -32,6 +32,6 @@ typedef struct child_phase_type CHILD_PHASE;
 
 struct child_phase_type
 { 
-  short ch; // How to indicate if no child -1
-  short ph; // Phase 0 for local attribute and conditions, if 0 not in the group
+  short ph; // Phase: ph is negative for inherited attributes of the visit/phase, positive for synthesized attributes
+  short ch; // Child number: ch is -1 for parent, and otherwise [0,nch)
 };
