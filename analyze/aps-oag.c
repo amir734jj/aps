@@ -315,11 +315,6 @@ static bool condition_is_impossible(CONDITION* cond)
   return cond->positive & cond->negative;
 }
 
-static bool instance_is_synthesized_attr(INSTANCE *i)
-{
-  return (fibered_attr_direction(&i->fibered_attr)) == instance_outward;
-}
-
 // Scheduling groups
 // 1) <-ph,nch> inh attr of parent
 // 2) <+ph,nch> syn attr of parent
