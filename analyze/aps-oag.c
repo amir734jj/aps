@@ -371,7 +371,7 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
     {
       CHILD_PHASE key = instance_groups[j];
 
-      // TODO: check other groups have been initialized or not
+      // TODO: check other previous groups have been scheduled or not
     }
   }
 
