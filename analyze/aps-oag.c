@@ -305,31 +305,6 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
   return cto_node;
 }
 
-// Scheduling groups
-// 1) <-ph,nch> inh attr of parent
-// 2) <+ph,nch> syn attr of parent
-// 3) <ph,ch>   all attrs of child
-// 4) <0,0>     for all locals and conditionals
-static int instance_schedule_group_key(CHILD_PHASE* phase)
-{
-  if (phase->ch == -1 && phase->ph < 0)
-  {
-    return 1;
-  }
-  else if (phase->ch == -1 && phase->ph > 0)
-  {
-    return 2;
-  }
-  else if (!phase->ph && !phase->ch)  // locals
-  {
-    return 4;
-  }
-  else
-  {
-    return 3;
-  }
-}
-
 #define CONDITION_IS_IMPOSSIBLE(cond) (cond.positive & cond.negative)
 #define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
 
@@ -345,7 +320,7 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
   int i = outer_instance->index;
   int j;
   int n = aug_graph->instances.length;
-  int group_key = instance_schedule_group_key(&(instance_groups[i]));
+  CHILD_PHASE group_key = instance_groups[i];
   EDGESET edges;
 
   for (j = 0; j < n; j++)
@@ -371,6 +346,32 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
         // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
         return false;
       }
+    }
+  }
+
+  // Scheduling gro
+  // 1) <-ph,-1> inh attr of parent
+  // 2) <+ph,-1> syn attr of parent
+  // 3) <ph,ch>   all attrs of child
+  // 4) <0,0>     for all locals and conditionals
+
+  // Its a parent inherited attribute, good to go!
+  if (group_key.ph < 0 && group_key.ch == -1)
+  {
+    return true;
+  }
+  else if (!group_key.ph && !group_key.ch)
+  {
+    // TODO: locals are special, ignore fo now
+    return false;
+  }
+  else
+  {
+    for (j = 0; j < n; j++)
+    {
+      CHILD_PHASE key = instance_groups[j];
+
+      // TODO: check other groups have been initialized or not
     }
   }
 
