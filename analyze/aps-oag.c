@@ -338,27 +338,37 @@ static int instance_schedule_group_key(CHILD_PHASE* phase)
  * @param aug_graph Augmented dependency graph
  * @param cond current condition
  * @param instance_group single CHILD_PHASE
- * @param i index to test
+ * @param instance instance to test
  */
-static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, int i)
+static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, INSTANCE* outer_instance)
 {
+  int i = outer_instance->index;
   int j;
   int n = aug_graph->instances.length;
+  int group_key = instance_schedule_group_key(&(instance_groups[i]));
   EDGESET edges;
 
   for (j = 0; j < n; j++)
   {
+    /* Dependency is not scheduled yet. Instance is not ready yet */
+    if (aug_graph->schedule[j] == 0)
+    {
+      return false;
+    }
+
     int index = j * n + i;
 
     /* Look at all dependencies from j to i */
     for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
     {
       /* If the merge condition is impossible, ignore this edge */
-      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
-
-      /* Dependency is not scheduled yet. Instance is not ready yet */
-      if (aug_graph->schedule[j] == 0)
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
       {
+        continue;
+      }
+      else
+      {
+        // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
         return false;
       }
     }
@@ -403,7 +413,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (group_ready_to_go(aug_graph, cond, instance_groups, i))
+    if (group_ready_to_go(aug_graph, cond, instance_groups, instance))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
@@ -490,7 +500,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     }
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     for (i = 0; i < n; i++)
     {
