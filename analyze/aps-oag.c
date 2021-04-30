@@ -362,7 +362,7 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
   }
   else if (!group_key.ph && !group_key.ch)
   {
-    // TODO: locals are special, ignore fo now
+    // TODO: locals are special, ignore for now
     return false;
   }
   else
