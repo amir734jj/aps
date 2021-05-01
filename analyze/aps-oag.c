@@ -309,13 +309,100 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
 #define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
 
 /**
+ * Simple function that returns the index of next element in the aug_graph array or -1 if it reached the end 
+ * @param aug_graph Augmented dependency graph
+ * @param instance_groups array of <ph,ch>
+ * @param after index candidate should be after this index
+ * @return next candidate index to test
+ */
+static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_groups, int after)
+{
+  int i, j;
+  int n = aug_graph->instances.length;
+
+  // Scheduling gro
+  // 1) <-ph,-1> inh attr of parent
+  // 2) <+ph,-1> syn attr of parent
+  // 3) <ph,ch>   all attrs of child
+  // 4) <0,0>     for all locals and conditionals
+  for (i = after + 1; i < n; i++)
+  {
+    INSTANCE* instance = &aug_graph->instances.array[i];
+    CHILD_PHASE group_key = instance_groups[i];
+
+    // Its a parent inherited attribute, good to go!
+    if (group_key.ph < 0 && group_key.ch == -1)
+    {
+      return true;
+    }
+
+    // Its a child inherited attribute
+    if (group_key.ph < 0 && group_key.ch > 0)
+    {
+      bool can_be_considered = true;
+      // Make sure all parent inherited attributes are scheduled before doing any child inherited attribute
+      for (j = 0; j < n; j++)
+      {
+        if (aug_graph->schedule[j] == 0 && instance_groups[j].ph < 0 && instance_groups[j].ch == -1)
+        {
+          can_be_considered = false;
+        }
+      }
+
+      return can_be_considered;
+    }
+
+    // Its child synthesized attribute
+    if (group_key.ph > 0 && group_key.ch > 0)
+    {
+      bool can_be_considered = true;
+      // Make sure all inherited attributes of parent/child are scheduled before doing any child synthesized attribute
+      for (j = 0; j < n; j++)
+      {
+        if (aug_graph->schedule[j] == 0 && instance_groups[j].ph < 0)
+        {
+          can_be_considered = false;
+        }
+      }
+
+      return can_be_considered;
+    }
+
+    // Its a parent synthesized attribute
+    if (group_key.ph > 0 && group_key.ch == -1)
+    {
+      bool can_be_considered = true;
+      // Make sure all inherited attributes of parent and child attributes (synthesized/inherited) are scheduled
+      for (j = 0; j < n; j++)
+      {
+        if (aug_graph->schedule[j] == 0 && (instance_groups[j].ph < 0 || (instance_groups[j].ph > 0 && instance_groups[j].ch != -1)))
+        {
+          can_be_considered = false;
+        }
+      }
+
+      return can_be_considered;
+    }
+
+    if (!group_key.ph && !group_key.ch)
+    {
+      // TODO: locals are special, ignore for now
+      return false;
+    }
+  }
+
+  return -1;
+}
+
+
+/**
  * Test whether previous groups have been scheduled or not
  * @param aug_graph Augmented dependency graph
  * @param cond current condition
- * @param instance_group single CHILD_PHASE
+ * @param instance_groups array of <ph,ch>
  * @param instance instance to test
  */
-static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, INSTANCE* outer_instance)
+static bool instance_dependency_check(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, INSTANCE* outer_instance)
 {
   int i = outer_instance->index;
   int j;
@@ -325,12 +412,6 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
 
   for (j = 0; j < n; j++)
   {
-    /* Dependency is not scheduled yet. Instance is not ready yet */
-    if (aug_graph->schedule[j] == 0)
-    {
-      return false;
-    }
-
     int index = j * n + i;
 
     /* Look at all dependencies from j to i */
@@ -346,32 +427,6 @@ static bool group_ready_to_go(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE*
         // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
         return false;
       }
-    }
-  }
-
-  // Scheduling gro
-  // 1) <-ph,-1> inh attr of parent
-  // 2) <+ph,-1> syn attr of parent
-  // 3) <ph,ch>   all attrs of child
-  // 4) <0,0>     for all locals and conditionals
-
-  // Its a parent inherited attribute, good to go!
-  if (group_key.ph < 0 && group_key.ch == -1)
-  {
-    return true;
-  }
-  else if (!group_key.ph && !group_key.ch)
-  {
-    // TODO: locals are special, ignore for now
-    return false;
-  }
-  else
-  {
-    for (j = 0; j < n; j++)
-    {
-      CHILD_PHASE key = instance_groups[j];
-
-      // TODO: check other previous groups have been scheduled or not
     }
   }
 
@@ -398,7 +453,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
   /* Outer condition is impossible, its a dead-end branch */
   if (CONDITION_IS_IMPOSSIBLE(cond)) return NULL;
 
-  for (i = 0; i < n; i++)
+  for (i = next_candidate_in_group(aug_graph, instance_groups, -1); i != -1; i = next_candidate_in_group(aug_graph, instance_groups, i))
   {
     INSTANCE *instance = &aug_graph->instances.array[i];
     CHILD_PHASE instance_group = instance_groups[i];
@@ -414,7 +469,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (group_ready_to_go(aug_graph, cond, instance_groups, instance))
+    if (instance_dependency_check(aug_graph, cond, instance_groups, instance))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
@@ -501,7 +556,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     }
   }
 
-  // if (oag_debug & DEBUG_ORDER)
+  if (oag_debug & DEBUG_ORDER)
   {
     for (i = 0; i < n; i++)
     {
