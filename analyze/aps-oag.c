@@ -356,7 +356,7 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
     if (group_key.ph > 0 && group_key.ch > 0)
     {
       bool can_be_considered = true;
-      // Make sure all inherited attributes of parent/child are scheduled before doing any child synthesized attribute
+      // Make sure all inherited attributes of parent and child are scheduled before doing any child synthesized attribute
       for (j = 0; j < n; j++)
       {
         if (aug_graph->schedule[j] == 0 && instance_groups[j].ph < 0)
@@ -372,7 +372,7 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
     if (group_key.ph > 0 && group_key.ch == -1)
     {
       bool can_be_considered = true;
-      // Make sure all inherited attributes of parent and child attributes (synthesized/inherited) are scheduled
+      // Make sure all inherited attributes of parent and child attributes (synthesized or inherited) are scheduled
       for (j = 0; j < n; j++)
       {
         if (aug_graph->schedule[j] == 0 && (instance_groups[j].ph < 0 || (instance_groups[j].ph > 0 && instance_groups[j].ch != -1)))
