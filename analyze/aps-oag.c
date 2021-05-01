@@ -394,7 +394,6 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
   return -1;
 }
 
-
 /**
  * Test whether previous groups have been scheduled or not
  * @param aug_graph Augmented dependency graph
