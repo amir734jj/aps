@@ -412,7 +412,7 @@ static bool instance_dependency_check(AUG_GRAPH* aug_graph, CONDITION cond, CHIL
 
   for (j = 0; j < n; j++)
   {
-    int index = j * n + i;
+    int index = j * n + i;    // i >--> j edge
 
     /* Look at all dependencies from j to i */
     for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
