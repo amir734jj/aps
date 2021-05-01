@@ -333,7 +333,13 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
     // Its a parent inherited attribute, good to go!
     if (group_key.ph < 0 && group_key.ch == -1)
     {
-      return true;
+      return i;
+    }
+
+    if (!group_key.ph && !group_key.ch)
+    {
+      // TODO: locals are special, ignore for now
+      return i;
     }
 
     // Its a child inherited attribute
@@ -349,7 +355,7 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
         }
       }
 
-      return can_be_considered;
+      return can_be_considered ? i : -1;
     }
 
     // Its child synthesized attribute
@@ -365,7 +371,7 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
         }
       }
 
-      return can_be_considered;
+      return can_be_considered ? i : -1;
     }
 
     // Its a parent synthesized attribute
@@ -381,13 +387,7 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
         }
       }
 
-      return can_be_considered;
-    }
-
-    if (!group_key.ph && !group_key.ch)
-    {
-      // TODO: locals are special, ignore for now
-      return false;
+      return can_be_considered ? i : -1;
     }
   }
 
@@ -400,11 +400,10 @@ static int next_candidate_in_group(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_g
  * @param aug_graph Augmented dependency graph
  * @param cond current condition
  * @param instance_groups array of <ph,ch>
- * @param instance instance to test
+ * @param i instance index to test
  */
-static bool instance_dependency_check(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, INSTANCE* outer_instance)
+static bool instance_dependency_check(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
 {
-  int i = outer_instance->index;
   int j;
   int n = aug_graph->instances.length;
   CHILD_PHASE group_key = instance_groups[i];
@@ -469,7 +468,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (instance_dependency_check(aug_graph, cond, instance_groups, instance))
+    if (instance_dependency_check(aug_graph, cond, instance_groups, i))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
@@ -556,7 +555,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     }
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     for (i = 0; i < n; i++)
     {
@@ -573,7 +572,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
       {
         PHY_GRAPH *npg = Declaration_info(in->node)->node_phy_graph;
         int ph = attribute_schedule(npg,&(in->fibered_attr));
-        printf("<%d,%d> (#%d)\n", group.ph, group.ch, instance_schedule_group_key(&group));
+        printf("<%d,%d>\n", group.ph, group.ch);
       }
     }
   }
