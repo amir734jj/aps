@@ -328,17 +328,17 @@ static bool instances_are_in_same_group(CHILD_PHASE* group_key1, CHILD_PHASE* gr
   // child inherited attribute
   else if (group_key1->ph < 0 && group_key1->ch > -1 && group_key2->ph < 0 && group_key2->ch > -1)
   {
-    return 1;
+    return true;
   }
   // child inherited attribute
   else if (group_key1->ph > 0 && group_key1->ch > -1 && group_key2->ph < 0 && group_key2->ch > -1)
   {
-    return 1;
+    return true;
   }
   // locals
   else if (!group_key1->ph && !group_key1->ch && !group_key2->ph && !group_key2->ch)
   {
-    return 4;
+    return true;
   }
   else
   {
