@@ -308,6 +308,38 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
 #define CONDITION_IS_IMPOSSIBLE(cond) (cond.positive & cond.negative)
 #define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
 
+static void print_indent(int count, FILE *stream)
+{
+  while (count-- > 0)
+  {
+    fprintf(stream, "  ");
+  }
+}
+
+static void print_total_order_rec(CTO_NODE *cto, CHILD_PHASE *instance_groups, int indent, FILE *stream)
+{
+  if (stream == 0) stream = stdout;
+  if (cto == NULL || cto->cto_instance == NULL) return;
+
+  print_indent(indent, stream);
+  print_instance(cto->cto_instance, stream);
+  printf("<%d,%d>", instance_groups[cto->cto_instance->index].ph, instance_groups[cto->cto_instance->index].ch);
+  printf("\n");
+  
+  if (cto->cto_if_true != NULL)
+  {
+    indent++;
+    print_total_order_rec(cto->cto_if_true, instance_groups, indent, stdout);
+  }
+
+  print_total_order_rec(cto->cto_next, instance_groups, indent, stdout);
+}
+
+static void print_total_order(CTO_NODE *cto, CHILD_PHASE *instance_groups, FILE *stream)
+{
+  print_total_order_rec(cto, instance_groups, 0, stream);
+}
+
 /**
  * Returns true if two attribute instances belong to the same group
  * @param phase1 CHILD_PHASE* instance 1 
@@ -392,13 +424,6 @@ static bool instance_dependency_check(AUG_GRAPH* aug_graph, CONDITION cond, CHIL
  */
 static bool instance_can_be_considered(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
 {
-  INSTANCE* instance = &aug_graph->instances.array[i];
-
-  /* check to see if makes sense
-  * (No need to schedule something that
-  * occurs only in a different condition branch.)
-  */
-  if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) return false;
 
   /* instance is already scheduled */
   if (aug_graph->schedule[i] != 0) return false;
@@ -419,13 +444,33 @@ static bool instance_can_be_considered(AUG_GRAPH *aug_graph, CONDITION cond, CHI
 static bool group_kind_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
 {
   int j;
+  EDGESET edges;
   int n = aug_graph->instances.length;
   
   for (j = 0; j < n; j++)
   {
-    if (instances_are_in_same_group(&instance_groups[i], &instance_groups[j]) && !instance_can_be_considered(aug_graph, cond, instance_groups, j))
+    // Already scheduled then ignore
+    if (aug_graph->schedule[j] != 0) continue;
+
+    // Instance in the same group but cannot be considered
+    if (instances_are_in_same_group(&instance_groups[i], &instance_groups[j]))
     {
-      return false;
+      int index = j * n + i;    // i >--> j edge
+
+      /* Look at all dependencies from j to i */
+      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+      {
+        /* If the merge condition is impossible, ignore this edge */
+        if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
+        {
+          continue;
+        }
+        else
+        {
+          // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
+          return false;
+        }
+      }
     }
   }
 
@@ -505,8 +550,6 @@ static bool parent_inherited_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, C
  */
 static bool generic_instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
 {
-  if (!instance_can_be_considered(aug_graph, cond, instance_groups, i)) return false;
-
   CHILD_PHASE group_key = instance_groups[i];
 
   // Its a parent inherited attribute
@@ -561,6 +604,15 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     INSTANCE *instance = &aug_graph->instances.array[i];
     CHILD_PHASE instance_group = instance_groups[i];
 
+    // Already scheduled then ignore
+    if (aug_graph->schedule[i] != 0) continue;
+
+    /* check to see if makes sense
+    * (No need to schedule something that
+    * occurs only in a different condition branch.)
+    */
+    if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) return false;
+
     // If edgeset condition is not impossible then go ahead with scheduling
     if (generic_instance_ready_to_go(aug_graph, cond, instance_groups, i))
     {
@@ -584,6 +636,8 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
       {
         cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
       }
+
+      aug_graph->schedule[i] = 0;
 
       return cto_node;
     }
@@ -651,6 +705,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
 
   // if (oag_debug & DEBUG_ORDER)
   {
+    printf("\nInstances:\n");
     for (i = 0; i < n; i++)
     {
       INSTANCE *in = &(aug_graph->instances.array[i]);
@@ -679,6 +734,12 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   cond.positive = 0;
   cond.negative = 0;
   aug_graph->total_order = schedule_visits(aug_graph, NULL, cond, instance_groups, n);
+
+  // if (oag_debug & DEBUG_ORDER)
+  {
+    printf("Schedule\n");
+    print_total_order(aug_graph->total_order, instance_groups, stdout);
+  }
 }
 
 void compute_oag(Declaration module, STATE *s) {
