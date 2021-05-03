@@ -441,7 +441,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
      * (No need to schedule something that
      * occurs only in a different condition branch.)
      */
-    if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) return false;
+    if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) continue;
 
     sane_remaining++;
 
