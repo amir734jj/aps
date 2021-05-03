@@ -308,27 +308,30 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
 #define CONDITION_IS_IMPOSSIBLE(cond) (cond.positive & cond.negative)
 #define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) ((cond1.positive|cond2.positive) & (cond1.negative|cond2.negative))
 
+// TODO: temporarily
 static void print_indent(int count, FILE *stream)
 {
   while (count-- > 0)
   {
-    fprintf(stream, "  ");
+    fprintf(stream, " ");
   }
 }
 
+// TODO: temporarily
 static void print_total_order_rec(CTO_NODE *cto, CHILD_PHASE *instance_groups, int indent, FILE *stream)
 {
   if (stream == 0) stream = stdout;
   if (cto == NULL || cto->cto_instance == NULL) return;
 
+  CHILD_PHASE *group_key = &instance_groups[cto->cto_instance->index];
   print_indent(indent, stream);
   print_instance(cto->cto_instance, stream);
-  printf("<%d,%d>", instance_groups[cto->cto_instance->index].ph, instance_groups[cto->cto_instance->index].ch);
+  printf(" <%d,%d>", group_key->ph, group_key->ch);
   printf("\n");
-  
+  indent++;
+
   if (cto->cto_if_true != NULL)
   {
-    indent++;
     print_total_order_rec(cto->cto_if_true, instance_groups, indent, stdout);
     printf("\n");
   }
@@ -336,6 +339,7 @@ static void print_total_order_rec(CTO_NODE *cto, CHILD_PHASE *instance_groups, i
   print_total_order_rec(cto->cto_next, instance_groups, indent, stdout);
 }
 
+// TODO: temporarily
 static void print_total_order(CTO_NODE *cto, CHILD_PHASE *instance_groups, FILE *stream)
 {
   print_total_order_rec(cto, instance_groups, 0, stream);
@@ -343,147 +347,27 @@ static void print_total_order(CTO_NODE *cto, CHILD_PHASE *instance_groups, FILE 
 
 /**
  * Returns true if two attribute instances belong to the same group
- * @param phase1 CHILD_PHASE* instance 1 
- * @param phase2 CHILD_PHASE* instance 2
+ * @param aug_graph Augmented dependency graph
+ * @param cond current condition
+ * @param instance_groups array of <ph,ch>
+ * @param i instance index to test
+ * @return boolean indicating if two attributes are in the same group
  */ 
-static bool instances_are_in_same_group(CHILD_PHASE* group_key1, CHILD_PHASE* group_key2)
+static bool instances_are_in_same_group(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, const int i, const int j)
 {
-  // parent inherited attribute
-  if (group_key1->ph < 0 && group_key1->ch == -1 && group_key2->ph < 0 && group_key2->ch == -1)
-  {
-    return true;
-  }
-  // parent synthesized attribute
-  else if (group_key1->ph > 0 && group_key1->ch == -1 && group_key2->ph > 0 && group_key2->ch == -1)
-  {
-    return true;
-  }
-  // child inherited attribute
-  else if (group_key1->ph < 0 && group_key1->ch > -1 && group_key2->ph < 0 && group_key2->ch > -1)
-  {
-    return true;
-  }
-  // child inherited attribute
-  else if (group_key1->ph > 0 && group_key1->ch > -1 && group_key2->ph < 0 && group_key2->ch > -1)
-  {
-    return true;
-  }
+  CHILD_PHASE *group_key1 = &instance_groups[i];
+  CHILD_PHASE *group_key2 = &instance_groups[j];
+
   // locals
-  else if (!group_key1->ph && !group_key1->ch && !group_key2->ph && !group_key2->ch)
+  if (!group_key1->ph && !group_key1->ch && !group_key2->ph && !group_key2->ch)
   {
-    return true;
+    return &aug_graph->instances.array[i] == &aug_graph->instances.array[j];
   }
+  // Anything else
   else
   {
-    return false;
+    return group_key1->ph == group_key2->ph && group_key1->ch == group_key2->ch;
   }
-}
-
-/**
- * Returns true if two attribute instances belong to the same group
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool group_kind_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  int j;
-  EDGESET edges;
-  int n = aug_graph->instances.length;
-  
-  for (j = 0; j < n; j++)
-  {
-    // Already scheduled then ignore
-    if (aug_graph->schedule[j] != 0) continue;
-
-    // Instance in the same group but cannot be considered
-    if (instances_are_in_same_group(&instance_groups[i], &instance_groups[j]))
-    {
-      int index = j * n + i;    // i >--> j edge
-
-      /* Look at all dependencies from j to i */
-      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
-      {
-        /* If the merge condition is impossible, ignore this edge */
-        if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
-        {
-          continue;
-        }
-        else
-        {
-          // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
-          return false;
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
-/**
- * Given a local instance index it returns boolean indicating if its ready to be scheduled or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool local_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  return true;
-}
-
-/**
- * Given a child synthesized instance index it returns boolean indicating if its ready to be scheduled or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool child_synthesized_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  // TODO: further tests may be needed
-  return group_kind_ready_to_go(aug_graph, cond, instance_groups, i);
-}
-
-/**
- * Given a child inherited instance index it returns boolean indicating if its ready to be scheduled or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool child_inherited_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  // TODO: further tests may be needed
-  return group_kind_ready_to_go(aug_graph, cond, instance_groups, i);
-}
-
-/**
- * Given a parent synthesized instance index it returns boolean indicating if its ready to be scheduled or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool parent_synthesized_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  // TODO: further tests may be needed
-  return group_kind_ready_to_go(aug_graph, cond, instance_groups, i);
-}
-
-/**
- * Given a parent inherited instance index it returns boolean indicating if its ready to be scheduled or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool parent_inherited_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  // TODO: further tests may be needed
-  return group_kind_ready_to_go(aug_graph, cond, instance_groups, i);
 }
 
 /**
@@ -493,35 +377,33 @@ static bool parent_inherited_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, C
  * @param instance_groups array of <ph,ch>
  * @param i instance index to test
  */
-static bool generic_instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
+static bool instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
 {
-  CHILD_PHASE group_key = instance_groups[i];
-
-  // Its a parent inherited attribute
-  if (group_key.ph < 0 && group_key.ch == -1)
+  int j;
+  EDGESET edges;
+  int n = aug_graph->instances.length;
+  
+  for (j = 0; j < n; j++)
   {
-    return parent_inherited_ready_to_go(aug_graph, cond, instance_groups, i);
-  }
+    // Instance in the same group but cannot be considered
+    if (instances_are_in_same_group(aug_graph, instance_groups, i, j))
+    {
+      int index = j * n + i;  // j (source) >--> i (sink) edge
 
-  // Its a child inherited attribute
-  if (group_key.ph < 0 && group_key.ch > -1)
-  {
-    return child_inherited_ready_to_go(aug_graph, cond, instance_groups, i);
-  }
+      /* Look at all dependencies from j to i */
+      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+      {
+        /* If the merge condition is impossible, ignore this edge */
+        if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
 
-  // Its a parent synthesized attribute
-  if (group_key.ph >= 0 && group_key.ch == -1)
-  {
-    return parent_synthesized_ready_to_go(aug_graph, cond, instance_groups, i);
-  }
+        // Already scheduled then ignore
+        if (aug_graph->schedule[j] != 0) continue;
 
-  // Its a child synthesized attribute
-  if (group_key.ph >= 0 && group_key.ch > -1)
-  {
-    return child_synthesized_ready_to_go(aug_graph, cond, instance_groups, i);
+        // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
+        return false;
+      }
+    }
   }
-
-  fatal_error("Not sure what group CHILD_PHASE belongs to");
 
   return true;
 }
@@ -538,6 +420,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
 {
   int i;
   int n = aug_graph->instances.length;
+  int sane_remaining = 0;
   CTO_NODE* cto_node = NULL;
   
   /* If nothing more to do, we are done. */
@@ -555,13 +438,15 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     if (aug_graph->schedule[i] != 0) continue;
 
     /* check to see if makes sense
-    * (No need to schedule something that
-    * occurs only in a different condition branch.)
-    */
+     * (No need to schedule something that
+     * occurs only in a different condition branch.)
+     */
     if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) return false;
 
+    sane_remaining++;
+
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (generic_instance_ready_to_go(aug_graph, cond, instance_groups, i))
+    if (instance_ready_to_go(aug_graph, cond, instance_groups, i))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
@@ -584,13 +469,20 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
         cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
       }
 
-      aug_graph->schedule[i] = 0;
+      aug_graph->schedule[i] = 0; // Release it
 
       return cto_node;
     }
   }
 
-  fatal_error("Dead-end path while scheduling");
+  // TODO: add more debugging information
+  fflush(stdout);
+  if (sane_remaining != remaining)
+  {
+    fprintf(stderr,"remaining out of sync %d != %d\n", sane_remaining, remaining);
+  }
+
+  fatal_error("Cannot make conditional total order!");
 
   return NULL;
 }
