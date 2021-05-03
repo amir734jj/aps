@@ -330,6 +330,7 @@ static void print_total_order_rec(CTO_NODE *cto, CHILD_PHASE *instance_groups, i
   {
     indent++;
     print_total_order_rec(cto->cto_if_true, instance_groups, indent, stdout);
+    printf("\n");
   }
 
   print_total_order_rec(cto->cto_next, instance_groups, indent, stdout);
@@ -376,62 +377,6 @@ static bool instances_are_in_same_group(CHILD_PHASE* group_key1, CHILD_PHASE* gr
   {
     return false;
   }
-}
-
-/**
- * Test whether previous groups have been scheduled or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool instance_dependency_check(AUG_GRAPH* aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-  int j;
-  int n = aug_graph->instances.length;
-  CHILD_PHASE group_key = instance_groups[i];
-  EDGESET edges;
-
-  for (j = 0; j < n; j++)
-  {
-    int index = j * n + i;    // i >--> j edge
-
-    /* Look at all dependencies from j to i */
-    for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
-    {
-      /* If the merge condition is impossible, ignore this edge */
-      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
-      {
-        continue;
-      }
-      else
-      {
-        // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-/**
- * Given a geneirc instance index it returns boolean indicating if instance can even be considered or not
- * @param aug_graph Augmented dependency graph
- * @param cond current condition
- * @param instance_groups array of <ph,ch>
- * @param i instance index to test
- */
-static bool instance_can_be_considered(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
-{
-
-  /* instance is already scheduled */
-  if (aug_graph->schedule[i] != 0) return false;
-
-  // If edgeset condition is not impossible then go ahead with scheduling
-  if (!instance_dependency_check(aug_graph, cond, instance_groups, i)) return false;
-
-  return true;
 }
 
 /**
@@ -565,16 +510,18 @@ static bool generic_instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, C
   }
 
   // Its a parent synthesized attribute
-  if (group_key.ph > 0 && group_key.ch == -1)
+  if (group_key.ph >= 0 && group_key.ch == -1)
   {
     return parent_synthesized_ready_to_go(aug_graph, cond, instance_groups, i);
   }
 
   // Its a child synthesized attribute
-  if (group_key.ph > 0 && group_key.ch > -1)
+  if (group_key.ph >= 0 && group_key.ch > -1)
   {
     return child_synthesized_ready_to_go(aug_graph, cond, instance_groups, i);
   }
+
+  fatal_error("Not sure what group CHILD_PHASE belongs to");
 
   return true;
 }
@@ -737,9 +684,11 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
 
   // if (oag_debug & DEBUG_ORDER)
   {
-    printf("Schedule\n");
+    printf("\nSchedule\n");
     print_total_order(aug_graph->total_order, instance_groups, stdout);
   }
+
+  printf("\n");
 }
 
 void compute_oag(Declaration module, STATE *s) {
