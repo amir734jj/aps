@@ -18,6 +18,7 @@ struct cto_node {
   INSTANCE* cto_instance;
   CTO_NODE* cto_next;
   CTO_NODE* cto_if_true;
+  CHILD_PHASE child_phase;
 #define cto_if_false cto_next
 };
       

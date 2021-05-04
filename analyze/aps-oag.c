@@ -359,9 +359,9 @@ static bool instances_are_in_same_group(AUG_GRAPH *aug_graph, CHILD_PHASE* insta
   CHILD_PHASE *group_key2 = &instance_groups[j];
 
   // locals
-  if (!group_key1->ph && !group_key1->ch && !group_key2->ph && !group_key2->ch)
+  if (!group_key1->ph && !group_key2->ph)
   {
-    return &aug_graph->instances.array[i] == &aug_graph->instances.array[j];
+    return i == j;
   }
   // Anything else
   else
@@ -385,21 +385,45 @@ static bool instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHA
   
   for (j = 0; j < n; j++)
   {
+    // Already scheduled then ignore
+    if (aug_graph->schedule[j] != 0) continue;
+
+    int index = j * n + i;  // j (source) >--> i (sink) edge
+
+    /* Look at all dependencies from j to i */
+    for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+    {
+      /* If the merge condition is impossible, ignore this edge */
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
+
+      // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Given a geneirc instance index it returns boolean indicating if its ready to be scheduled or not
+ * @param aug_graph Augmented dependency graph
+ * @param cond current condition
+ * @param instance_groups array of <ph,ch>
+ * @param i instance index to test
+ */
+static bool group_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE* instance_groups, const int i)
+{
+  int n = aug_graph->instances.length;
+  int j;
+  for (j = 0; j < n; j++)
+  {
     // Instance in the same group but cannot be considered
     if (instances_are_in_same_group(aug_graph, instance_groups, i, j))
     {
-      int index = j * n + i;  // j (source) >--> i (sink) edge
+      if (aug_graph->schedule[j] != 0) continue;
 
-      /* Look at all dependencies from j to i */
-      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+      if (!instance_ready_to_go(aug_graph, cond, instance_groups, j))
       {
-        /* If the merge condition is impossible, ignore this edge */
-        if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
-
-        // Already scheduled then ignore
-        if (aug_graph->schedule[j] != 0) continue;
-
-        // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
         return false;
       }
     }
@@ -437,22 +461,28 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     // Already scheduled then ignore
     if (aug_graph->schedule[i] != 0) continue;
 
-    /* check to see if makes sense
-     * (No need to schedule something that
-     * occurs only in a different condition branch.)
-     */
-    if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) continue;
+    // TODO: can't just ignore it
+    // /* check to see if makes sense
+    //  * (No need to schedule something that
+    //  * occurs only in a different condition branch.)
+    //  */
+    // if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) continue;
 
     sane_remaining++;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (instance_ready_to_go(aug_graph, cond, instance_groups, i))
+    if (group_ready_to_go(aug_graph, cond, instance_groups, i))
     {
+      // We need to schedule all the ones in the group, this here is only scheduling only one
+      // If it is not local then its either child of parent attribute
+      // we schedule all child inherited attributes and then synthesized ones
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
       cto_node->cto_instance = instance;
 
       aug_graph->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
+
+      // Start special cases
 
       if (if_rule_p(instance->fibered_attr.attr))
       {
