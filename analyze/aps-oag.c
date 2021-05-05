@@ -505,10 +505,6 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
 
       return cto_node;
     }
-    else
-    {
-      return schedule_visits(aug_graph, prev, cond, instance_groups, remaining /* no change */);  
-    }
   }
 
   // If we find ourselves scheduling a <+ph,-1>, this means that after we put all these ones in the schedule
