@@ -397,6 +397,9 @@ static bool instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHA
       if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
 
       // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
+      printf("This edgeset was not ready: ");
+      print_edgeset(edges, stdout);
+
       return false;
     }
   }
@@ -405,7 +408,7 @@ static bool instance_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHA
 }
 
 /**
- * Given a geneirc instance index it returns boolean indicating if its ready to be scheduled or not
+ * Given a generic instance index it returns boolean indicating if its ready to be scheduled or not
  * @param aug_graph Augmented dependency graph
  * @param cond current condition
  * @param instance_groups array of <ph,ch>
@@ -612,7 +615,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     sane_remaining++;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (group_ready_to_go(aug_graph, cond, instance_groups, i) && check_group_order(aug_graph, &prev, cond, instance_groups, i))
+    if (group_ready_to_go(aug_graph, cond, instance_groups, i))
     {
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
