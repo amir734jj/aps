@@ -433,6 +433,154 @@ static bool group_ready_to_go(AUG_GRAPH *aug_graph, CONDITION cond, CHILD_PHASE*
 }
 
 /**
+ * Simple function to check if there is more to schedule in the group of index
+ * @param aug_graph Augmented dependency graph
+ * @param instance_groups array of <ph,ch> indexed by INSTANCE index
+ * @param parent_group parent group key
+ * @return boolean indicating if there is more in this group that needs to be scheduled
+ */
+static bool is_there_more_to_schedule_in_group(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, CHILD_PHASE *parent_group)
+{
+  int n = aug_graph->instances.length;
+  int i;
+  for (i = 0; i < n; i++)
+  {
+    // Instance in the same group but cannot be considered
+    CHILD_PHASE *group_key = &instance_groups[i];
+
+    // Check if in the same group
+    if (group_key->ph == parent_group->ph && group_key->ch == parent_group->ch)
+    {
+      if (aug_graph->schedule[i] == 0) return true;
+    }
+  }
+
+  return false;
+}
+
+// Signature of function
+static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, CHILD_PHASE* instance_groups, int remaining);
+
+/**
+ * Recursive scheduling function
+ * @param aug_graph Augmented dependency graph
+ * @param prev previous CTO node
+ * @param cond current CONDITION
+ * @param instance_groups array of <ph,ch> indexed by INSTANCE index
+ * @param remaining count of remaining instances to schedule
+ * @param parent_group parent group key
+ */
+static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, CHILD_PHASE* instance_groups, int remaining, CHILD_PHASE *parent_group)
+{
+  int i;
+  int n = aug_graph->instances.length;
+  int sane_remaining = 0;
+  CTO_NODE* cto_node = NULL;
+  
+  /* If nothing more to do, we are done. */
+  if (remaining == 0) return NULL;
+
+  /* Outer condition is impossible, its a dead-end branch */
+  if (CONDITION_IS_IMPOSSIBLE(cond)) return NULL;
+
+  // If we find ourselves scheduling a <-ph,ch>, we need to (after putting in all the
+  // instances in that group), we need to schedule the visit of the child (add a CTO
+  // node with a null instance but with <ph,ch) and then ALSO schedule immediately
+  // all the syn attributes of that child’s phase. (<+ph,ch> group, if any).
+  if (parent_group->ph < 0 && parent_group->ch > -1)
+  {
+    // Group is finished
+    if (!is_there_more_to_schedule_in_group(aug_graph, instance_groups, parent_group))
+    {
+      // Visit marker
+      CTO_NODE *cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+      cto_node->cto_prev = prev;
+      cto_node->cto_instance = NULL;
+      cto_node->child_phase.ph = -parent_group->ph;
+      cto_node->child_phase.ch = parent_group->ch;
+      cto_node->cto_next = schedule_visits_group(aug_graph, cto_node, cond, instance_groups, remaining - 1, &(cto_node->child_phase));
+
+      return cto_node;
+    }
+    else
+    {
+      return schedule_visits(aug_graph, prev, cond, instance_groups, remaining /* no change */);  
+    }
+  }
+
+  // If we find ourselves scheduling a <+ph,-1>, this means that after we put all these ones in the schedule
+  // (which we should do as a group NOW), this visit phase is over. And we should mark it with a <ph,-1> marker in the CTO.
+  if (parent_group->ph >= 0 && parent_group->ch == -1)
+  {
+    // Group is finished
+    if (!is_there_more_to_schedule_in_group(aug_graph, instance_groups, parent_group))
+    {
+      // Visit marker
+      CTO_NODE *cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+      cto_node->cto_prev = prev;
+      cto_node->cto_instance = NULL;
+      cto_node->child_phase.ph = parent_group->ph;
+      cto_node->child_phase.ch = parent_group->ch;
+      cto_node->cto_next = schedule_visits(aug_graph, prev, cond, instance_groups, remaining /* no change */);
+
+      return cto_node;
+    }
+  }
+
+  for (i = 0; i < n; i++)
+  {
+    INSTANCE *instance = &aug_graph->instances.array[i];
+    CHILD_PHASE *group_key = &instance_groups[i];
+
+    // Already scheduled then ignore
+    if (aug_graph->schedule[i] != 0) continue;
+
+    sane_remaining++;
+
+    // Check if everything is in the same group, don't check for dependencies
+    if (group_key->ph == parent_group->ph && group_key->ch == parent_group->ch)
+    {
+      cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+      cto_node->cto_prev = prev;
+      cto_node->cto_instance = instance;
+      cto_node->child_phase = *group_key;
+
+      aug_graph->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
+
+      if (if_rule_p(instance->fibered_attr.attr))
+      {
+        int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
+        cond.negative |= cmask;
+        cto_node->cto_if_false = schedule_visits_group(aug_graph, cto_node, cond, instance_groups, remaining-1, parent_group);
+        cond.negative &= ~cmask;
+        cond.positive |= cmask;
+        cto_node->cto_if_true = schedule_visits_group(aug_graph, cto_node, cond, instance_groups, remaining-1, parent_group);
+        cond.positive &= ~cmask;
+      }
+      else
+      {
+        cto_node->cto_next = schedule_visits_group(aug_graph, cto_node, cond, instance_groups, remaining-1, parent_group);
+      }
+
+      aug_graph->schedule[i] = 0; // Release it
+
+      return cto_node;
+    }
+  }
+
+  // TODO: add more debugging information
+  fflush(stdout);
+  if (sane_remaining != remaining)
+  {
+    fprintf(stderr,"remaining out of sync %d != %d\n", sane_remaining, remaining);
+  }
+
+  fatal_error("Cannot make conditional total order!");
+
+  return NULL;
+}
+
+/**
  * Recursive scheduling function
  * @param aug_graph Augmented dependency graph
  * @param prev previous CTO node
@@ -456,52 +604,78 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
   for (i = 0; i < n; i++)
   {
     INSTANCE *instance = &aug_graph->instances.array[i];
-    CHILD_PHASE instance_group = instance_groups[i];
+    CHILD_PHASE *group_key = &instance_groups[i];
 
     // Already scheduled then ignore
     if (aug_graph->schedule[i] != 0) continue;
 
-    // TODO: can't just ignore it
-    // /* check to see if makes sense
-    //  * (No need to schedule something that
-    //  * occurs only in a different condition branch.)
-    //  */
-    // if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance))) continue;
-
     sane_remaining++;
 
     // If edgeset condition is not impossible then go ahead with scheduling
-    if (group_ready_to_go(aug_graph, cond, instance_groups, i))
+    if (group_ready_to_go(aug_graph, cond, instance_groups, i) && check_group_order(aug_graph, &prev, cond, instance_groups, i))
     {
-      // We need to schedule all the ones in the group, this here is only scheduling only one
-      // If it is not local then its either child of parent attribute
-      // we schedule all child inherited attributes and then synthesized ones
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
       cto_node->cto_instance = instance;
+      cto_node->child_phase = *group_key;
 
       aug_graph->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
-      // Start special cases
-
-      if (if_rule_p(instance->fibered_attr.attr))
+      // If it is local then continue scheduling
+      if (!group_key->ph && !group_key->ch)
       {
-        int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
-        cond.negative |= cmask;
-        cto_node->cto_if_false = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
-        cond.negative &= ~cmask;
-        cond.positive |= cmask;
-        cto_node->cto_if_true = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
-        cond.positive &= ~cmask;
+        if (if_rule_p(instance->fibered_attr.attr))
+        {
+          int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
+          cond.negative |= cmask;
+          cto_node->cto_if_false = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
+          cond.negative &= ~cmask;
+          cond.positive |= cmask;
+          cto_node->cto_if_true = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
+          cond.positive &= ~cmask;
+        }
+        else
+        {
+          cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
+        }
+
+        aug_graph->schedule[i] = 0; // Release it
+
+        return cto_node;
       }
+      // Instance is not local then delegate it to group scheduler
       else
       {
-        cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1);
+        // If we find ourselves scheduling a <+ph,ch>, this means that somehow, we didn’t have any <-ph,ch>
+        // for that same ph and ch -- apparently the phase has no inherited attributes! 0 and so we need
+        // to *first* put in the child visit node, and *then* the syn attributes from this group.
+        if (group_key->ph >= 0 && group_key->ch > -1)
+        {
+          // Visit marker
+          CTO_NODE *cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+          cto_node->cto_prev = prev;
+          cto_node->cto_instance = NULL;
+          cto_node->child_phase.ph = group_key->ph + 1;
+          cto_node->child_phase.ch = group_key->ch;
+          cto_node->cto_next = schedule_visits_group(aug_graph, prev, cond, instance_groups, remaining /* no change */, group_key);
+        }
+
+        // If we find ourselves schedule a parent inherited attribute (that wasn’t handled in the case case),
+        // this means that the previous visit ended without any synthesized attributes, so we need to stick in the visit end
+        // (Visit(child = -1, ph = +(one less then the -ph we are on now).
+        if (group_key->ph < 0 && group_key->ch == -1)
+        {
+          // Visit marker
+          CTO_NODE *cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+          cto_node->cto_prev = prev;
+          cto_node->cto_instance = NULL;
+          cto_node->child_phase.ph = group_key->ph - 1;
+          cto_node->child_phase.ch = -1;
+          cto_node->cto_next = schedule_visits_group(aug_graph, prev, cond, instance_groups, remaining /* no change */, group_key);
+        }
+
+        return schedule_visits_group(aug_graph, prev, cond, instance_groups, remaining, group_key);
       }
-
-      aug_graph->schedule[i] = 0; // Release it
-
-      return cto_node;
     }
   }
 
