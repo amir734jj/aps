@@ -473,7 +473,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
  * @param remaining count of remaining instances to schedule
  * @param parent_group parent group key
  */
-static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, CHILD_PHASE* instance_groups, int remaining, CHILD_PHASE *parent_group)
+static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, CHILD_PHASE* instance_groups, int remaining, CHILD_PHASE *group)
 {
   int i;
   int n = aug_graph->instances.length;
