@@ -384,7 +384,144 @@ static void edgeset_combine_dependencies(EDGESET es, DEPENDENCY* acc_dependency,
   }
 }
 
+/**
+ * Resolves surrounding function declaration of an AST node
+ * @param node
+ * @return surrounding function declaration of an AST node
+ */
+static Declaration resolve_surrounding_function_decl(void* node)
+{
+  if (node == NULL) return NULL;
+
+  switch (ABSTRACT_APS_tnode_phylum(node))
+  {
+  case KEYDeclaration:
+  {
+    Declaration decl = (Declaration) node;
+    switch (Declaration_KEY(decl))
+    {
+    case KEYfunction_decl:
+      return decl;
+    }
+  }
+  }
+
+  return resolve_surrounding_function_decl(tnode_parent(node));
+}
+
 #define UP_DOWN_DIRECTION(v, direction) (direction ? v : !v)
+
+/**
+ * Utility function to detect whether any dependency between two attribute instance is valid or not
+ * @param source_instance
+ * @param destination_instance
+ * @return boolean indicating the validity
+ */
+static bool is_invalid_edge(INSTANCE* source_instance, INSTANCE* destination_instance)
+{
+  // fibered_attr.attr may not actually be a real Declaration! we have to be careful.
+  Declaration source = source_instance->fibered_attr.attr;
+  Declaration destination = destination_instance->fibered_attr.attr;
+
+  bool delete = false;
+  Declaration func_decl = NULL;
+
+  // Detecting whether this edge is between function result to function formal
+  if ((func_decl = resolve_surrounding_function_decl(source)) != NULL && func_decl == resolve_surrounding_function_decl(destination))
+  {
+    if (ABSTRACT_APS_tnode_phylum(source) == KEYDeclaration)
+    {
+      Declaration source_decl = (Declaration) source;
+      if (some_function_decl_result(func_decl) == source_decl)
+      {
+        if (ABSTRACT_APS_tnode_phylum(destination) == KEYDeclaration)
+        {
+          Declaration destination_decl = (Declaration) destination;
+          switch (Declaration_KEY(destination_decl))
+          {
+            case KEYformal:
+            {
+              delete = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (delete)
+  {
+    printf("prevented: ");
+    print_instance(source_instance, stdout);
+    printf("->");
+    print_instance(destination_instance, stdout);
+    printf("\n");
+  }
+
+  return delete;
+}
+
+/**
+ * Utility function to remove dependencies between edges
+ * @param s state
+ */
+static void remove_invalid_dependencies(STATE *s)
+{
+  int i, j, k;
+  DEPENDENCY acc_dependency;
+  CONDITION acc_cond;
+
+  // Forall phylum in the phylum_graph
+  for (i = 0; i < s->phyla.length; i++)
+  {
+    PHY_GRAPH *phy = &s->phy_graphs[i];
+    int n = phy->instances.length;
+    int phylum_index = phylum_instance_start[i];
+    INSTANCE *array = phy->instances.array;
+
+    for (j = 0; j < n; j++)
+    {
+      INSTANCE *source = &array[j];
+
+      // Forall instances in array
+      for (k = 0; k < n; k++)
+      {
+        INSTANCE *destination = &array[k];
+
+        if (is_invalid_edge(source, destination))
+        {
+          phy->mingraph[j * n + k] = no_dependency;
+        }
+      }
+    }
+  }
+
+  // Forall edges in the augmented dependency graph
+  for (i = 0; i <= s->match_rules.length; i++)
+  {
+    AUG_GRAPH *aug_graph =
+        (i == s->match_rules.length) ? &s->global_dependencies : &s->aug_graphs[i];
+    int n = aug_graph->instances.length;
+    INSTANCE *array = aug_graph->instances.array;
+    for (j = 0; j < n; j++)
+    {
+      INSTANCE *source = &array[j];
+
+      // Forall instances in array
+      for (k = 0; k < n; k++)
+      {
+        INSTANCE *destination = &array[k];
+
+        if (is_invalid_edge(source, destination))
+        {
+          remove_edgeset(j, k, n, array, aug_graph);
+        }
+      }
+    }
+  }
+}
+
 
 /**
  * In phylum graph (and in aug graph)
@@ -693,6 +830,7 @@ void break_fiber_cycles(Declaration module,STATE *s,DEPENDENCY dep) {
   get_fiber_cycles(s);
 
   bool direction = !(dep & DEPENDENCY_NOT_JUST_FIBER);
+  remove_invalid_dependencies(s);
   add_up_down_attributes(s,direction);
   release(mark);
   {
