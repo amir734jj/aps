@@ -191,9 +191,9 @@ void *make_augmented_cycles_func_calls(void *paug_graph, void *node) {
 	    break;
 	if (proxy == NULL)
 	  fatal_error("missing funcall proxy");
-	make_augmented_cycles_for_node(aug_graph,
-				       constructor_instance_start[i],
-				       proxy);
+	// make_augmented_cycles_for_node(aug_graph,
+	//			       constructor_instance_start[i],
+	//			       proxy);
       }
     }
     break;
@@ -202,7 +202,9 @@ void *make_augmented_cycles_func_calls(void *paug_graph, void *node) {
       switch (Declaration_KEY(decl)) {
       default:
 	break;
-      case KEYsome_function_decl:
+      case KEYfunction_decl:
+        break;
+      case KEYprocedure_decl:
       case KEYtop_level_match:
 	/* don't look inside (unless its what we're doing the analysis for) */
 	if (aug_graph->match_rule != node) return NULL;
@@ -242,7 +244,9 @@ static void make_augmented_cycles(AUG_GRAPH *aug_graph, int constructor_index)
     make_augmented_cycles_for_node(aug_graph,constructor_index,
 				   aug_graph->match_rule);
     break;
-  case KEYsome_function_decl:
+  case KEYfunction_decl:
+    break;
+  case KEYprocedure_decl:
     make_augmented_cycles_for_node(aug_graph,constructor_index,
 				   aug_graph->match_rule);
     break;
