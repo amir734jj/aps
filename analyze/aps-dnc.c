@@ -2577,6 +2577,10 @@ void print_instance(INSTANCE *i, FILE *stream) {
     } else {
       fputs(symbol_name(def_name(declaration_def(i->node))),stream);
     }
+    if (i->cyclic)
+      fprintf(stream, " 'cyclic' ");
+    else
+      fprintf(stream, " 'non-cyclic' ");
     fputc('.',stream);
   }
   if (i->fibered_attr.attr == NULL) {
@@ -2663,6 +2667,15 @@ void print_edgeset(EDGESET e, FILE *stream) {
 	fputs("!!SINK=",stream);
 	print_instance(tmp->sink,stream);
       }
+      if (tmp->cyclic)
+      {
+        fputs("cyclic",stream);
+      }
+      else
+      {
+        fputs("non-cyclic",stream);
+      }
+
       print_edge_helper(tmp->kind,&tmp->cond,stream);
       tmp = tmp->rest;
       if (tmp != NULL) fputc(',',stream);

@@ -1022,7 +1022,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     fatal_error("Failed to create total order.");
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     printf("\nSchedule\n");
     printf("syntax_decl %s\n", decl_name(aug_graph->syntax_decl));

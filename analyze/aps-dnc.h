@@ -16,6 +16,7 @@ typedef struct attribute_instance {
   FIBERED_ATTRIBUTE fibered_attr;
   Declaration node; /* NULL for locals */
   int index;
+  BOOL cyclic;
 } INSTANCE;
 
 enum instance_direction {instance_local, instance_inward, instance_outward};
@@ -51,6 +52,7 @@ typedef struct edgeset {
   CONDITION cond;
   DEPENDENCY kind;
   struct edgeset *next_in_edge_worklist;
+  BOOL cyclic;
 } *EDGESET;
 
 extern DEPENDENCY edgeset_kind(EDGESET);

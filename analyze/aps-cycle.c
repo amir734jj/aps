@@ -351,8 +351,9 @@ static void remove_edgeset(int index1, int index2, int n, INSTANCE *array, AUG_G
  * @param dep dependency to join
  * @param cond condition to join
  * @param aug_graph augmented dependency graph
+ * @param cyclic boolean indicating if its a down-up edge in a cycle
  */
-static void add_up_down_edge(int index1, int index2, int n, INSTANCE *array, DEPENDENCY dep, CONDITION *cond, AUG_GRAPH *aug_graph)
+static void add_up_down_edge(int index1, int index2, int n, INSTANCE *array, DEPENDENCY dep, CONDITION *cond, AUG_GRAPH *aug_graph, bool cyclic)
 {
   INSTANCE *attr1 = &array[index1];
   INSTANCE *attr2 = &array[index2];
@@ -366,6 +367,9 @@ static void add_up_down_edge(int index1, int index2, int n, INSTANCE *array, DEP
     printf("\n");
   }
   add_edge_to_graph(attr1, attr2, cond, dep, aug_graph);
+
+  int index = attr1->index*(aug_graph->instances.length)+attr2->index;
+  aug_graph->graph[index]->cyclic = cyclic;
 }
 
 /**
@@ -515,6 +519,12 @@ static void add_up_down_attributes(STATE *s, bool direction)
                 // Make sure it is a DOWN attribute
                 if (acc_dependency && UP_DOWN_DIRECTION(!instance_is_up(&array[l]), direction))
                 {
+                  printf("522: source: %s ", instance_is_up(instance) ? "up" : "down");
+                  print_instance(instance, stdout);
+                  printf("-> destination: %s ", instance_is_up(&array[l]) ? "up" : "down");
+                  print_instance(&array[l], stdout);
+                  printf("\n");
+                  
                   phy->mingraph[k * n + l] = acc_dependency;
                 }
                 else
@@ -590,7 +600,7 @@ static void add_up_down_attributes(STATE *s, bool direction)
               if (parent_index[l + constructor_index] == cyc->internal_info)
               {
                 // printf("k -> l Adding Not In cycle -> In Cycle: ");
-                add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph);
+                add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph, false);
               }
             }
           }
@@ -619,7 +629,7 @@ static void add_up_down_attributes(STATE *s, bool direction)
               if (parent_index[l + constructor_index] == cyc->internal_info)
               {
                 // printf("l -> k Adding In Cycle -> Not In Cycle: ");
-                add_up_down_edge(l, k, n, array, acc_dependency, &acc_cond, aug_graph);
+                add_up_down_edge(l, k, n, array, acc_dependency, &acc_cond, aug_graph, false);
               }
             }
           }
@@ -653,8 +663,13 @@ static void add_up_down_attributes(STATE *s, bool direction)
                 // Make sure it is a DOWN attribute
                 if (acc_dependency && UP_DOWN_DIRECTION(!instance_is_up(&array[l]), direction))
                 {
-                  // printf("k -> l Adding In cycle -> In Cycle: ");
-                  add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph);
+                  printf("657: source: %s ", instance_is_up(instance) ? "up" : "down");
+                  print_instance(instance, stdout);
+                  printf("-> destination: %s ", instance_is_up(&array[l]) ? "up" : "down");
+                  print_instance(&array[l], stdout);
+                  printf("\n");
+
+                  add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph, true);
                 }
                 else
                 {
@@ -680,6 +695,65 @@ static void add_up_down_attributes(STATE *s, bool direction)
             }
           }
         }
+      }
+    }
+  }
+}
+
+static EDGESET get_edgeset(INSTANCE *attr1, INSTANCE *attr2, AUG_GRAPH *aug_graph)
+{
+  int index = attr1->index*(aug_graph->instances.length)+attr2->index;
+  return aug_graph->graph[index];
+}
+
+static bool contains_cyclic_edge(EDGESET es)
+{
+  while (es != NULL)
+  {
+    if (es->cyclic) return true;
+    
+    es = es->rest;
+  }
+
+  return false;
+}
+
+static void mark_cyclic_attributes(STATE* s)
+{
+  int i, j, k;
+
+  // Forall edges in the augmented dependency graph
+  for (i = 0; i <= s->match_rules.length; i++)
+  {
+    AUG_GRAPH *aug_graph =
+        (i == s->match_rules.length) ? &s->global_dependencies : &s->aug_graphs[i];
+    int n = aug_graph->instances.length;
+    int constructor_index = constructor_instance_start[i];
+    INSTANCE *array = aug_graph->instances.array;
+    for (j = 0; j < n; j++)
+    {
+      INSTANCE *source = &array[j];
+      source->cyclic = true;
+    }
+  }
+
+  // Forall edges in the augmented dependency graph
+  for (i = 0; i <= s->match_rules.length; i++)
+  {
+    AUG_GRAPH *aug_graph =
+        (i == s->match_rules.length) ? &s->global_dependencies : &s->aug_graphs[i];
+    int n = aug_graph->instances.length;
+    int constructor_index = constructor_instance_start[i];
+    INSTANCE *array = aug_graph->instances.array;
+    for (j = 0; j < n; j++)
+    {
+      INSTANCE *source = &array[j];
+      for (k = 0; k < n; k++)
+      {
+        INSTANCE *destination = &array[k];
+        bool cyclic = contains_cyclic_edge(get_edgeset(source, destination, aug_graph));
+        source->cyclic |= cyclic;
+        destination->cyclic |= cyclic;
       }
     }
   }
@@ -711,7 +785,10 @@ void break_fiber_cycles(Declaration module,STATE *s,DEPENDENCY dep) {
     analysis_debug = saved_analysis_debug;
   }
 
-  if (analysis_debug & (DNC_ITERATE|DNC_FINAL)) {
+  mark_cyclic_attributes(s);
+
+  // if (analysis_debug & (DNC_ITERATE|DNC_FINAL))
+  {
     printf("\n****** After closure of up/down attributes:\n\n");
     print_analysis_state(s,stdout);
   }
