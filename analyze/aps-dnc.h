@@ -21,6 +21,8 @@ typedef struct attribute_instance {
 enum instance_direction {instance_local, instance_inward, instance_outward};
 enum instance_direction fibered_attr_direction(FIBERED_ATTRIBUTE *fa);
 enum instance_direction instance_direction(INSTANCE *);
+extern BOOL fiber_attr_circular(FIBERED_ATTRIBUTE* fiber_attr);
+extern BOOL instance_circular(INSTANCE* in);
 
 typedef unsigned DEPENDENCY;
 
@@ -66,6 +68,7 @@ typedef struct augmented_dependency_graph {
   struct augmented_dependency_graph *next_in_aug_worklist;
   int *schedule; /* one-d array, indexed by instance number */
   struct cto_node *total_order;
+  Declaration* children;
 } AUG_GRAPH;
 extern const char *aug_graph_name(AUG_GRAPH *);
 
@@ -76,6 +79,7 @@ typedef struct summary_dependency_graph {
   DEPENDENCY *mingraph; /* two-d array, indexed by instance number */
   struct summary_dependency_graph *next_in_phy_worklist;
   int *summary_schedule; /* one-d array, indexed by instance number */
+  BOOL* cyclic_flags; /* one-d array, indexed by phase number indicating whether phase is circular or not */
 } PHY_GRAPH;
 extern const char *phy_graph_name(PHY_GRAPH *);
   
