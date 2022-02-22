@@ -8,6 +8,8 @@
 
 int oag_debug;
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+
 /**
  * Utility function that schedules a single phase
  * @param phy_graph phylum graph
@@ -89,6 +91,10 @@ void schedule_summary_dependency_graph(PHY_GRAPH* phy_graph) {
   int phase = 0;
   int done = 0;
   BOOL cont = true;
+
+  if (oag_debug & TOTAL_ORDER) {
+    printf("Scheduling order for %s\n",decl_name(phy_graph->phylum));
+  }
   
   int i, j;
   for (i = 0; i < n; ++i)
@@ -429,46 +435,6 @@ static void print_schedule_error_debug(AUG_GRAPH *aug_graph, CHILD_PHASE* instan
   print_total_order(prev, 0, stream);
 }
 
-static void assert_edgesets(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, FILE *stream)
-{
-  bool any_error = false;
-
-  int i, j;
-  EDGESET edges;
-  int n = aug_graph->instances.length;
-  
-  for (i = 0; i < n; i++)
-  {
-    for (j = 0; j < n; j++)
-    {
-      int index = i * n + j;  // k (source) >--> j (sink) edge
-
-      /* Look at all dependencies from j to i */
-      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
-      {
-        CHILD_PHASE* source_group = &instance_groups[edges->source->index];
-        CHILD_PHASE* sink_group = &instance_groups[edges->sink->index];
-
-        if (source_group->ph != 0 && sink_group->ph != 0 && abs(source_group->ph) > abs(sink_group->ph))
-        {
-          if (!any_error)
-          {
-            fprintf(stream, "\nInvalid edgesets in %s aug_graph with <ph,ch>:\n", decl_name(aug_graph->syntax_decl));
-            any_error = true;
-          }
-
-          print_instance(edges->source, stream);
-          fprintf(stream, " <%d,%d> -> ", source_group->ph, source_group->ch);
-          print_instance(edges->sink, stream);
-          fprintf(stream, " <%d,%d>", sink_group->ph, sink_group->ch);
-
-          fprintf(stream, " (invalid edge) \n");
-        }
-      }
-    }
-  }
-}
-
 /**
  * Utility function to determine if instance group is local or not
  * @param group instance group <ph,ch>
@@ -741,36 +707,47 @@ static void assert_locals_order(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_grou
   }
 }
 
-/**
- * Function that throws an error if phases are out of order
- * @param current head of linkedlist
- * @param ph current value of ph being investigated
- */
-static void assert_total_order(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, CTO_NODE *current, short ph)
+static void find_parent_max_phase(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, CTO_NODE *current, short* max_phase)
 {
   if (current == NULL) return;
 
-  short new_ph = ph;
-
-  if (current->cto_instance == NULL)
+  if (current->child_phase.ph == -1)
   {
-    if (current->child_phase.ch == -1)
+    *max_phase = MAX(abs(current->child_phase.ph), *max_phase);
+  }
+
+  if (current->cto_instance != NULL && if_rule_p(current->cto_instance->fibered_attr.attr))
+  {
+    find_parent_max_phase(aug_graph, instance_groups, current->cto_if_true, max_phase);
+  }
+
+  find_parent_max_phase(aug_graph, instance_groups, current->cto_next, max_phase);
+}
+
+/**
+ * Function that throws an error if phases are out of order
+ * @param head head of linkedlist
+ * @param ph current value of ph being investigated
+ */
+static void assert_total_order(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, CTO_NODE *head)
+{
+  short total_order_max_phase = SHRT_MIN;
+  find_parent_max_phase(aug_graph, instance_groups, head, &total_order_max_phase);
+
+  short instances_max_phase = SHRT_MIN;
+  int i;
+  for (i = 0; i < aug_graph->instances.length; i++)
+  {
+    if (instance_groups[i].ph == -1)
     {
-      new_ph +=1;
+      instances_max_phase = MAX(instances_max_phase, abs(instance_groups[i].ph));
     }
   }
-  else if (if_rule_p(current->cto_instance->fibered_attr.attr))
-  {
-    assert_total_order(aug_graph, instance_groups, current->cto_if_true, new_ph);
-  }
 
-  if (current->child_phase.ph != 0 && abs(current->child_phase.ph) != ph)
+  if (total_order_max_phase != instances_max_phase)
   {
-    // fatal_error("Total order is invalid. Expected a phase %d but received a node <%d,%d>.", ph, current->child_phase.ph, current->child_phase.ch);
-    return;
+    fatal_error("Expected max parent phase of %d but found max parent phase of %d.", instances_max_phase, total_order_max_phase);
   }
-
-  assert_total_order(aug_graph, instance_groups, current->cto_next, new_ph);
 }
 
 /**
@@ -1219,8 +1196,6 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     }
   }
 
-  assert_edgesets(aug_graph, instance_groups, stderr);
-
   if (oag_debug & DEBUG_ORDER)
   {
     printf("\nInstances %s:\n", decl_name(aug_graph->syntax_decl));
@@ -1269,7 +1244,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   }
 
   // Ensure generated total order is valid
-  assert_total_order(aug_graph, instance_groups, aug_graph->total_order, 1);
+  assert_total_order(aug_graph, instance_groups, aug_graph->total_order);
 }
 
 void compute_oag(Declaration module, STATE *s) {
