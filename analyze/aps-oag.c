@@ -8,7 +8,8 @@
 
 int oag_debug;
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+// <ph,ch> representing the parent inherited attributes
+CHILD_PHASE parent_inherited_group = { -1, -1 };
 
 /**
  * Utility function that schedules a single phase
@@ -364,6 +365,8 @@ CTO_NODE* schedule_rest(AUG_GRAPH *aug_graph,
 
 #define CONDITION_IS_IMPOSSIBLE(cond) ((cond).positive & (cond).negative)
 #define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) (((cond1).positive|(cond2).positive) & ((cond1).negative|(cond2).negative))
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define IS_VISIT_MARKER(node) (node->cto_instance == NULL)
 
 /**
  * Utility function to print indent with single space character
@@ -394,6 +397,7 @@ static void print_total_order(CTO_NODE *cto, int indent, FILE *stream)
   else
   {
     print_instance(cto->cto_instance, stream);
+    if (ABSTRACT_APS_tnode_phylum(cto->cto_instance) == KEYDeclaration) printf(" %s ", instance_circular(cto->cto_instance) ? "circular": "non-circular");
   }
   fprintf(stream, " <%d,%d>", cto->child_phase.ph, cto->child_phase.ch);
   fprintf(stream, "\n");
@@ -707,21 +711,152 @@ static void assert_locals_order(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_grou
   }
 }
 
-static void find_parent_max_phase(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, CTO_NODE *current, short* max_phase)
+static void followed_by(CTO_NODE* current, short ph, short ch, bool immediate, bool visit_marker_only, bool* any)
 {
   if (current == NULL) return;
 
-  if (current->child_phase.ph == -1)
+  if (current->child_phase.ph == ph && current->child_phase.ch == ch)
   {
-    *max_phase = MAX(abs(current->child_phase.ph), *max_phase);
+    if ((visit_marker_only && IS_VISIT_MARKER(current)) || !visit_marker_only)
+    {
+      *any = true;
+    }
+  }
+  else if (immediate)
+  {
+    return;
   }
 
-  if (current->cto_instance != NULL && if_rule_p(current->cto_instance->fibered_attr.attr))
+  if (group_is_local(&current->child_phase) && if_rule_p(current->cto_instance->fibered_attr.attr))
   {
-    find_parent_max_phase(aug_graph, instance_groups, current->cto_if_true, max_phase);
+    followed_by(current->cto_if_true, ph, ch, immediate, visit_marker_only, any);
   }
 
-  find_parent_max_phase(aug_graph, instance_groups, current->cto_next, max_phase);
+  followed_by(current->cto_next, ph, ch, immediate, visit_marker_only, any);
+}
+
+/**
+ * Utility function used by assert_total_order to check sanity of total order
+ * @param current CTO_NODE node
+ */
+static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group)
+{
+  if (current == NULL) return;
+
+  CHILD_PHASE* current_group = &current->child_phase;
+
+  if (IS_VISIT_MARKER(current))
+  {
+    if (current->child_phase.ch == -1)
+    {
+      // End of total order
+      if (current->cto_next == NULL) return;
+
+      // Should immediately followed by <ph+1,*>
+      bool followed_by_parent_inherited = false;
+      followed_by(current->cto_next, -current->child_phase.ph, -1, false, false, &followed_by_parent_inherited);
+
+      bool followed_by_parent_synthesized = false;
+      followed_by(current->cto_next, current->child_phase.ph, -1, false, false, &followed_by_parent_synthesized);
+
+      if (followed_by_parent_inherited || followed_by_parent_synthesized)
+      {
+        fatal_error("After visit marker <ph,-1> the phase should be greater than current phase.");
+      }
+    }
+    else
+    {
+      // Boolean indicating whether visit marker was followed by child synthesized attribute(s) <ph,ch>
+      bool followed_by_child_synthesized = false;
+      followed_by(current->cto_next, current->child_phase.ph, current->child_phase.ch, true, false, &followed_by_child_synthesized);
+
+      // Boolean indicating whether visit marker was followed by child inherited attribute(s) <-ph,ch>
+      bool preceded_by_child_inherited = prev_group->ph == -current_group->ph && prev_group->ch == current_group->ch;
+
+      if (!(followed_by_child_synthesized || preceded_by_child_inherited))
+      {
+        fatal_error("After visit marker <ph,ch> the phase should be <ph,ch>.");
+      }
+    }
+  }
+
+  if (group_is_local(&current->child_phase))
+  {
+    // Do not change the current group if instance is local
+    current_group = prev_group;
+
+    if (if_rule_p(current->cto_instance->fibered_attr.attr))
+    {
+      total_order_sanity_check(current->cto_if_true, &current->child_phase);
+    }
+  }
+
+  total_order_sanity_check(current->cto_next, current_group);
+}
+
+static void child_visit_consecutive_check(CTO_NODE *current, short ph, short ch)
+{
+  if (current == NULL) return;
+
+  if (IS_VISIT_MARKER(current) && current->child_phase.ch == ch)
+  {
+    if (current->child_phase.ph != ph)
+    {
+      fatal_error("Out of order child visits, expected visit(%d,%d) but received visit(%d,%d)", ph, ch, current->child_phase.ph, current->child_phase.ch);
+    }
+
+    child_visit_consecutive_check(current->cto_next, ph+1, ch);
+    return;
+  }
+
+  if (group_is_local(&current->child_phase) && if_rule_p(current->cto_instance->fibered_attr.attr))
+  {
+    child_visit_consecutive_check(current->cto_if_true, ph, ch);
+  }
+
+  child_visit_consecutive_check(current->cto_next, ph, ch);
+}
+
+static void child_visit_consecutive(AUG_GRAPH *aug_graph, CTO_NODE *head)
+{
+  int i;
+  for (i = 0; i < aug_graph->children.length; i++)
+  {
+    child_visit_consecutive_check(head, 1, i);
+  }
+}
+
+static void child_visit_completeness(AUG_GRAPH* aug_graph, CHILD_PHASE* instance_groups, CTO_NODE* head)
+{
+  size_t max_phases_size = sizeof(short) * aug_graph->children.length;
+  short* max_phases = (short*)alloca(max_phases_size);
+  memset(max_phases, (int)0, max_phases_size);
+
+  int i, j;
+  for (i = 0; i < aug_graph->instances.length; i++)
+  {
+    CHILD_PHASE group = instance_groups[i];
+    if (group.ch != -1 && !group_is_local(&group))
+    {
+      max_phases[group.ch] = MAX(abs(max_phases[group.ch]), group.ph);
+    }
+  }
+
+  for (i = 0; i < aug_graph->children.length; i++)
+  {
+    short max_phase = (short) max_phases[i];
+    printf("max phase for child %d is %d\n", i, max_phase);
+    for (j = 1; j <= max_phase; j++)
+    {
+      bool any = false;
+      followed_by(head, j, i, false, true, &any);
+
+      if (!any)
+      {
+        fatal_error("Missing child %d visit call for phase %d", i, j);
+      }
+    }
+  }
 }
 
 /**
@@ -731,23 +866,14 @@ static void find_parent_max_phase(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_gr
  */
 static void assert_total_order(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_groups, CTO_NODE *head)
 {
-  short total_order_max_phase = SHRT_MIN;
-  find_parent_max_phase(aug_graph, instance_groups, head, &total_order_max_phase);
+  // Condition #1: completeness of child visit calls
+  child_visit_completeness(aug_graph, instance_groups, head);
 
-  short instances_max_phase = SHRT_MIN;
-  int i;
-  for (i = 0; i < aug_graph->instances.length; i++)
-  {
-    if (instance_groups[i].ph == -1)
-    {
-      instances_max_phase = MAX(instances_max_phase, abs(instance_groups[i].ph));
-    }
-  }
+  // Condition #2: general sanity of total order using visit markers
+  total_order_sanity_check(head, &parent_inherited_group);
 
-  if (total_order_max_phase != instances_max_phase)
-  {
-    fatal_error("Expected max parent phase of %d but found max parent phase of %d.", instances_max_phase, total_order_max_phase);
-  }
+  // Condition #3: consecutiveness of child visit calls
+  child_visit_consecutive(aug_graph, head);
 }
 
 /**
@@ -774,7 +900,7 @@ static CTO_NODE* schedule_transitions(AUG_GRAPH *aug_graph, CTO_NODE* prev, COND
     cto_node->cto_instance = NULL;
     cto_node->child_phase.ph = -group->ph;
     cto_node->child_phase.ch = group->ch;
-    cto_node->child_decl = aug_graph->children[group->ch];
+    cto_node->child_decl = aug_graph->children.array[group->ch];
     cto_node->cto_next = schedule_visits_group(aug_graph, cto_node, cond, instance_groups, remaining, &(cto_node->child_phase));
     return cto_node;
   }
@@ -1037,85 +1163,84 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
  * Utility function to get children of augmented dependency graph as array of declarations
  * @param aug_graph Augmented dependency graph
  */
-static Declaration* get_aug_graph_children(AUG_GRAPH *aug_graph)
+static void set_aug_graph_children(AUG_GRAPH *aug_graph)
 {
   Declaration source = aug_graph->match_rule;
+  Declaration* children_arr = NULL;
+  int children_count = 0;
+
   switch (Declaration_KEY(source))
   {
   case KEYtop_level_match:
   {
-    int count = 0;
     Declaration formal = top_level_match_first_rhs_decl(source);
     while (formal != NULL)
     {
-      count++;
+      children_count++;
       formal = DECL_NEXT(formal);
     }
 
     int i = 0;
-    Declaration* result = (Declaration*)HALLOC(sizeof(Declaration) * count);
+    children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
     formal = top_level_match_first_rhs_decl(source);
     while (formal != NULL)
     {
-      result[i++] = formal;
+      children_arr[i++] = formal;
       formal = DECL_NEXT(formal);
     }
 
-    return result;
+    break;
   }
   case KEYsome_class_decl:
   {
-    int count = 0;
     Declaration child = first_Declaration(block_body(some_class_decl_contents(source)));
     while (child != NULL)
     {
       if (Declaration_KEY(child) == KEYvalue_decl)
       {
-        count++;
+        children_count++;
       }
       child = DECL_NEXT(child);
     }
 
     int i = 0;
-    Declaration* result = (Declaration*)HALLOC(sizeof(Declaration) * count);
+    children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
     child = first_Declaration(block_body(some_class_decl_contents(source)));
     while (child != NULL)
     {
       if (Declaration_KEY(child) == KEYvalue_decl)
       {
-        result[i++] = child;
+        children_arr[i++] = child;
       }
       child = DECL_NEXT(child);
     }
 
-    return result;
+    break;
   }
   case KEYsome_function_decl:
   {
-    int count = 0;
     Declaration formal = first_Declaration(function_type_formals(some_function_decl_type(source)));
     while (formal != NULL)
     {
-      count++;
+      children_count++;
       formal = DECL_NEXT(formal);
     }
 
     int i = 0;
-    Declaration* result = (Declaration*)HALLOC(sizeof(Declaration) * count);
+    children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
     formal = first_Declaration(function_type_formals(some_function_decl_type(source)));
     while (formal != NULL)
     {
-      result[i++] = formal;
+      children_arr[i++] = formal;
       formal = DECL_NEXT(formal);
     }
     
-    return result;
+    break;
   }
   }
 
-  fatal_error("Failed to create children array for augment dependency graph: %s", decl_name(aug_graph->syntax_decl));
-
-  return NULL;
+  aug_graph->children.array = children_arr;
+  aug_graph->children.length = children_count;
 }
 
 /**
@@ -1218,7 +1343,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   }
 
   // Find children of augmented graph: this will be used as argument to visit calls
-  aug_graph->children = get_aug_graph_children(aug_graph);
+  set_aug_graph_children(aug_graph);
 
   /* we use the schedule array as temp storage */
   for (i=0; i < n; ++i) {
@@ -1228,9 +1353,8 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   cond.negative = 0;
   cond.positive = 0;
 
-  CHILD_PHASE next_group = { -1, -1 };
   // It is safe to assume inherited attribute of parents have no dependencies and should be scheduled right away
-  aug_graph->total_order = schedule_visits_group(aug_graph, NULL, cond, instance_groups, n, &next_group);
+  aug_graph->total_order = schedule_visits_group(aug_graph, NULL, cond, instance_groups, n, &parent_inherited_group);
 
   if (aug_graph->total_order == NULL)
   {
