@@ -774,7 +774,7 @@ static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group)
 
       if (followed_by_parent_inherited || followed_by_parent_synthesized)
       {
-        fatal_error("After visit marker <ph,-1> the phase should be greater than current phase.");
+        fatal_error("After visit marker <%d,-1> the phase should be greater than current phase.", current->child_phase.ph);
       }
     }
     else
@@ -918,27 +918,13 @@ static CTO_NODE* schedule_transitions(AUG_GRAPH *aug_graph, CTO_NODE* prev, COND
   }
 
   // If we find ourselves scheduling a <+ph,-1>, this means that after we put all these ones in the schedule
-  // (which we should do as a group NOW), this visit phase is over. And we should mark it with a <ph,-1> marker in the CTO.
-  if (group->ph > 0 && group->ch == -1 && FALSE)
+  // (which we should do as a group NOW), this visit phase is over. And we should mark it with a <ph,-1> marker in the CTO.  if (group->ph == -1 && group->ch > 0)
   {
     // Visit marker
     CTO_NODE *cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
     cto_node->cto_prev = prev;
     cto_node->cto_instance = NULL;
-    cto_node->child_phase.ph = group->ph;
-    cto_node->child_phase.ch = -1;
-    cto_node->cto_next = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining /* no change */, group);
-
-    return cto_node;
-  }
-
-  // If we finished scheduling parent synthesized attribute then its time to add a visit marker
-  if (group->ph == -1 && group->ch > 0)
-  {
-    CTO_NODE *cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
-    cto_node->cto_prev = prev;
-    cto_node->cto_instance = NULL;
-    cto_node->child_phase.ph = abs(group->ph);
+    cto_node->child_phase.ph = -group->ph;
     cto_node->child_phase.ch = -1;
     cto_node->cto_next = schedule_visits(aug_graph, prev, cond, instance_groups, remaining, group);
     return cto_node;
@@ -952,7 +938,7 @@ static CTO_NODE* schedule_transitions(AUG_GRAPH *aug_graph, CTO_NODE* prev, COND
 
     if (find_child_attribute(aug_graph, cond, instance_groups, group->ph, &child_group))
     {
-      return schedule_visits_group(aug_graph, prev, cond, instance_groups, remaining, child_group);
+      // return schedule_visits_group(aug_graph, prev, cond, instance_groups, remaining, child_group);
     }
   }
 
