@@ -429,7 +429,18 @@ static void print_schedule_error_debug(AUG_GRAPH *aug_graph, CHILD_PHASE* instan
   for (i = 0; i < aug_graph->instances.length; i++)
   {
     print_instance(&aug_graph->instances.array[i], stream);
-    fprintf(stream, "<%d, %d>\n", instance_groups[i].ph, instance_groups[i].ch);
+    fprintf(stream, " <%d, %d> (%s)\n", instance_groups[i].ph, instance_groups[i].ch, aug_graph->schedule[i] ? "scheduled" : "not-scheduled");
+  }
+
+  fprintf(stderr, "\nNot scheduled instances (%s):\n", decl_name(aug_graph->syntax_decl));
+
+  for (i = 0; i < aug_graph->instances.length; i++)
+  {
+    if (!aug_graph->schedule[i])
+    {
+      print_instance(&aug_graph->instances.array[i], stream);
+      fprintf(stream, " <%d, %d>\n", instance_groups[i].ph, instance_groups[i].ch);
+    }
   }
 
   fprintf(stream, "Schedule so far:\n");
@@ -704,6 +715,8 @@ static void assert_locals_order(AUG_GRAPH *aug_graph, CHILD_PHASE* instance_grou
           print_instance(&aug_graph->instances.array[j], stderr);
           fprintf(stderr, "\n");
 
+          print_schedule_error_debug(aug_graph, instance_groups, NULL, stderr);
+
           fatal_error("Scheduling local attribute instances in an out of order fashion.");
         }
       }
@@ -845,7 +858,6 @@ static void child_visit_completeness(AUG_GRAPH* aug_graph, CHILD_PHASE* instance
   for (i = 0; i < aug_graph->children.length; i++)
   {
     short max_phase = (short) max_phases[i];
-    printf("max phase for child %d is %d\n", i, max_phase);
     for (j = 1; j <= max_phase; j++)
     {
       bool any = false;
@@ -928,7 +940,7 @@ static CTO_NODE* schedule_transitions(AUG_GRAPH *aug_graph, CTO_NODE* prev, COND
     cto_node->cto_instance = NULL;
     cto_node->child_phase.ph = abs(group->ph);
     cto_node->child_phase.ch = -1;
-    cto_node->cto_next = schedule_visits_group(aug_graph, prev, cond, instance_groups, remaining, group);
+    cto_node->cto_next = schedule_visits(aug_graph, prev, cond, instance_groups, remaining, group);
     return cto_node;
   }
 
@@ -1016,6 +1028,8 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
 
       if (if_rule_p(instance->fibered_attr.attr))
       {
+        printf("scheduling <%d,%d>\n", group->ph, group->ch);
+
         int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
         cond.negative |= cmask;
         cto_node->cto_if_false = schedule_visits(aug_graph, cto_node, cond, instance_groups, remaining-1, group);
@@ -1026,9 +1040,7 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
       }
       else
       {
-        // Ask myself if I am working on the right phase of child
-        // This is because I have synthesized attribute of child without seeing inherited attribute of child
-
+        printf("scheduling <%d,%d>\n", group->ph, group->ch);
 
         cto_node->cto_next = schedule_visits_group(aug_graph, cto_node, cond, instance_groups, remaining-1, group);
       }
@@ -1108,6 +1120,8 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
         aug_graph->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
         assert_locals_order(aug_graph, instance_groups);
+
+        printf("scheduling <%d,%d>\n", group->ph, group->ch);
 
         if (if_rule_p(instance->fibered_attr.attr))
         {
@@ -1352,6 +1366,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
 
   cond.negative = 0;
   cond.positive = 0;
+  printf("\nSchedule for %s:\n", decl_name(aug_graph->syntax_decl));
 
   // It is safe to assume inherited attribute of parents have no dependencies and should be scheduled right away
   aug_graph->total_order = schedule_visits_group(aug_graph, NULL, cond, instance_groups, n, &parent_inherited_group);
