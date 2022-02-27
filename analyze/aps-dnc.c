@@ -1913,7 +1913,6 @@ static void init_augmented_dependency_graph(AUG_GRAPH *aug_graph,
   }
   
   aug_graph->next_in_aug_worklist = NULL;
-  aug_graph->schedule = (int *)HALLOC(aug_graph->instances.length*sizeof(int));
 }
 
 static void init_summary_dependency_graph(PHY_GRAPH *phy_graph,

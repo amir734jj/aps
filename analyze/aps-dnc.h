@@ -66,9 +66,7 @@ typedef struct augmented_dependency_graph {
   EDGESET *graph; /* two-d array, indexed by instance number */
   EDGESET worklist_head, worklist_tail;
   struct augmented_dependency_graph *next_in_aug_worklist;
-  int *schedule; /* one-d array, indexed by instance number */
   struct cto_node *total_order;
-  VECTOR(Declaration) children;
 } AUG_GRAPH;
 extern const char *aug_graph_name(AUG_GRAPH *);
 
