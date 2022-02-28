@@ -9,6 +9,6 @@ files=( "first" "follow" "nested-cycles" "simple-oag" "simple-coag"
 for i in "${files[@]}"
 do
   echo "=> Working on $i.aps"
-  ../bin/apssched -p .:../base $i
+  ../bin/apssched -p .:../base -DTo $i
   echo 
-done
+done || exit 0
