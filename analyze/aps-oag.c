@@ -250,7 +250,10 @@ static void print_total_order(CTO_NODE *cto, int indent, FILE *stream)
   else
   {
     print_instance(cto->cto_instance, stream);
-    if (ABSTRACT_APS_tnode_phylum(cto->cto_instance) == KEYDeclaration) printf(" %s ", instance_circular(cto->cto_instance) ? "circular": "non-circular");
+    if (ABSTRACT_APS_tnode_phylum(cto->cto_instance) == KEYDeclaration)
+    {
+      printf(" %s ", instance_circular(cto->cto_instance) ? "circular": "non-circular");
+    }
   }
   fprintf(stream, " <%d,%d>", cto->child_phase.ph, cto->child_phase.ch);
   fprintf(stream, "\n");
@@ -660,23 +663,10 @@ static void child_visit_consecutive(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* sta
  */
 static void child_visit_completeness(AUG_GRAPH* aug_graph, TOTAL_ORDER_STATE* state, CTO_NODE* head)
 {
-  size_t max_phases_size = sizeof(short) * state->children.length;
-  short* max_phases = (short*)alloca(max_phases_size);
-  memset(max_phases, (int)0, max_phases_size);
-
   int i, j;
-  for (i = 0; i < aug_graph->instances.length; i++)
-  {
-    CHILD_PHASE group = state->instance_groups[i];
-    if (group.ch != -1 && !group_is_local(&group))
-    {
-      max_phases[group.ch] = MAX(abs(max_phases[group.ch]), group.ph);
-    }
-  }
-
   for (i = 0; i < state->children.length; i++)
   {
-    short max_phase = (short) max_phases[i];
+    short max_phase = (short) state->max_child_ph[i];
     for (j = 1; j <= max_phase; j++)
     {
       bool any = false;
@@ -749,6 +739,22 @@ static CTO_NODE* schedule_transition_start_of_group(AUG_GRAPH *aug_graph, CTO_NO
     cto_node->child_phase.ch = -1;
     cto_node->cto_next = schedule_visits_group(aug_graph, prev, cond, state, remaining, group, parent_ph + 1);
     return cto_node;
+  }
+
+  // If we are starting to schedule parent synthesized attribute then
+  // look for any other non-parent attribute to schedule if any before
+  // scheduling current group
+  if (group->ph == state->max_parent_ph && group->ch == -1)
+  {
+    int i;
+    int n = aug_graph->instances.length;
+    for (i = 0; i < n; i++)
+    {
+      if (!state->schedule[i] && state->instance_groups[i].ch != -1 && group_ready_to_go(aug_graph, state, cond, i))
+      {
+        return schedule_visits_group(aug_graph, prev, cond, state, remaining, &state->instance_groups[i], parent_ph);
+      }
+    }
   }
 
   return schedule_visits_group(aug_graph, prev, cond, state, remaining, group, parent_ph);
@@ -1008,7 +1014,10 @@ static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* stat
     Declaration formal = top_level_match_first_rhs_decl(source);
     while (formal != NULL)
     {
-      children_count++;
+      if (type_is_phylum(infer_formal_type(formal)))
+      {
+        children_count++;
+      }
       formal = DECL_NEXT(formal);
     }
 
@@ -1054,7 +1063,10 @@ static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* stat
     Declaration formal = first_Declaration(function_type_formals(some_function_decl_type(source)));
     while (formal != NULL)
     {
-      children_count++;
+      if (type_is_phylum(infer_formal_type(formal)))
+      {
+        children_count++;
+      }
       formal = DECL_NEXT(formal);
     }
 
@@ -1161,18 +1173,22 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   // Find children of augmented graph: this will be used as argument to visit calls
   set_aug_graph_children(aug_graph, state);
 
-  state->max_parent_ph = 1;
-
-  size_t max_child_ph_size = sizeof(state->children.length * sizeof(short));
-  short* max_child_ph = (short *)alloca(max_child_ph_size);
-  state->max_child_ph = max_child_ph;
-
   size_t schedule_size = n * sizeof(int);
   bool* schedule = (bool *)alloca(schedule_size);
 
   /* This means: not scheduled yet */
   memset(schedule, false, schedule_size);
   state->schedule = schedule;
+
+  /* Set default max phase of parent */
+  state->max_parent_ph = 1;
+
+  size_t max_child_ph_size = sizeof(state->children.length * sizeof(short));
+  short* max_child_ph = (short *)alloca(max_child_ph_size);
+
+  /* Set default max phase of children indexed by child index */
+  memset(max_child_ph, (int)0, max_child_ph_size);
+  state->max_child_ph = max_child_ph;
 
   // Collect max_parent_ph and max_child_ph
   for (i = 0; i < n; i++)
@@ -1223,7 +1239,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
 
   if (oag_debug & DEBUG_ORDER)
   {
-    printf("\nSchedule for %s:\n", decl_name(aug_graph->syntax_decl));
+    printf("\nSchedule for %s (%d children):\n", decl_name(aug_graph->syntax_decl), state->children.length);
     print_total_order(aug_graph->total_order, 0, stdout);
   }
 
