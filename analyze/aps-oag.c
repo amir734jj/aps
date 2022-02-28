@@ -862,8 +862,6 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
 
       if (if_rule_p(instance->fibered_attr.attr))
       {
-        // printf("scheduling <%d,%d>\n", group->ph, group->ch);
-
         int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
         cond.negative |= cmask;
         cto_node->cto_if_false = schedule_visits(aug_graph, cto_node, cond, state, remaining-1, group, parent_ph);
@@ -874,8 +872,6 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
       }
       else
       {
-        // printf("scheduling <%d,%d>\n", group->ph, group->ch);
-
         cto_node->cto_next = schedule_visits_group(aug_graph, cto_node, cond, state, remaining-1, group, parent_ph);
       }
 
@@ -955,8 +951,6 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
         state->schedule[i] = true; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
         assert_locals_order(aug_graph, state);
-
-        // printf("scheduling <%d,%d>\n", group->ph, group->ch);
 
         if (if_rule_p(instance->fibered_attr.attr))
         {
