@@ -1183,7 +1183,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   /* Set default max phase of parent */
   state->max_parent_ph = 1;
 
-  size_t max_child_ph_size = sizeof(state->children.length * sizeof(short));
+  size_t max_child_ph_size = state->children.length * sizeof(short);
   short* max_child_ph = (short *)alloca(max_child_ph_size);
 
   /* Set default max phase of children indexed by child index */
