@@ -1173,7 +1173,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   // Find children of augmented graph: this will be used as argument to visit calls
   set_aug_graph_children(aug_graph, state);
 
-  size_t schedule_size = n * sizeof(int);
+  size_t schedule_size = n * sizeof(bool);
   bool* schedule = (bool *)alloca(schedule_size);
 
   /* This means: not scheduled yet */
