@@ -871,7 +871,8 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
       cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
       cto_node->cto_prev = prev;
       cto_node->cto_instance = instance;
-      cto_node->child_phase = *group;
+      cto_node->child_phase.ph = group->ph;
+      cto_node->child_phase.ch = group->ch;
 
       state->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
@@ -966,7 +967,8 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
         cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
         cto_node->cto_prev = prev;
         cto_node->cto_instance = instance;
-        cto_node->child_phase = *group;
+        cto_node->child_phase.ch = group->ch;
+        cto_node->child_phase.ph = group->ph;
 
         state->schedule[i] = 1; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
@@ -1156,7 +1158,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
 	   aug_graph_name(aug_graph));
   }
   if (oag_debug & DEBUG_ORDER) {
-    for (int i=0; i <= n; ++i) {
+    for (int i=0; i < n; ++i) {
       INSTANCE *in = &(aug_graph->instances.array[i]);
       print_instance(in,stdout);
       printf(": ");
@@ -1207,10 +1209,13 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
   TOTAL_ORDER_STATE* state = (TOTAL_ORDER_STATE *)alloca(sizeof(TOTAL_ORDER_STATE));
   state->instance_groups = instance_groups;
   state->max_parent_ph = 1;
-  state->schedule = (int *)alloca(n * sizeof(int));
+
+  size_t schedule_size = n * sizeof(int);
+  int* schedule = (int *)alloca(schedule_size);
 
   /* This means: not scheduled yet */
-  memset(state->schedule, (int)0, n * sizeof(int));
+  memset(schedule, (int)0, schedule_size);
+  state->schedule = schedule;
 
   for (i = 0; i < n; i++)
   {
@@ -1222,7 +1227,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     }
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     printf("\nInstances %s:\n", decl_name(aug_graph->syntax_decl));
     for (i = 0; i < n; i++)
@@ -1263,14 +1268,14 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     fatal_error("Failed to create total order.");
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     printf("\nSchedule for %s:\n", decl_name(aug_graph->syntax_decl));
     print_total_order(aug_graph->total_order, 0, stdout);
   }
 
   // Ensure generated total order is valid
-  assert_total_order(aug_graph, state, aug_graph->total_order);
+  // assert_total_order(aug_graph, state, aug_graph->total_order);
 }
 
 void compute_oag(Declaration module, STATE *s) {
