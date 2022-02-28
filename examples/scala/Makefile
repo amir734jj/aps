@@ -34,10 +34,10 @@ all	: nested_cycles_implicit.class NestedCyclesDriver.class
 
 run: Classic.run TestCollDriver.run TestCycleDriver.run NestedCyclesDriver.run
 
-%.static.scala : ../%.aps ${APS2SCALA}
-	${APS2SCALA} ${APS2SCALAFLAGS} $*
+nested-cycles.scala first.scala follow.scala : ../$(basename $(@F)).aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
 
-%.scala : ../%.aps ${APS2SCALA}
+%.scala: ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} $*
 
 %_implicit.class : %.scala
@@ -69,7 +69,7 @@ SimpleParserBase.class : SimpleParserBase.scala simple_implicit.class
 SimpleTokens.class : SimpleTokens.scala
 	${SCALAC} ${SCALACFLAGS} $<
 
-nested-cycles.class: nested-cycles.static.scala simple_implicit.class
+nested-cycles.class: nested-cycles.scala simple_implicit.class
 	${SCALAC} ${SCALACFLAGS} nested-cycles.scala
 
 .PHONY: nested_cycles_implicit.class
