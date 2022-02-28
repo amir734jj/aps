@@ -727,20 +727,6 @@ static CTO_NODE* schedule_transition_start_of_group(AUG_GRAPH *aug_graph, CTO_NO
     return cto_node;
   }
 
-  // If parent phase is greater than current parent attribute phase then we
-  // have reached the end of previous phase and so add a end of parent phase
-  // visit marker <ph,-1>
-  if (abs(group->ph) > parent_ph && group->ch == -1)
-  {
-    cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
-    cto_node->cto_prev = prev;
-    cto_node->cto_instance = NULL;
-    cto_node->child_phase.ph = parent_ph;
-    cto_node->child_phase.ch = -1;
-    cto_node->cto_next = schedule_visits_group(aug_graph, prev, cond, state, remaining, group, parent_ph + 1);
-    return cto_node;
-  }
-
   // If we are starting to schedule parent synthesized attribute then
   // look for any other non-parent attribute to schedule if any before
   // scheduling current group
@@ -757,6 +743,20 @@ static CTO_NODE* schedule_transition_start_of_group(AUG_GRAPH *aug_graph, CTO_NO
     }
   }
 
+  // If parent phase is greater than current parent attribute phase then we
+  // have reached the end of previous phase and so add a end of parent phase
+  // visit marker <ph,-1>
+  if (abs(group->ph) > parent_ph && group->ch == -1)
+  {
+    cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
+    cto_node->cto_prev = prev;
+    cto_node->cto_instance = NULL;
+    cto_node->child_phase.ph = parent_ph;
+    cto_node->child_phase.ch = -1;
+    cto_node->cto_next = schedule_visits_group(aug_graph, prev, cond, state, remaining, group, parent_ph + 1);
+    return cto_node;
+  }
+  
   return schedule_visits_group(aug_graph, prev, cond, state, remaining, group, parent_ph);
 }
 
@@ -1014,7 +1014,7 @@ static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* stat
     Declaration formal = top_level_match_first_rhs_decl(source);
     while (formal != NULL)
     {
-      if (type_is_phylum(infer_formal_type(formal)))
+      // if (type_is_phylum(infer_formal_type(formal)))
       {
         children_count++;
       }
@@ -1063,7 +1063,7 @@ static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* stat
     Declaration formal = first_Declaration(function_type_formals(some_function_decl_type(source)));
     while (formal != NULL)
     {
-      if (type_is_phylum(infer_formal_type(formal)))
+      // if (type_is_phylum(infer_formal_type(formal)))
       {
         children_count++;
       }
