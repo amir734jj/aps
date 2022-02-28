@@ -23,6 +23,18 @@ struct total_order_state
 
 typedef struct total_order_state TOTAL_ORDER_STATE;
 
+
+#define CONDITION_IS_IMPOSSIBLE(cond) ((cond).positive & (cond).negative)
+#define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) (((cond1).positive|(cond2).positive) & ((cond1).negative|(cond2).negative))
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define IS_VISIT_MARKER(node) (node->cto_instance == NULL)
+
+// Greedy scheduler
+static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, TOTAL_ORDER_STATE* state, int remaining, CHILD_PHASE *group, short parent_ph);
+
+// Group scheduler
+static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, TOTAL_ORDER_STATE* state, int remaining, CHILD_PHASE *group, short parent_ph);
+
 /**
  * Utility function that schedules a single phase
  * @param phy_graph phylum graph
@@ -208,11 +220,6 @@ CONDITION instance_condition(INSTANCE *in)
     return Declaration_info(ad)->decl_cond;
   }
 }
-
-#define CONDITION_IS_IMPOSSIBLE(cond) ((cond).positive & (cond).negative)
-#define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) (((cond1).positive|(cond2).positive) & ((cond1).negative|(cond2).negative))
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define IS_VISIT_MARKER(node) (node->cto_instance == NULL)
 
 /**
  * Utility function to print indent with single space character
@@ -466,10 +473,6 @@ static bool is_there_more_to_schedule_in_group(AUG_GRAPH *aug_graph, TOTAL_ORDER
 
   return false;
 }
-
-// Signature of function
-static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, TOTAL_ORDER_STATE* state, int remaining, CHILD_PHASE *group, short parent_ph);
-static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, TOTAL_ORDER_STATE* state, int remaining, CHILD_PHASE *group, short parent_ph);
 
 /**
  * Function that throws an error if locals are scheduled out of order
