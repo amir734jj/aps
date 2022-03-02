@@ -14,11 +14,22 @@ CHILD_PHASE parent_inherited_group = { -1, -1 };
 // Utility struct to keep of track of information needed to handle group scheduling
 struct total_order_state
 { 
+  // Max parent phase
   short max_parent_ph;
+  // One-d array, max child phase indexed by child index
   short* max_child_ph;
+  // Tuple <ph,ch> indexed by instance number
   CHILD_PHASE* instance_groups;
-  bool *schedule; /* one-d array, indexed by instance number */
+  // One-d array, indexed by instance number
+  bool* schedule;
+  // Children Declaration array
   VECTOR(Declaration) children;
+  // One-d array, boolean indicating whether there is any parent synthesized attribute at
+  // phase indexed by phase number
+  bool* any_parent_synth;
+  // One-d array, boolean indicating whether there is any parent inherited attribute at
+  // phase indexed by phase number
+  bool* any_parent_inh;
 };
 
 typedef struct total_order_state TOTAL_ORDER_STATE;
@@ -539,12 +550,28 @@ static void followed_by(CTO_NODE* current, short ph, short ch, bool immediate, b
     return;
   }
 
+  bool if_true_any = false;
+  bool if_false_any = false;
+  bool node_is_cond = false;
+  
   if (group_is_local(&current->child_phase) && if_rule_p(current->cto_instance->fibered_attr.attr))
   {
-    followed_by(current->cto_if_true, ph, ch, immediate, visit_marker_only, any);
+    node_is_cond = true;
+    followed_by(current->cto_if_true, ph, ch, immediate, visit_marker_only, &if_true_any);
   }
 
-  followed_by(current->cto_next, ph, ch, immediate, visit_marker_only, any);
+  followed_by(current->cto_next, ph, ch, immediate, visit_marker_only, &if_false_any);
+
+  if (node_is_cond && (if_true_any || if_false_any))
+  {
+    // If something is true in one branch, it has to be in the second branch
+    if (if_true_any != if_false_any)
+    {
+      fatal_error("Inconsistencies between true and false branch of conditional.");
+    }
+  }
+
+  *any |= (if_true_any || if_false_any);
 }
 
 /**
@@ -555,7 +582,7 @@ static void followed_by(CTO_NODE* current, short ph, short ch, bool immediate, b
  * @param current CTO_NODE node
  * @param prev_group <ph,ch> group
  */
-static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group)
+static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group, CHILD_PHASE* prev_parent, TOTAL_ORDER_STATE* state)
 {
   if (current == NULL) return;
 
@@ -568,16 +595,22 @@ static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group)
       // End of total order
       if (current->cto_next == NULL) return;
 
-      // Should immediately followed by <ph+1,*>
-      bool followed_by_parent_inherited = false;
-      followed_by(current->cto_next, -current->child_phase.ph, -1, false, false, &followed_by_parent_inherited);
+      // Boolean indicating whether end of phase visit marker was preceded by
+      // parent synthesized attributes <ph,-1> if any
+      bool preceded_by_parent_synthesized_current_phase = prev_parent->ph > 0 && prev_parent->ch == -1;
 
-      bool followed_by_parent_synthesized = false;
-      followed_by(current->cto_next, current->child_phase.ph, -1, false, false, &followed_by_parent_synthesized);
-
-      if (followed_by_parent_inherited || followed_by_parent_synthesized)
+      if (state->any_parent_synth[current_group->ph] && !preceded_by_parent_synthesized_current_phase)
       {
-        fatal_error("After visit marker <%d,-1> the phase should be greater than current phase.", current->child_phase.ph);
+        fatal_error("Expected to be preceded by parent synthesized attribute of current phase <%d,%d>", current_group->ph, -1);
+      }
+
+      // Boolean indicating whether followed by inherited attribute of parent <-(ph+1),-1>
+      bool followed_by_parent_inherited_next_phase = false;
+      followed_by(current->cto_next, -(current->child_phase.ph + 1), -1, false, false, &followed_by_parent_inherited_next_phase);
+
+      if (state->any_parent_inh[current_group->ph + 1] && !followed_by_parent_inherited_next_phase)
+      {
+        fatal_error("Expected to be followed by parent inherited attribute of next phase <%d,%d>", current_group->ph + 1, -1);
       }
     }
     else
@@ -596,6 +629,11 @@ static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group)
     }
   }
 
+  if (current_group->ch == -1)
+  {
+    prev_parent = current_group;
+  }
+
   if (group_is_local(&current->child_phase))
   {
     // Do not change the current group if instance is local
@@ -603,11 +641,11 @@ static void total_order_sanity_check(CTO_NODE* current, CHILD_PHASE* prev_group)
 
     if (if_rule_p(current->cto_instance->fibered_attr.attr))
     {
-      total_order_sanity_check(current->cto_if_true, &current->child_phase);
+      total_order_sanity_check(current->cto_if_true, &current->child_phase, prev_parent, state);
     }
   }
 
-  total_order_sanity_check(current->cto_next, current_group);
+  total_order_sanity_check(current->cto_next, current_group, prev_parent, state);
 }
 
 /**
@@ -692,7 +730,7 @@ static void assert_total_order(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state, C
   child_visit_completeness(aug_graph, state, head);
 
   // Condition #2: general sanity of total order using visit markers
-  total_order_sanity_check(head, &parent_inherited_group);
+  total_order_sanity_check(head, &parent_inherited_group, &parent_inherited_group, state);
 
   // Condition #3: consecutiveness of child visit calls
   child_visit_consecutive(aug_graph, state, head);
@@ -1205,6 +1243,34 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     }
   }
 
+  // Collect parent_inh and parent_synth
+  size_t parent_inh_synth_size = (state->max_parent_ph + 1) * sizeof(bool);
+  bool* any_parent_inh = (bool *)alloca(parent_inh_synth_size);
+  bool* any_parent_synth = (bool *)alloca(parent_inh_synth_size);
+
+  memset(any_parent_inh, (int)0, parent_inh_synth_size);
+  memset(any_parent_synth, (int)0, parent_inh_synth_size);
+
+  state->any_parent_inh = any_parent_inh;
+  state->any_parent_synth = any_parent_synth;
+
+  for (i = 0; i < n; i++)
+  {
+    CHILD_PHASE group = instance_groups[i];
+
+    if (group.ch == -1)
+    {
+      if (group.ph > 0)
+      {
+        state->any_parent_synth[group.ph] = true;
+      }
+      else
+      {
+        state->any_parent_inh[-group.ph] = true;
+      }
+    }
+  }
+
   if (oag_debug & DEBUG_ORDER)
   {
     printf("\nInstances %s:\n", decl_name(aug_graph->syntax_decl));
@@ -1237,7 +1303,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     fatal_error("Failed to create total order.");
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     printf("\nSchedule for %s (%d children):\n", decl_name(aug_graph->syntax_decl), state->children.length);
     print_total_order(aug_graph->total_order, 0, stdout);
@@ -1276,7 +1342,8 @@ void compute_oag(Declaration module, STATE *s) {
 
       analysis_debug = saved_analysis_debug;
     }
-    if (analysis_debug & DNC_ITERATE) {
+    // if (analysis_debug & DNC_ITERATE)
+    {
       printf ("\n*** After closure after schedule OAG phylum %d\n\n",j);
       print_analysis_state(s,stdout);
       print_cycles(s,stdout);
