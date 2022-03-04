@@ -1035,84 +1035,20 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
  */
 static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state)
 {
-  Declaration source = aug_graph->match_rule;
   Declaration* children_arr = NULL;
   int children_count = 0;
 
-  switch (Declaration_KEY(source))
+  Declaration current;
+  for(current = aug_graph->first_rhs_decl; current != NULL; current = DECL_NEXT(current))
   {
-  case KEYtop_level_match:
-  {
-    Declaration formal = top_level_match_first_rhs_decl(source);
-    while (formal != NULL)
-    {
-      // if (type_is_phylum(infer_formal_type(formal)))
-      {
-        children_count++;
-      }
-      formal = DECL_NEXT(formal);
-    }
-
-    int i = 0;
-    children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
-    formal = top_level_match_first_rhs_decl(source);
-    while (formal != NULL)
-    {
-      children_arr[i++] = formal;
-      formal = DECL_NEXT(formal);
-    }
-
-    break;
+    children_count++;
   }
-  case KEYsome_class_decl:
+
+  int i = 0;
+  children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
+  for(current = aug_graph->first_rhs_decl; current != NULL; current = DECL_NEXT(current))
   {
-    Declaration child = first_Declaration(block_body(some_class_decl_contents(source)));
-    while (child != NULL)
-    {
-      if (Declaration_KEY(child) == KEYvalue_decl)
-      {
-        children_count++;
-      }
-      child = DECL_NEXT(child);
-    }
-
-    int i = 0;
-    children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
-    child = first_Declaration(block_body(some_class_decl_contents(source)));
-    while (child != NULL)
-    {
-      if (Declaration_KEY(child) == KEYvalue_decl)
-      {
-        children_arr[i++] = child;
-      }
-      child = DECL_NEXT(child);
-    }
-
-    break;
-  }
-  case KEYsome_function_decl:
-  {
-    Declaration formal = first_Declaration(function_type_formals(some_function_decl_type(source)));
-    while (formal != NULL)
-    {
-      // if (type_is_phylum(infer_formal_type(formal)))
-      {
-        children_count++;
-      }
-      formal = DECL_NEXT(formal);
-    }
-
-    int i = 0;
-    children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
-    formal = first_Declaration(function_type_formals(some_function_decl_type(source)));
-    while (formal != NULL)
-    {
-      children_arr[i++] = formal;
-      formal = DECL_NEXT(formal);
-    }
-    
-    break;
-  }
+    children_arr[i++] = current;
   }
 
   // Assign children vector array
