@@ -153,6 +153,7 @@ void schedule_summary_dependency_graph(PHY_GRAPH* phy_graph) {
     if (count_non_circular) {
       done += count_non_circular;
       circular_phase[phase] = false;
+      printf("^^^ non-circular\n");
       continue;
     }
 
@@ -161,6 +162,7 @@ void schedule_summary_dependency_graph(PHY_GRAPH* phy_graph) {
     if (count_circular) {
       done += count_circular;
       circular_phase[phase] = true;
+      printf("^^^ circular\n");
       continue;
     }
 
@@ -1072,7 +1074,7 @@ int attribute_schedule(PHY_GRAPH *phy_graph, FIBERED_ATTRIBUTE* key)
   return 0;
 }
 
-void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
+void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
   int n = aug_graph->instances.length;
   CONDITION cond;
   int i, j;
@@ -1132,6 +1134,21 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
       int ph = attribute_schedule(npg,&(in->fibered_attr));
       instance_groups[i].ph = (short) ph;
       instance_groups[i].ch = (short) ch;
+      instance_groups[i].cycle = i;
+
+      int k, l;
+      for (k = 0; k < cycles.length; k++)
+      {
+        CYCLE cyc = cycles.array[k];
+        for (l = 0; l < cyc.instances.length; l++)
+        {
+          INSTANCE source = cyc.instances.array[l];
+          if (source.index == i)
+          {
+            instance_groups[i].cycle = k;
+          }
+        }
+      }
     }
   }
 
@@ -1233,7 +1250,7 @@ void schedule_augmented_dependency_graph(AUG_GRAPH *aug_graph) {
     fatal_error("Failed to create total order.");
   }
 
-  // if (oag_debug & DEBUG_ORDER)
+  if (oag_debug & DEBUG_ORDER)
   {
     printf("\nSchedule for %s (%d children):\n", decl_name(aug_graph->syntax_decl), state->children.length);
     print_total_order(aug_graph->total_order, 0, stdout);
@@ -1272,7 +1289,7 @@ void compute_oag(Declaration module, STATE *s) {
 
       analysis_debug = saved_analysis_debug;
     }
-    // if (analysis_debug & DNC_ITERATE)
+    if (analysis_debug & DNC_ITERATE)
     {
       printf ("\n*** After closure after schedule OAG phylum %d\n\n",j);
       print_analysis_state(s,stdout);
@@ -1284,9 +1301,9 @@ void compute_oag(Declaration module, STATE *s) {
 
   if (!analysis_state_cycle(s)) {
     for (j=0; j < s->match_rules.length; ++j) {
-      schedule_augmented_dependency_graph(&s->aug_graphs[j]);
+      schedule_augmented_dependency_graph(s->cycles, &s->aug_graphs[j]);
     }
-    schedule_augmented_dependency_graph(&s->global_dependencies);
+    schedule_augmented_dependency_graph(s->cycles, &s->global_dependencies);
   }
 
   if (analysis_debug & (DNC_ITERATE|DNC_FINAL)) {

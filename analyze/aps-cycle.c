@@ -319,6 +319,60 @@ bool instance_is_up(INSTANCE *i) {
   return (fibered_attr_direction(&i->fibered_attr)) == instance_outward;
 }
 
+bool instance_is_down(INSTANCE *i) {
+  return (fibered_attr_direction(&i->fibered_attr)) == instance_inward;
+}
+
+static bool instance_is_local(INSTANCE* i)
+{
+  return (fibered_attr_direction(&i->fibered_attr)) == instance_local;
+}
+
+static bool edge_can_be_deleted(int index1, int index2, INSTANCE *array, bool direction)
+{
+  INSTANCE *attr1 = (&array[index1]);
+  INSTANCE *attr2 = (&array[index2]);
+
+  // UP-DOWN
+  if (direction)
+  {
+    if ((instance_is_up(attr1) && instance_is_local(attr2)) || (instance_is_local(attr1) && instance_is_down(attr2)))
+    {
+      if (cycle_debug & DEBUG_UP_DOWN)
+      {
+        printf(" preserved up-down: ");
+        print_instance(attr1, stdout);
+        printf(" -> ");
+        print_instance(attr2, stdout);
+        printf("\n");
+      }
+
+      return false;
+    }
+  }
+  
+  // DOWN-UP
+  if (!direction)
+  {
+    if ((instance_is_down(attr1) && instance_is_local(attr2)) || (instance_is_local(attr1) && instance_is_up(attr2)))
+    {
+      if (cycle_debug & DEBUG_UP_DOWN)
+      {
+        printf(" preserved down-up: ");
+        print_instance(attr1, stdout);
+        printf(" -> ");
+        print_instance(attr2, stdout);
+        printf("\n");
+      }
+
+      return false;
+    }
+  }
+
+  // Kill the edge
+  return true;
+}
+
 /**
  * Removes edgeset between two instances at the indices.
  * @param index1 source index
@@ -331,12 +385,13 @@ static void remove_edgeset(int index1, int index2, int n, INSTANCE *array, AUG_G
 {
   INSTANCE *attr1 = (&array[index1]);
   INSTANCE *attr2 = (&array[index2]);
-  if (cycle_debug & DEBUG_UP_DOWN) {
-    printf("  Removing up/down: ");
+  if (cycle_debug & DEBUG_UP_DOWN)
+  {
+    printf("  Removing edge: ");
     print_instance(attr1, stdout);
-    printf(" -> ");
+    printf(" (%s) -> ", instance_is_up(attr1) ? "up" : "down");
     print_instance(attr2, stdout);
-    printf("\n");
+    printf(" (%s) \n", instance_is_up(attr2) ? "up" : "down");
   }
   free_edgeset(aug_graph->graph[index1 * n + index2], aug_graph);
   aug_graph->graph[index1 * n + index2] = NULL;
@@ -359,11 +414,11 @@ static void add_up_down_edge(int index1, int index2, int n, INSTANCE *array, DEP
 
   if (cycle_debug & DEBUG_UP_DOWN)
   {     
-    printf("  Adding up/down: ");
+    printf("  Adding edge: ");
     print_instance(attr1, stdout);
-    printf(" -> ");
+    printf(" (%s) -> ", instance_is_up(attr1) ? "up" : "down");
     print_instance(attr2, stdout);
-    printf("\n");
+    printf(" (%s) \n", instance_is_up(attr2) ? "up" : "down");
   }
   add_edge_to_graph(attr1, attr2, cond, dep, aug_graph);
 }
@@ -517,7 +572,7 @@ static void add_up_down_attributes(STATE *s, bool direction)
                 {
                   phy->mingraph[k * n + l] = acc_dependency;
                 }
-                else
+                else if (edge_can_be_deleted(k, l, array, direction))
                 {
                   phy->mingraph[k * n + l] = no_dependency;
                 }
@@ -533,8 +588,11 @@ static void add_up_down_attributes(STATE *s, bool direction)
               // Make sure it is in the cycle
               if (parent_index[l + phylum_index] == cyc->internal_info)
               {
-                // Remove edges between instance and all others in the same cycle
-                phy->mingraph[k * n + l] = no_dependency;
+                if (edge_can_be_deleted(k, l, array, direction))
+                {
+                  // Remove edges between instance and all others in the same cycle
+                  phy->mingraph[k * n + l] = no_dependency;
+                }
               }
             }
           }
@@ -589,7 +647,7 @@ static void add_up_down_attributes(STATE *s, bool direction)
               // If edge is not to self and it is in the cycle
               if (parent_index[l + constructor_index] == cyc->internal_info)
               {
-                // printf("k -> l Adding Not In cycle -> In Cycle: ");
+                // printf("Adding Not In cycle -> In Cycle: ");
                 add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph);
               }
             }
@@ -618,7 +676,7 @@ static void add_up_down_attributes(STATE *s, bool direction)
               // If edge is not to self and it is in the cycle
               if (parent_index[l + constructor_index] == cyc->internal_info)
               {
-                // printf("l -> k Adding In Cycle -> Not In Cycle: ");
+                // printf("Adding In Cycle -> Not In Cycle: ");
                 add_up_down_edge(l, k, n, array, acc_dependency, &acc_cond, aug_graph);
               }
             }
@@ -653,12 +711,12 @@ static void add_up_down_attributes(STATE *s, bool direction)
                 // Make sure it is a DOWN attribute
                 if (acc_dependency && UP_DOWN_DIRECTION(!instance_is_up(&array[l]), direction))
                 {
-                  // printf("k -> l Adding In cycle -> In Cycle: ");
-                  add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph);
+                  // printf("Adding In cycle -> In Cycle: ");
+                  add_up_down_edge(k, l, n, array, acc_dependency, &acc_cond, aug_graph);              
                 }
-                else
+                else if (edge_can_be_deleted(k, l, array, direction))
                 {
-                  // printf("k -> l Removing In cycle -> In Cycle: ");
+                  // printf("Removing In cycle -> In Cycle: ");
                   remove_edgeset(k, l, n, array, aug_graph);
                 }
               }
@@ -673,9 +731,12 @@ static void add_up_down_attributes(STATE *s, bool direction)
               // Make sure it is in the cycle
               if (parent_index[l + constructor_index] == cyc->internal_info)
               {
-                // Remove edges between instance and all others in the same cycle
-                // printf("k -> l Removing Down In cycle -> In Cycle: ");
-                remove_edgeset(k, l, n, array, aug_graph);
+                 if (edge_can_be_deleted(k, l, array, direction))
+                 {
+                  // Remove edges between instance and all others in the same cycle
+                  // printf("Removing Down In cycle -> In Cycle: ");
+                  remove_edgeset(k, l, n, array, aug_graph);
+                 }
               }
             }
           }

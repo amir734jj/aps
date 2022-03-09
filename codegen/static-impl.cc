@@ -93,7 +93,7 @@ int global_suffix = 0;
  * @param suffix suffix to prevent duplicate variable name
  * @param os FILE out
  */
-static void dump_fixed_point_loop_visit(Declaration decl, int n, int ph, int suffix, ostream& os)
+static void dump_fixed_point_loop_visit(Declaration decl, int n, int ph, int ch, int suffix, ostream& os)
 {
 #ifdef APS2SCALA
   os << indent(nesting_level) << "val prevChanged" << n << "_" << ph << "_" << suffix << " = changed;\n";
@@ -132,17 +132,22 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
     // Visit marker for when child visit happens
     if (in == NULL && ch > -1)
     {
+      os << "\n";
       os << indent() << "// aug_graph: " << decl_name(aug_graph->syntax_decl) << "\n";
       os << indent() << "// visit marker(" << ph << "," << ch << ")\n";
 
       PHY_GRAPH* pg = Declaration_info(cto->child_decl)->node_phy_graph;
+      PHY_GRAPH* pg_parent = Declaration_info(aug_graph->lhs_decl)->node_phy_graph;
       int n = PHY_GRAPH_NUM(pg);
 
+      os << indent() << "// parent visit of " << decl_name(pg_parent->phylum) << " at " << phase <<  " is " << (pg_parent->cyclic_flags[phase] ? "circular" : "non-circular") << "\n";
+      os << indent() << "// current visit of " << decl_name(pg->phylum) << " at " << ph << " is " << (pg->cyclic_flags[ph] ? "circular" : "non-circular") << "\n";
+      
       // If current phase is not circular but visit is circular then fixed-point loop is needed
-      if (current > 0 && !pg->cyclic_flags[current] && pg->cyclic_flags[ph])
+      if (!pg_parent->cyclic_flags[phase] && pg->cyclic_flags[ph])
       {
         os << indent() << "// Fixed-point is needed here.\n";
-        dump_fixed_point_loop_visit(cto->child_decl, n, ph, global_suffix++, os);
+        dump_fixed_point_loop_visit(cto->child_decl, n, ph, ch, global_suffix++, os);
       }
       else
       {

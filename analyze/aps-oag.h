@@ -12,6 +12,7 @@ struct child_phase_type
 { 
   short ph; // Phase: ph is negative for inherited attributes of the visit/phase, positive for synthesized attributes
   short ch; // Child number: ch is -1 for parent, and otherwise [0,nch)
+  int cycle;
 };
 
 /** A conditional total order is a tree of cto nodes.
