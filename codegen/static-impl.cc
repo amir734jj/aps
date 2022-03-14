@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string.h>
-extern "C" {
+extern "C"
+{
 #include <stdio.h>
 #include "aps-ag.h"
 }
@@ -8,7 +9,7 @@ extern "C" {
 #include "implement.h"
 #include <sstream>
 
-#define LOCAL_VALUE_FLAG (1<<28)
+#define LOCAL_VALUE_FLAG (1 << 28)
 
 using namespace std;
 
@@ -20,7 +21,8 @@ using namespace std;
 
 Expression default_init(Default def)
 {
-  switch (Default_KEY(def)) {
+  switch (Default_KEY(def))
+  {
   case KEYsimple:
     return simple_value(def);
   case KEYcomposite:
@@ -34,27 +36,33 @@ Expression default_init(Default def)
  * If "from" is not NULL, then initialize the new array
  * with it.
  */
-Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
-				     Block block,
-				     Expression from[])
+Expression *make_instance_assignment(AUG_GRAPH *aug_graph,
+                                     Block block,
+                                     Expression from[])
 {
   if (!strcmp("assign_stmt", decl_name(aug_graph->syntax_decl)))
   {
     printf("interesting\n");
   }
-  else{
+  else
+  {
     printf("aug_graph->syntax_decl: %s\n", decl_name(aug_graph->syntax_decl));
   }
 
   int n = aug_graph->instances.length;
-  Expression* array = new Expression[n];
+  Expression *array = new Expression[n];
 
-  if (from) {
-    for (int i=0; i < n; ++i) {
+  if (from)
+  {
+    for (int i = 0; i < n; ++i)
+    {
       array[i] = from[i];
     }
-  } else {
-    for (int i=0; i < n; ++i) {
+  }
+  else
+  {
+    for (int i = 0; i < n; ++i)
+    {
       INSTANCE *in = &aug_graph->instances.array[i];
       printf(" => ");
       print_instance(in, stdout);
@@ -62,40 +70,66 @@ Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
       array[i] = 0;
       Declaration ad = in->fibered_attr.attr;
       if (ad != 0 && in->fibered_attr.fiber == 0 &&
-	  ABSTRACT_APS_tnode_phylum(ad) == KEYDeclaration) {
-	// get default!
-	switch (Declaration_KEY(ad)) {
-	case KEYattribute_decl:
-	  array[i] = default_init(attribute_decl_default(ad));
-	  break;
-	case KEYvalue_decl:
-	  array[i] = default_init(value_decl_default(ad));
-	  break;
-	default:
-	  break;
-	}
+          ABSTRACT_APS_tnode_phylum(ad) == KEYDeclaration)
+      {
+        // get default!
+        switch (Declaration_KEY(ad))
+        {
+        case KEYattribute_decl:
+          array[i] = default_init(attribute_decl_default(ad));
+          break;
+        case KEYvalue_decl:
+          array[i] = default_init(value_decl_default(ad));
+          break;
+        default:
+          break;
+        }
       }
     }
-  }  
-  
+  }
+
   Declarations ds = block_body(block);
-  for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d)) {
-          printf("line %d\n", tnode_line_number(d));
-    switch (Declaration_KEY(d)) {
-    case KEYassign:
+  for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d))
+  {
+    printf("line %d\n", tnode_line_number(d));
+    switch (Declaration_KEY(d))
+    {
+    case KEYcollect_assign:
+    {
+      if (INSTANCE *in = Expression_info(assign_rhs(d))->value_for)
       {
-        INSTANCE* in;
-        if ((in = Expression_info(assign_rhs(d))->value_for)) {
+        if (in->index >= n)
+          fatal_error("bad index for instance");
+
+        if (array[in->index] != NULL)
+        {
+          Expression new_expr = assign_rhs(d);
+          Expression_info(new_expr)->collect_next = array[in->index];
+          array[in->index] = new_expr;
+        }
+        else
+        {
+          array[in->index] = assign_rhs(d);
+        }
+      }
+      break;
+    }
+    case KEYnormal_assign:
+    {
+      INSTANCE *in;
+      if ((in = Expression_info(assign_rhs(d))->value_for))
+      {
 
         printf(" |=> ");
         print_instance(in, stdout);
         printf("\n");
 
-    if (in->index >= n) fatal_error("bad index for instance");
-    array[in->index] = assign_rhs(d);
-        }        
+        if (in->index >= n)
+          fatal_error("bad index for instance");
+        array[in->index] = assign_rhs(d);
       }
-      break;
+    }
+    break;
     default:
       break;
     }
@@ -112,7 +146,7 @@ Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
  * @param ch child index
  * @param os FILE out
  */
-static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short ch, ostream& os)
+static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short ch, ostream &os)
 {
 #ifdef APS2SCALA
   os << indent(nesting_level) << "val prevChanged_" << ph << "_" << ch << " = changed;\n";
@@ -134,14 +168,15 @@ static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short
 // phase is what we are generating code for,
 // current is the current value of ph
 // return true if there are still more instances after this phase:
-static bool implement_visit_function(AUG_GRAPH* aug_graph,
-				     int phase, /* phase to impl. */
-				     CTO_NODE* cto,
-				     Expression instance_assignment[],
-				     int nch,
-				     ostream& os)
+static bool implement_visit_function(AUG_GRAPH *aug_graph,
+                                     int phase, /* phase to impl. */
+                                     CTO_NODE *cto,
+                                     Expression instance_assignment[],
+                                     int nch,
+                                     ostream &os)
 {
-  for (; cto; cto = cto->cto_next) {
+  for (; cto; cto = cto->cto_next)
+  {
     INSTANCE *in = cto->cto_instance;
     int ch = cto->child_phase.ch;
     int ph = cto->child_phase.ph;
@@ -153,12 +188,12 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       os << indent() << "// aug_graph: " << decl_name(aug_graph->syntax_decl) << "\n";
       os << indent() << "// visit marker(" << ph << "," << ch << ")\n";
 
-      PHY_GRAPH* pg = Declaration_info(cto->child_decl)->node_phy_graph;
-      PHY_GRAPH* pg_parent = Declaration_info(aug_graph->lhs_decl)->node_phy_graph;
+      PHY_GRAPH *pg = Declaration_info(cto->child_decl)->node_phy_graph;
+      PHY_GRAPH *pg_parent = Declaration_info(aug_graph->lhs_decl)->node_phy_graph;
       int n = PHY_GRAPH_NUM(pg);
 
-      os << indent() << "// parent visit of " << decl_name(pg_parent->phylum) << " at phase " << phase <<  " is " << (pg_parent->cyclic_flags[phase] ? "circular" : "non-circular") << "\n";
-      os << indent() << "// child visit of " << decl_name(pg->phylum) << " at phase " << ph <<  " is " << (pg->cyclic_flags[ph] ? "circular" : "non-circular") << "\n";
+      os << indent() << "// parent visit of " << decl_name(pg_parent->phylum) << " at phase " << phase << " is " << (pg_parent->cyclic_flags[phase] ? "circular" : "non-circular") << "\n";
+      os << indent() << "// child visit of " << decl_name(pg->phylum) << " at phase " << ph << " is " << (pg->cyclic_flags[ph] ? "circular" : "non-circular") << "\n";
 
       // If current phase is not circular but visit is circular then fixed-point loop is needed
       if (!pg_parent->cyclic_flags[phase] && pg->cyclic_flags[ph])
@@ -169,13 +204,13 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       else
       {
         os << indent() << "visit_" << n
-        << "_" << ph << "(";	
+           << "_" << ph << "(";
 #ifdef APS2SCALA
         os << "v_" << decl_name(cto->child_decl);
-#else /* APS2SCALA */
+#else  /* APS2SCALA */
         os << "v_" << decl_name(cto->child_decl);
 #endif /* APS2SCALA */
-      os << ");\n";
+        os << ");\n";
       }
 
       continue;
@@ -199,26 +234,27 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
         int n = PHY_GRAPH_NUM(Declaration_info(aug_graph->syntax_decl)->node_phy_graph);
 
 #ifdef APS2SCALA
-      os << indent() << "for (root <- roots) {\n";
-#else /* APS2SCALA */
-      os << indent() << "for (int i=0; i < n_roots; ++i) {\n";
+        os << indent() << "for (root <- roots) {\n";
+#else  /* APS2SCALA */
+        os << indent() << "for (int i=0; i < n_roots; ++i) {\n";
 #endif /* APS2SCALA */
-  	  ++nesting_level;
+        ++nesting_level;
 #ifndef APS2SCALA
-	    os << indent() << "C_PHYLUM::Node *root = phylum->node(i);\n";
+        os << indent() << "C_PHYLUM::Node *root = phylum->node(i);\n";
 #endif /* APS2SCALA */
 
-        os << indent() << "visit_" << n << "_" << ph << "(";	
+        os << indent() << "visit_" << n << "_" << ph << "(";
         os << "root";
         os << ");\n";
 
         --nesting_level;
-        os << indent() << "}\n";        
+        os << indent() << "}\n";
       }
 
-      os << indent() << "// End of parent (" << decl_name(aug_graph->syntax_decl) << ") phase visit marker for phase: " << phase << "\n"; 
+      os << indent() << "// End of parent (" << decl_name(aug_graph->syntax_decl) << ") phase visit marker for phase: " << phase << "\n";
 
-      if (ph == phase) return false;
+      if (ph == phase)
+        return false;
 
       continue;
     }
@@ -230,10 +266,8 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       fatal_error("total_order is malformed: Instance should not be null for non-visit marker CTO nodes.");
     }
 
-
-
     Declaration ad = in->fibered_attr.attr;
-    
+
     bool node_is_lhs = in->node == aug_graph->lhs_decl;
     bool node_is_syntax = ch < nch || node_is_lhs;
 
@@ -241,91 +275,106 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
     print_instance(in, stdout);
     printf("\n");
 
-    if (if_rule_p(ad)) {
+    if (if_rule_p(ad))
+    {
       bool is_match = ABSTRACT_APS_tnode_phylum(ad) == KEYMatch;
       Block if_true;
       Block if_false;
-      if (is_match) {
-	Match m = (Match)ad;
-	Pattern p = matcher_pat(m);
-	Declaration header = Match_info(m)->header;
-	// if first match in case, we evaluate variable:
-	if (m == first_Match(case_stmt_matchers(header))) {
-	  Expression e = case_stmt_expr(header);
+      if (is_match)
+      {
+        Match m = (Match)ad;
+        Pattern p = matcher_pat(m);
+        Declaration header = Match_info(m)->header;
+        // if first match in case, we evaluate variable:
+        if (m == first_Match(case_stmt_matchers(header)))
+        {
+          Expression e = case_stmt_expr(header);
 #ifdef APS2SCALA
-	  //Type ty = infer_expr_type(e);
-	  os << indent() << "val node = " << e << ";\n";
-#else /* APS2SCALA */
-	  Type ty = infer_expr_type(e);
-	  os << indent() << ty << " node=" << e << ";\n";
+          // Type ty = infer_expr_type(e);
+          os << indent() << "val node = " << e << ";\n";
+#else  /* APS2SCALA */
+          Type ty = infer_expr_type(e);
+          os << indent() << ty << " node=" << e << ";\n";
 #endif /* APS2SCALA */
-	}
+        }
 #ifdef APS2SCALA
-	os << indent() << "node match {\n";
-	os << indent() << "case " << p << " => {\n";
-#else /* APS2SCALA */
-	os << indent() << "if (";
-	dump_Pattern_cond(p,"node",os);
-	os << ") {\n";
+        os << indent() << "node match {\n";
+        os << indent() << "case " << p << " => {\n";
+#else  /* APS2SCALA */
+        os << indent() << "if (";
+        dump_Pattern_cond(p, "node", os);
+        os << ") {\n";
 #endif /* APS2SCALA */
-	nesting_level+=1;
+        nesting_level += 1;
 #ifndef APS2SCALA
-	dump_Pattern_bindings(p,os);
+        dump_Pattern_bindings(p, os);
 #endif /* APS2SCALA */
-	if_true = matcher_body(m);
-	if (MATCH_NEXT(m)) {
-	  if_false = 0; //? Why not the nxt match ?
-	} else {
-	  if_false = case_stmt_default(header);
-	}
-      } else {
-	// Symbol boolean_symbol = intern_symbol("Boolean");
-	os << indent() << "if (" << if_stmt_cond(ad) << ") {\n";
-	++nesting_level;
-	if_true = if_stmt_if_true(ad);
-	if_false = if_stmt_if_false(ad);
+        if_true = matcher_body(m);
+        if (MATCH_NEXT(m))
+        {
+          if_false = 0; //? Why not the nxt match ?
+        }
+        else
+        {
+          if_false = case_stmt_default(header);
+        }
       }
-      Expression* true_assignment =
-	make_instance_assignment(aug_graph,if_true,instance_assignment);
-      implement_visit_function(aug_graph,phase,cto->cto_if_true,
-			       true_assignment,
-			       nch,os);
+      else
+      {
+        // Symbol boolean_symbol = intern_symbol("Boolean");
+        os << indent() << "if (" << if_stmt_cond(ad) << ") {\n";
+        ++nesting_level;
+        if_true = if_stmt_if_true(ad);
+        if_false = if_stmt_if_false(ad);
+      }
+      Expression *true_assignment =
+          make_instance_assignment(aug_graph, if_true, instance_assignment);
+      implement_visit_function(aug_graph, phase, cto->cto_if_true,
+                               true_assignment,
+                               nch, os);
       delete[] true_assignment;
       --nesting_level;
 #ifdef APS2SCALA
-      if (is_match) {
-	os << indent() << "}\n";
-	os << indent() << "case _ => {\n";
-      } else {
-	os << indent() << "} else {\n";
+      if (is_match)
+      {
+        os << indent() << "}\n";
+        os << indent() << "case _ => {\n";
       }
-#else /* APS2SCALA */
+      else
+      {
+        os << indent() << "} else {\n";
+      }
+#else  /* APS2SCALA */
       os << indent() << "} else {\n";
 #endif /* APS2SCALA */
       ++nesting_level;
-      Expression* false_assignment = if_false
-	? make_instance_assignment(aug_graph,if_false,instance_assignment)
-	: instance_assignment;
-      bool cont = implement_visit_function(aug_graph,phase,
-					   cto->cto_if_false,
-					   false_assignment,
-					   nch,os);
-      if (if_false) delete[] false_assignment;
+      Expression *false_assignment = if_false
+                                         ? make_instance_assignment(aug_graph, if_false, instance_assignment)
+                                         : instance_assignment;
+      bool cont = implement_visit_function(aug_graph, phase,
+                                           cto->cto_if_false,
+                                           false_assignment,
+                                           nch, os);
+      if (if_false)
+        delete[] false_assignment;
       --nesting_level;
 #ifdef APS2SCALA
-      if (is_match) {
-	os << indent() << "}}\n";
-      } else {
-	os << indent() << "}\n";
+      if (is_match)
+      {
+        os << indent() << "}}\n";
       }
-#else /* APS2SCALA */
+      else
+      {
+        os << indent() << "}\n";
+      }
+#else  /* APS2SCALA */
       os << indent() << "}\n";
 #endif /* APS2SCALA */
       return cont;
     }
 
-
-    if (phase == 2 && ph == -2 && ch == -1 && !strcmp(decl_name(aug_graph->syntax_decl), "assign_stmt")){
+    if (phase == 2 && ph == -2 && ch == -1 && !strcmp(decl_name(aug_graph->syntax_decl), "assign_stmt"))
+    {
       printf("why? %d %s\n", Declaration_KEY(in->fibered_attr.attr), decl_name(in->fibered_attr.attr));
     }
 
@@ -355,32 +404,41 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
     // }
 
     Symbol asym = ad ? def_name(declaration_def(ad)) : 0;
-    
-    if (instance_direction(in) == instance_inward) {
+
+    if (instance_direction(in) == instance_inward)
+    {
       os << indent() << "// " << in
-	 << " is ready now.\n";
+         << " is ready now.\n";
       continue;
     }
 
     Expression rhs = instance_assignment[in->index];
 
-    if (rhs == NULL) continue;
+    if (rhs == NULL)
+      continue;
 
-    if (in->node && Declaration_KEY(in->node) == KEYnormal_assign) {
+    do
+    {
+
+    if (in->node && Declaration_KEY(in->node) == KEYnormal_assign)
+    {
       // parameter value will be filled in at call site
       os << indent() << "// delaying " << in << " to call site.\n";
       continue;
     }
 
-    if (in->node && Declaration_KEY(in->node) == KEYpragma_call) {
+    if (in->node && Declaration_KEY(in->node) == KEYpragma_call)
+    {
       os << indent() << "// place holder for " << in << "\n";
       continue;
     }
 
-    if (in->fibered_attr.fiber != 0) {
-      if (rhs == 0) {
-	os << indent() << "// " << in << "\n";
-	continue;
+    if (in->fibered_attr.fiber != 0)
+    {
+      if (rhs == 0)
+      {
+        os << indent() << "// " << in << "\n";
+        continue;
       }
 
       Declaration assign = (Declaration)tnode_parent(rhs);
@@ -388,132 +446,187 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       Declaration field = 0;
       os << indent();
       // dump the object containing the field
-      switch (Expression_KEY(lhs)) {
+      switch (Expression_KEY(lhs))
+      {
       case KEYvalue_use:
-	// shared global collection
-	field = USE_DECL(value_use_use(lhs));
+        // shared global collection
+        field = USE_DECL(value_use_use(lhs));
 #ifdef APS2SCALA
-	os << "a_" << decl_name(field) << ".";
-	if (debug) os << "assign"; else os << "set";
-	os << "(" << rhs << ");\n";
-#else /* APS2SCALA */
-	os << "v_" << decl_name(field) << "=";
-	switch (Default_KEY(value_decl_default(field))) {
-	case KEYcomposite:
-	  os << composite_combiner(value_decl_default(field));
-	  break;
-	default:
-	  os << as_val(value_decl_type(field)) << "->v_combine";
-	  break;
-	}
-	os << "(v_" << decl_name(field) << "," << rhs << ");\n";
+        os << "a_" << decl_name(field) << ".";
+        if (debug)
+          os << "assign";
+        else
+          os << "set";
+        os << "(" << rhs << ");\n";
+#else  /* APS2SCALA */
+        os << "v_" << decl_name(field) << "=";
+        switch (Default_KEY(value_decl_default(field)))
+        {
+        case KEYcomposite:
+          os << composite_combiner(value_decl_default(field));
+          break;
+        default:
+          os << as_val(value_decl_type(field)) << "->v_combine";
+          break;
+        }
+        os << "(v_" << decl_name(field) << "," << rhs << ");\n";
 #endif /* APS2SCALA */
-	break;
+        break;
       case KEYfuncall:
-	field = field_ref_p(lhs);
-	if (field == 0) fatal_error("what sort of assignment lhs: %d",
-				    tnode_line_number(assign));
-	os << "a_" << decl_name(field) << DEREF;
-	if (debug) os << "assign"; else os << "set";
-	os << "(" << field_ref_object(lhs) << "," << rhs << ");\n";
-	break;
+        field = field_ref_p(lhs);
+        if (field == 0)
+          fatal_error("what sort of assignment lhs: %d",
+                      tnode_line_number(assign));
+        os << "a_" << decl_name(field) << DEREF;
+        if (debug)
+          os << "assign";
+        else
+          os << "set";
+        os << "(" << field_ref_object(lhs) << "," << rhs << ");\n";
+        break;
       default:
-	fatal_error("what sort of assignment lhs: %d",
-		    tnode_line_number(assign));
+        fatal_error("what sort of assignment lhs: %d",
+                    tnode_line_number(assign));
       }
       continue;
     }
 
     os << indent();
-    
-    if (in->node == 0 && ad != 0) {
-      if (rhs) {
-	if (Declaration_info(ad)->decl_flags & LOCAL_ATTRIBUTE_FLAG) {
-	  os << "a" << LOCAL_UNIQUE_PREFIX(ad) << "_" << asym << DEREF;
-	  if (debug) os << "assign"; else os << "set2";
-	  os << "(anchor," << rhs << ");\n";
-	} else {
-	  int i = LOCAL_UNIQUE_PREFIX(ad);
-	  if (i == 0) {
-#ifdef APS2SCALA
-	    if (!def_is_constant(value_decl_def(ad))) {
-	      os << "// v_" << asym << " is assigned/initialized by default.\n";
-	    } else {
-	      os << "// v_" << asym << " is initialized in module.\n";
-	    }
-#else
-	    os << "v_" << asym << " = " << rhs << ";\n";
-#endif
-	  } else {
-	    os << "v" << i << "_" << asym << " = " << rhs << "; // local\n";
-	  }
-	}
-      } else {
-	if (Declaration_KEY(ad) == KEYvalue_decl &&
-	    !direction_is_collection(value_decl_direction(ad))) {
-	  aps_warning(ad,"Local attribute %s is apparently undefined",
-			  decl_name(ad));
+
+    if (in->node == 0 && ad != 0)
+    {
+      if (rhs)
+      {
+        if (Declaration_info(ad)->decl_flags & LOCAL_ATTRIBUTE_FLAG)
+        {
+          os << "a" << LOCAL_UNIQUE_PREFIX(ad) << "_" << asym << DEREF;
+          if (debug)
+            os << "assign";
+          else
+            os << "set";
+          os << "(anchor," << rhs << ");\n";
         }
-	os << "// " << in << " is ready now\n";
+        else
+        {
+          int i = LOCAL_UNIQUE_PREFIX(ad);
+          if (i == 0)
+          {
+#ifdef APS2SCALA
+            if (!def_is_constant(value_decl_def(ad)))
+            {
+              os << "// v_" << asym << " is assigned/initialized by default.\n";
+            }
+            else
+            {
+              os << "// v_" << asym << " is initialized in module.\n";
+            }
+#else
+            os << "v_" << asym << " = " << rhs << ";\n";
+#endif
+          }
+          else
+          {
+            os << "v" << i << "_" << asym << " = " << rhs << "; // local\n";
+          }
+        }
+      }
+      else
+      {
+        if (Declaration_KEY(ad) == KEYvalue_decl &&
+            !direction_is_collection(value_decl_direction(ad)))
+        {
+          aps_warning(ad, "Local attribute %s is apparently undefined",
+                      decl_name(ad));
+        }
+        os << "// " << in << " is ready now\n";
       }
       continue;
-    } else if (node_is_syntax) {
-      if (ATTR_DECL_IS_SHARED_INFO(ad) && ch < nch) {
-	os << "// shared info for " << decl_name(in->node)
-	   << " is ready.\n";
-      } else if (ATTR_DECL_IS_UP_DOWN(ad)) {
-	os << "// " << decl_name(in->node) << "." << decl_name(ad) 
-	   << " implicit.\n";
-      } else if (rhs) {
-	if (Declaration_KEY(in->node) == KEYfunction_decl) {
-	  if (direction_is_collection(value_decl_direction(ad))) {
-	    cout << "Not expecting collection here!\n";
-	    os << "v_" << asym << " = somehow_combine(v_"
-	       << asym << "," << rhs << ");\n";
-	  } else {
-	    int i = LOCAL_UNIQUE_PREFIX(ad);
-	    if (i == 0)
-	      os << "v_" << asym << " = " << rhs << "; // function\n";
-	    else
-	      os << "v" << i << "_" << asym << " = " << rhs << ";\n";
-	  }
-	} else {
-	  os << "a_" << asym << DEREF;
-	  if (debug) os << "assign"; else os << "set";
-	  os << "(v_" << decl_name(in->node)
-	     << "," << rhs << ");\n";
-	}
-      } else {
-	aps_warning(in->node,"Attribute %s.%s is apparently undefined",
-		    decl_name(in->node),symbol_name(asym));
-	os << "// " << in << " is ready.\n";
+    }
+    else if (node_is_syntax)
+    {
+      if (ATTR_DECL_IS_SHARED_INFO(ad) && ch < nch)
+      {
+        os << "// shared info for " << decl_name(in->node)
+           << " is ready.\n";
+      }
+      else if (ATTR_DECL_IS_UP_DOWN(ad))
+      {
+        os << "// " << decl_name(in->node) << "." << decl_name(ad)
+           << " implicit.\n";
+      }
+      else if (rhs)
+      {
+        if (Declaration_KEY(in->node) == KEYfunction_decl)
+        {
+          if (direction_is_collection(value_decl_direction(ad)))
+          {
+            cout << "Not expecting collection here!\n";
+            os << "v_" << asym << " = somehow_combine(v_"
+               << asym << "," << rhs << ");\n";
+          }
+          else
+          {
+            int i = LOCAL_UNIQUE_PREFIX(ad);
+            if (i == 0)
+              os << "v_" << asym << " = " << rhs << "; // function\n";
+            else
+              os << "v" << i << "_" << asym << " = " << rhs << ";\n";
+          }
+        }
+        else
+        {
+          os << "a_" << asym << DEREF;
+          if (debug)
+            os << "assign";
+          else
+            os << "set";
+          os << "(v_" << decl_name(in->node)
+             << "," << rhs << ");\n";
+        }
+      }
+      else
+      {
+        aps_warning(in->node, "Attribute %s.%s is apparently undefined",
+                    decl_name(in->node), symbol_name(asym));
+        os << "// " << in << " is ready.\n";
       }
       continue;
-    } else if (Declaration_KEY(in->node) == KEYvalue_decl) {
-      if (rhs) {
-	// assigning field of object
-	os << "a_" << asym << DEREF;
-	if (debug) os << "assign"; else os << "set";
-	os << "(v_" << decl_name(in->node)
-	   << "," << rhs << ");\n";
-      } else {
-	os << "// " << in << " is ready now.\n";
+    }
+    else if (Declaration_KEY(in->node) == KEYvalue_decl)
+    {
+      if (rhs)
+      {
+        // assigning field of object
+        os << "a_" << asym << DEREF;
+        if (debug)
+          os << "assign";
+        else
+          os << "set";
+        os << "(v_" << decl_name(in->node)
+           << "," << rhs << ");\n";
+      }
+      else
+      {
+        os << "// " << in << " is ready now.\n";
       }
       continue;
     }
     cout << "Problem assigning " << in << "\n";
     os << "// Not sure what to do for " << in << "\n";
-  }
+  }while (rhs != NULL && (rhs = Expression_info(rhs)->collect_next) != NULL);
+
+  } 
+
   return 0; // no more!
 }
 
 // dump visit functions for constructors
 void dump_visit_functions(PHY_GRAPH *phy_graph,
-			  AUG_GRAPH *aug_graph,
+                          AUG_GRAPH *aug_graph,
 #ifdef APS2SCALA
-			  ostream& os)
-#else /* APS2SCALA */
-			  output_streams& oss)
+                          ostream &os)
+#else  /* APS2SCALA */
+                          output_streams &oss)
 #endif /* APS2SCALA */
 {
   Declaration tlm = aug_graph->match_rule;
@@ -521,10 +634,10 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
   Block block = matcher_body(m);
 
 #ifndef APS2SCALA
-  ostream& hs = oss.hs;
-  ostream& cpps = oss.cpps;
+  ostream &hs = oss.hs;
+  ostream &cpps = oss.cpps;
   // ostream& is = oss.is;
-  ostream& os = inline_definitions ? hs : cpps;
+  ostream &os = inline_definitions ? hs : cpps;
 
 #endif /* APS2SCALA */
   int pgn = PHY_GRAPH_NUM(phy_graph);
@@ -533,13 +646,13 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 
   /* Count the children */
   int nch = 0;
-  for (Declaration ch = aug_graph->first_rhs_decl; ch != 0; ch=DECL_NEXT(ch))
+  for (Declaration ch = aug_graph->first_rhs_decl; ch != 0; ch = DECL_NEXT(ch))
     ++nch;
 
   int phase;
 
-  Expression* instance_assignment =
-    make_instance_assignment(aug_graph,block,0);
+  Expression *instance_assignment =
+      make_instance_assignment(aug_graph, block, 0);
 
   // the following loop is controlled in two ways:
   // (1) if total order is zero, there are no visits at all.
@@ -554,24 +667,24 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
        << ") : Unit = anchor match {\n";
     ++nesting_level;
     os << indent() << "case " << matcher_pat(m) << " => {\n";
-#else /* APS2SCALA */
+#else  /* APS2SCALA */
     oss << header_return_type<Type>(0) << "void "
-	<< header_function_name("visit_") << pgn << "_" << phase << "_" << j
-	<< "(C_PHYLUM::Node* anchor)" << header_end();
+        << header_function_name("visit_") << pgn << "_" << phase << "_" << j
+        << "(C_PHYLUM::Node* anchor)" << header_end();
     INDEFINITION;
     os << " {\n";
 #endif /* APS2SCALA */
     ++nesting_level;
 #ifndef APS2SCALA
-    os << matcher_bindings("anchor",m);
+    os << matcher_bindings("anchor", m);
     os << "\n";
 #endif /* APS2SCALA */
 
     os << indent() << "// Implementing visit function for " << decl_name(aug_graph->syntax_decl) << " phase: " << phase << "\n";
     bool cont =
-      implement_visit_function(aug_graph,phase,total_order,
-			       instance_assignment,
-			       nch,os);
+        implement_visit_function(aug_graph, phase, total_order,
+                                 instance_assignment,
+                                 nch, os);
 
     --nesting_level;
 #ifdef APS2SCALA
@@ -580,24 +693,26 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 #endif /* APS2SCALA */
     os << indent() << "}\n";
   }
-    
+
   delete[] instance_assignment;
 }
 
 // The following function is only for Scala code generation
-void dump_constructor_owner(Declaration pd, ostream& os)
+void dump_constructor_owner(Declaration pd, ostream &os)
 {
-  switch (Declaration_KEY(pd)) {
-   default:
-      aps_error(pd,"cannot attribute this phylum");
-      break;
+  switch (Declaration_KEY(pd))
+  {
+  default:
+    aps_error(pd, "cannot attribute this phylum");
+    break;
   case KEYphylum_formal:
     os << "t_" << decl_name(pd) << DEREF;
     break;
   case KEYphylum_decl:
-    switch (Type_KEY(phylum_decl_type(pd))) {
+    switch (Type_KEY(phylum_decl_type(pd)))
+    {
     default:
-      aps_error(pd,"cannot attribute this phylum");
+      aps_error(pd, "cannot attribute this phylum");
       break;
     case KEYno_type:
       break;
@@ -605,17 +720,18 @@ void dump_constructor_owner(Declaration pd, ostream& os)
       os << "t_" << decl_name(pd) << DEREF;
       break;
     case KEYtype_use:
-      dump_constructor_owner(USE_DECL(type_use_use(phylum_decl_type(pd))),os);
+      dump_constructor_owner(USE_DECL(type_use_use(phylum_decl_type(pd))), os);
       break;
     }
     break;
   case KEYtype_renaming:
-    switch (Type_KEY(phylum_decl_type(pd))) {
+    switch (Type_KEY(phylum_decl_type(pd)))
+    {
     default:
-      aps_error(pd,"cannot attribute this phylum");
+      aps_error(pd, "cannot attribute this phylum");
       break;
     case KEYtype_use:
-      dump_constructor_owner(USE_DECL(type_use_use(phylum_decl_type(pd))),os);
+      dump_constructor_owner(USE_DECL(type_use_use(phylum_decl_type(pd))), os);
       break;
     }
     break;
@@ -623,9 +739,9 @@ void dump_constructor_owner(Declaration pd, ostream& os)
 }
 
 #ifdef APS2SCALA
-void dump_visit_functions(PHY_GRAPH *pg, ostream& os)
-#else /* APS2SCALA */
-void dump_visit_functions(PHY_GRAPH *pg, output_streams& oss)
+void dump_visit_functions(PHY_GRAPH *pg, ostream &os)
+#else  /* APS2SCALA */
+void dump_visit_functions(PHY_GRAPH *pg, output_streams &oss)
 #endif /* APS2SCALA */
 {
   STATE *s = pg->global_state;
@@ -634,32 +750,38 @@ void dump_visit_functions(PHY_GRAPH *pg, output_streams& oss)
 #ifdef APS2SCALA
   ostream &oss = os;
 #else
-  ostream& hs = oss.hs;
-  ostream& cpps = oss.cpps;
+  ostream &hs = oss.hs;
+  ostream &cpps = oss.cpps;
   // ostream& is = oss.is;
-  ostream& os = inline_definitions ? hs : cpps;
+  ostream &os = inline_definitions ? hs : cpps;
 
 #endif /* APS2SCALA */
   int max_phase = 0;
-  for (int i=0; i < pg->instances.length; ++i) {
+  for (int i = 0; i < pg->instances.length; ++i)
+  {
     int ph = pg->summary_schedule[i];
-    if (ph < 0) ph = -ph;
-    if (ph > max_phase) max_phase = ph;
+    if (ph < 0)
+      ph = -ph;
+    if (ph > max_phase)
+      max_phase = ph;
   }
 
-  vector<AUG_GRAPH*> aug_graphs; // not in order
+  vector<AUG_GRAPH *> aug_graphs; // not in order
 
-  for (int i=0; i < s->match_rules.length; ++i) {
+  for (int i = 0; i < s->match_rules.length; ++i)
+  {
     AUG_GRAPH *ag = &s->aug_graphs[i];
     if (ag->lhs_decl &&
-	Declaration_info(ag->lhs_decl)->node_phy_graph == pg) {
+        Declaration_info(ag->lhs_decl)->node_phy_graph == pg)
+    {
       aug_graphs.push_back(ag);
     }
   }
-  
+
   int num_cons = aug_graphs.size();
 
-  if (num_cons == 0) {
+  if (num_cons == 0)
+  {
     fatal_error("no top-level-match match for phylum %s", decl_name(pg->phylum));
   }
 
@@ -667,37 +789,43 @@ void dump_visit_functions(PHY_GRAPH *pg, output_streams& oss)
   // that the constructor declarations in the tree module
   int cons_num = 0;
   Declaration cmodule =
-    (Declaration)tnode_parent(aug_graphs.front()->syntax_decl);
+      (Declaration)tnode_parent(aug_graphs.front()->syntax_decl);
   while (ABSTRACT_APS_tnode_phylum(cmodule) != KEYDeclaration ||
-	 Declaration_KEY(cmodule) != KEYmodule_decl)
+         Declaration_KEY(cmodule) != KEYmodule_decl)
     cmodule = (Declaration)tnode_parent(cmodule);
   Block cblock = module_decl_contents(cmodule);
   for (Declaration d = first_Declaration(block_body(cblock));
-       d; d=DECL_NEXT(d)) {
-    if (Declaration_KEY(d) == KEYconstructor_decl) {
-      for (int j=0; j < num_cons; ++j) {
-	if (aug_graphs[j]->syntax_decl == d) {
-	  Declaration_info(d)->instance_index = cons_num;
-	  ++cons_num;
-	  break;
-	}
+       d; d = DECL_NEXT(d))
+  {
+    if (Declaration_KEY(d) == KEYconstructor_decl)
+    {
+      for (int j = 0; j < num_cons; ++j)
+      {
+        if (aug_graphs[j]->syntax_decl == d)
+        {
+          Declaration_info(d)->instance_index = cons_num;
+          ++cons_num;
+          break;
+        }
       }
     }
   }
-  
-  if (num_cons != cons_num) {
+
+  if (num_cons != cons_num)
+  {
     fatal_error("Can't find all constructors");
   }
-  
-  for (int ph = 1; ph <= max_phase; ++ph) {
+
+  for (int ph = 1; ph <= max_phase; ++ph)
+  {
 #ifdef APS2SCALA
     os << indent() << "def visit_" << pgn << "_" << ph
        << "(node : T_" << decl_name(pg->phylum)
        << ") : Unit = node match {\n";
-#else /* APS2SCALA */
+#else  /* APS2SCALA */
     oss << header_return_type<Type>(0) << "void "
-	<< header_function_name("visit_") << pgn << "_" << ph
-	<< "(C_PHYLUM::Node* node)" << header_end();
+        << header_function_name("visit_") << pgn << "_" << ph
+        << "(C_PHYLUM::Node* node)" << header_end();
     INDEFINITION;
     os << " {\n";
 #endif /* APS2SCALA */
@@ -705,23 +833,26 @@ void dump_visit_functions(PHY_GRAPH *pg, output_streams& oss)
 #ifndef APS2SCALA
     os << indent() << "switch (node->cons->get_index()) {\n";
 #endif /* APS2SCALA */
-    for (int j=0; j < num_cons; ++j) {
+    for (int j = 0; j < num_cons; ++j)
+    {
 #ifdef APS2SCALA
       Declaration cd = aug_graphs[j]->syntax_decl;
       os << indent() << "case ";
-      dump_constructor_owner(pg->phylum,os);
+      dump_constructor_owner(pg->phylum, os);
       os << "p_" << decl_name(cd) << "(_";
       Declarations fs = function_type_formals(constructor_decl_type(cd));
-      for (Declaration f = first_Declaration(fs); f; f=DECL_NEXT(f)) {
-	os << ",_";
+      for (Declaration f = first_Declaration(fs); f; f = DECL_NEXT(f))
+      {
+        os << ",_";
       }
-      os << ") => " << "visit_" << pgn << "_" << ph << "_"
-	 << Declaration_info(cd)->instance_index << "(node);\n";
-#else /* APS2SCALA */
+      os << ") => "
+         << "visit_" << pgn << "_" << ph << "_"
+         << Declaration_info(cd)->instance_index << "(node);\n";
+#else  /* APS2SCALA */
       os << indent() << "case " << j << ":\n";
       ++nesting_level;
       os << indent() << "visit_" << pgn << "_" << ph << "_" << j
-	 << "(node);\n";
+         << "(node);\n";
       os << indent() << "break;\n";
       --nesting_level;
 #endif /* APS2SCALA */
@@ -735,7 +866,7 @@ void dump_visit_functions(PHY_GRAPH *pg, output_streams& oss)
     --nesting_level;
 #ifdef APS2SCALA
     os << indent() << "};\n";
-#else /* APS2SCALA */
+#else  /* APS2SCALA */
     os << indent() << "}\n";
     --nesting_level;
     os << indent() << "}\n";
@@ -743,40 +874,43 @@ void dump_visit_functions(PHY_GRAPH *pg, output_streams& oss)
   }
 
   // Now spit out visit procedures for each constructor
-  for (int i=0; i < num_cons; ++i) {
-    dump_visit_functions(pg,aug_graphs[i],oss);
+  for (int i = 0; i < num_cons; ++i)
+  {
+    dump_visit_functions(pg, aug_graphs[i], oss);
   }
 
   oss << "\n"; // some blank lines
 }
 
 #ifdef APS2SCALA
-void dump_visit_functions(STATE*s, ostream& os)
-#else /* APS2SCALA */
-void dump_visit_functions(STATE*s, output_streams& oss)
+void dump_visit_functions(STATE *s, ostream &os)
+#else  /* APS2SCALA */
+void dump_visit_functions(STATE *s, output_streams &oss)
 #endif /* APS2SCALA */
 {
 #ifdef APS2SCALA
-  ostream& oss = os;
+  ostream &oss = os;
 #else /* !APS2SCALA */
-  ostream& hs = oss.hs;
-  ostream& cpps = oss.cpps;
-  ostream& os = inline_definitions ? hs : cpps;
+  ostream &hs = oss.hs;
+  ostream &cpps = oss.cpps;
+  ostream &os = inline_definitions ? hs : cpps;
 
 #endif /* APS2SCALA */
   // first dump all visit functions for each phylum:
   int nphy = s->phyla.length;
-  for (int j=0; j < nphy; ++j) {
+  for (int j = 0; j < nphy; ++j)
+  {
     PHY_GRAPH *pg = &s->phy_graphs[j];
-    if (Declaration_KEY(pg->phylum) == KEYphylum_decl) {
-      dump_visit_functions(pg,oss);
+    if (Declaration_KEY(pg->phylum) == KEYphylum_decl)
+    {
+      dump_visit_functions(pg, oss);
     }
   }
-  
+
   Declaration sp = s->start_phylum;
 #ifdef APS2SCALA
   os << indent() << "def visit() : Unit = {\n";
-#else /* APS2SCALA */
+#else  /* APS2SCALA */
   oss << header_return_type<Type>(0) << "void "
       << header_function_name("visit") << "()" << header_end();
   INDEFINITION;
@@ -786,7 +920,7 @@ void dump_visit_functions(STATE*s, output_streams& oss)
 #ifdef APS2SCALA
   os << indent() << "val roots = t_" << decl_name(sp)
      << ".nodes;\n";
-#else /* APS2SCALA */
+#else  /* APS2SCALA */
   os << indent() << "Phylum* phylum = this->t_" << decl_name(sp) //! bug sometimes
      << "->get_phylum();\n";
   os << indent() << "int n_roots = phylum->size();\n";
@@ -796,14 +930,14 @@ void dump_visit_functions(STATE*s, output_streams& oss)
   // printf("sp: %s and pointer %ld %d\n", decl_name(sp), (long) (Declaration_info(s->start_phylum)->node_phy_graph), tnode_line_number(s->));
   int phase = Declaration_info(s->module)->node_phy_graph->max_phase;
 
-  Expression* instance_assignment =
-    make_instance_assignment(&s->global_dependencies,
-			     module_decl_contents(s->module),0);
-  
-  implement_visit_function(&s->global_dependencies,phase,
-        s->global_dependencies.total_order,
-        instance_assignment,
-        1,os);
+  Expression *instance_assignment =
+      make_instance_assignment(&s->global_dependencies,
+                               module_decl_contents(s->module), 0);
+
+  implement_visit_function(&s->global_dependencies, phase,
+                           s->global_dependencies.total_order,
+                           instance_assignment,
+                           1, os);
 
   delete[] instance_assignment;
 
@@ -811,79 +945,88 @@ void dump_visit_functions(STATE*s, output_streams& oss)
   os << indent() << "}\n";
 }
 
-static void* dump_scheduled_local(void *pbs, void *node) {
-  ostream& bs = *(ostream*)pbs;
-  if (ABSTRACT_APS_tnode_phylum(node) == KEYDeclaration) {
+static void *dump_scheduled_local(void *pbs, void *node)
+{
+  ostream &bs = *(ostream *)pbs;
+  if (ABSTRACT_APS_tnode_phylum(node) == KEYDeclaration)
+  {
     Declaration d = (Declaration)node;
-    if (Declaration_KEY(d) == KEYvalue_decl) {
+    if (Declaration_KEY(d) == KEYvalue_decl)
+    {
       static int unique = 0;
       LOCAL_UNIQUE_PREFIX(d) = ++unique;
       Declaration_info(d)->decl_flags |= LOCAL_VALUE_FLAG;
 #ifdef APS2SCALA
-      bs << indent() << "var " << " v" << unique << "_" << decl_name(d)
-	 << " : " << value_decl_type(d)
-	 << " = null.asInstanceOf[" << value_decl_type(d) << "]" 
-	 << ";\n";
-#else /* APS2SCALA */
+      bs << indent() << "var "
+         << " v" << unique << "_" << decl_name(d)
+         << " : " << value_decl_type(d)
+         << " = null.asInstanceOf[" << value_decl_type(d) << "]"
+         << ";\n";
+#else  /* APS2SCALA */
       bs << indent() << value_decl_type(d)
-	 << " v" << unique << "_" << decl_name(d) << ";\n";
+         << " v" << unique << "_" << decl_name(d) << ";\n";
 #endif /* APS2SCALA */
     }
   }
   return pbs;
 }
 
-void dump_scheduled_function_body(Declaration fd, STATE*s, ostream& bs)
+void dump_scheduled_function_body(Declaration fd, STATE *s, ostream &bs)
 {
   const char *name = decl_name(fd);
   Type ft = function_decl_type(fd);
 
   // dump any local values:
-  traverse_Declaration(dump_scheduled_local,&bs,fd);
+  traverse_Declaration(dump_scheduled_local, &bs, fd);
 
   int index;
   for (index = 0; index < s->match_rules.length; ++index)
-    if (s->match_rules.array[index] == fd) break;
+    if (s->match_rules.array[index] == fd)
+      break;
 
   if (index >= s->match_rules.length)
-    fatal_error("Cannot find function %s in top-level-matches",name);
+    fatal_error("Cannot find function %s in top-level-matches", name);
 
   int pindex;
   for (pindex = 0; pindex < s->phyla.length; ++pindex)
-    if (s->phyla.array[pindex] == fd) break;
-  
+    if (s->phyla.array[pindex] == fd)
+      break;
+
   if (pindex >= s->phyla.length)
-    fatal_error("Cannot find function %s in phyla",name);
+    fatal_error("Cannot find function %s in phyla", name);
 
   AUG_GRAPH *aug_graph = &s->aug_graphs[index];
   CTO_NODE *schedule = aug_graph->total_order;
 
-  Expression* instance_assignment =
-    make_instance_assignment(aug_graph,function_decl_body(fd),0);
+  Expression *instance_assignment =
+      make_instance_assignment(aug_graph, function_decl_body(fd), 0);
 
-
-  bool cont = implement_visit_function(aug_graph,1,schedule,
-				       instance_assignment,0,bs);
+  bool cont = implement_visit_function(aug_graph, 1, schedule,
+                                       instance_assignment, 0, bs);
 
   Declaration returndecl = first_Declaration(function_type_return_values(ft));
-  if (returndecl == 0) {
+  if (returndecl == 0)
+  {
     bs << indent() << "return;\n";
-  } else {
+  }
+  else
+  {
     bs << indent() << "return v" << LOCAL_UNIQUE_PREFIX(returndecl)
        << "_" << decl_name(returndecl) << ";\n";
   }
 
-  if (cont) {
+  if (cont)
+  {
     cout << "Function " << name << " should not require a second pass!\n";
     int phase = 2;
     bs << "    /*\n";
     bs << "    // phase 2\n";
-    while (implement_visit_function(aug_graph,phase,schedule,
-				    instance_assignment,0,bs)) 
+    while (implement_visit_function(aug_graph, phase, schedule,
+                                    instance_assignment, 0, bs))
       bs << "    // phase " << ++phase << "\n";
     bs << "    */\n";
   }
-  
+
   delete[] instance_assignment;
 }
 
@@ -891,126 +1034,152 @@ class Static : public Implementation
 {
 public:
   typedef Implementation::ModuleInfo Super;
-  class ModuleInfo : public Super {
+  class ModuleInfo : public Super
+  {
   public:
     ModuleInfo(Declaration mdecl) : Implementation::ModuleInfo(mdecl) {}
 
-    void note_top_level_match(Declaration tlm, GEN_OUTPUT& oss) {
-      Super::note_top_level_match(tlm,oss);
+    void note_top_level_match(Declaration tlm, GEN_OUTPUT &oss)
+    {
+      Super::note_top_level_match(tlm, oss);
     }
 
-    void note_local_attribute(Declaration ld, GEN_OUTPUT& oss) {
-      Super::note_local_attribute(ld,oss);
+    void note_local_attribute(Declaration ld, GEN_OUTPUT &oss)
+    {
+      Super::note_local_attribute(ld, oss);
       Declaration_info(ld)->decl_flags |= LOCAL_ATTRIBUTE_FLAG;
     }
-    
-    void note_attribute_decl(Declaration ad, GEN_OUTPUT& oss) {
+
+    void note_attribute_decl(Declaration ad, GEN_OUTPUT &oss)
+    {
       Declaration_info(ad)->decl_flags |= ATTRIBUTE_DECL_FLAG;
-      Super::note_attribute_decl(ad,oss);
+      Super::note_attribute_decl(ad, oss);
     }
-    
-    void note_var_value_decl(Declaration vd, GEN_OUTPUT& oss) {
-      Super::note_var_value_decl(vd,oss);
+
+    void note_var_value_decl(Declaration vd, GEN_OUTPUT &oss)
+    {
+      Super::note_var_value_decl(vd, oss);
     }
 
 #ifdef APS2SCALA
-    void implement(ostream& os) {
-#else /* APS2SCALA */
-    void implement(output_streams& oss) {
+    void implement(ostream &os){
+#else  /* APS2SCALA */
+    void implement(output_streams &oss)
+    {
 #endif /* APS2SCALA */
-      STATE *s = (STATE*)Declaration_info(module_decl)->analysis_state;
+        STATE *s = (STATE *)Declaration_info(module_decl)->analysis_state;
 
 #ifdef APS2SCALA
-      ostream& oss = os;
+    ostream &oss = os;
 #else
-      ostream& hs = oss.hs;
-      ostream& cpps = oss.cpps;
-      ostream& os = inline_definitions ? hs : cpps;
+      ostream &hs = oss.hs;
+      ostream &cpps = oss.cpps;
+      ostream &os = inline_definitions ? hs : cpps;
       // char *name = decl_name(module_decl);
 #endif /* APS2SCALA */
 
-      Declarations ds = block_body(module_decl_contents(module_decl));
-      
-      dump_visit_functions(s,oss);
+    Declarations ds = block_body(module_decl_contents(module_decl));
 
-      // Implement finish routine:
+    dump_visit_functions(s, oss);
+
+    // Implement finish routine:
 #ifdef APS2SCALA
-      os << indent() << "override def finish() : Unit = {\n";
-#else /* APS2SCALA */
+    os << indent() << "override def finish() : Unit = {\n";
+#else  /* APS2SCALA */
       hs << indent() << "void finish()";
-      if (!inline_definitions) {
-	hs << ";\n";
-	cpps << "void " << oss.prefix << "finish()";
+      if (!inline_definitions)
+      {
+        hs << ";\n";
+        cpps << "void " << oss.prefix << "finish()";
       }
       INDEFINITION;
       os << " {\n";
 #endif /* APS2SCALA */
-      ++nesting_level;
-      os << indent() << "visit();\n";
+    ++nesting_level;
+    os << indent() << "visit();\n";
 
-      // types actually should be scheduled...
-      for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d)) {
-	const char* kind = NULL;
-	switch(Declaration_KEY(d)) {
-	case KEYphylum_decl:
-	case KEYtype_decl:
-	  switch (Type_KEY(some_type_decl_type(d))) {
-	  case KEYno_type:
-	  case KEYtype_inst:
-	    kind = "t_";
-	    break;
-	  default:
-	    break;
-	  }
-	default:
-	  break;
-	}
-	if (kind != NULL) {
-	  const char *n = decl_name(d);
-	  os << indent() << kind << n << DEREF << "finish();\n";
-	}
+    // types actually should be scheduled...
+    for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d))
+    {
+      const char *kind = NULL;
+      switch (Declaration_KEY(d))
+      {
+      case KEYphylum_decl:
+      case KEYtype_decl:
+        switch (Type_KEY(some_type_decl_type(d)))
+        {
+        case KEYno_type:
+        case KEYtype_inst:
+          kind = "t_";
+          break;
+        default:
+          break;
+        }
+      default:
+        break;
       }
+      if (kind != NULL)
+      {
+        const char *n = decl_name(d);
+        os << indent() << kind << n << DEREF << "finish();\n";
+      }
+    }
 #ifdef APS2SCALA
-      os << indent() << "super.finish();\n";
+    os << indent() << "super.finish();\n";
 #endif /* ! APS2SCALA */
-      --nesting_level;
-      os << indent() << "}\n";
+    --nesting_level;
+    os << indent() << "}\n";
 
-      clear_implementation_marks(module_decl);
-    }
-  };
-
-  Super* get_module_info(Declaration m) {
-    return new ModuleInfo(m);
-  }
-
-  void implement_function_body(Declaration f, ostream& os) {
-    Declaration module = (Declaration)tnode_parent(f);
-    while (module && (ABSTRACT_APS_tnode_phylum(module) != KEYDeclaration ||
-		      Declaration_KEY(module) != KEYmodule_decl))
-      module = (Declaration)tnode_parent(module);
-    if (module) {
-      STATE *s = (STATE*)Declaration_info(module)->analysis_state;
-      dump_scheduled_function_body(f,s,os);
-    } else {
-      dynamic_impl->implement_function_body(f,os);
-    }
-  }
-
-  void implement_value_use(Declaration vd, ostream& os) {
-    int flags = Declaration_info(vd)->decl_flags;
-    if (flags & LOCAL_ATTRIBUTE_FLAG) {
-      os << "a" << LOCAL_UNIQUE_PREFIX(vd) << "_"
-	 << decl_name(vd) << DEREF << "get(anchor)"; 
-    } else if (flags & ATTRIBUTE_DECL_FLAG) {
-      os << "a" << "_" << decl_name(vd) << DEREF << "get";
-    } else if (flags & LOCAL_VALUE_FLAG) {
-      os << "v" << LOCAL_UNIQUE_PREFIX(vd) << "_" << decl_name(vd);
-    } else {
-      aps_error(vd,"internal_error: What is special about this?");
-    }
+    clear_implementation_marks(module_decl);
   }
 };
+
+Super *get_module_info(Declaration m)
+{
+  return new ModuleInfo(m);
+}
+
+void implement_function_body(Declaration f, ostream &os)
+{
+  Declaration module = (Declaration)tnode_parent(f);
+  while (module && (ABSTRACT_APS_tnode_phylum(module) != KEYDeclaration ||
+                    Declaration_KEY(module) != KEYmodule_decl))
+    module = (Declaration)tnode_parent(module);
+  if (module)
+  {
+    STATE *s = (STATE *)Declaration_info(module)->analysis_state;
+    dump_scheduled_function_body(f, s, os);
+  }
+  else
+  {
+    dynamic_impl->implement_function_body(f, os);
+  }
+}
+
+void implement_value_use(Declaration vd, ostream &os)
+{
+  int flags = Declaration_info(vd)->decl_flags;
+  if (flags & LOCAL_ATTRIBUTE_FLAG)
+  {
+    os << "a" << LOCAL_UNIQUE_PREFIX(vd) << "_"
+       << decl_name(vd) << DEREF << "get(anchor)";
+  }
+  else if (flags & ATTRIBUTE_DECL_FLAG)
+  {
+    os << "a"
+       << "_" << decl_name(vd) << DEREF << "get";
+  }
+  else if (flags & LOCAL_VALUE_FLAG)
+  {
+    os << "v" << LOCAL_UNIQUE_PREFIX(vd) << "_" << decl_name(vd);
+  }
+  else
+  {
+    aps_error(vd, "internal_error: What is special about this?");
+  }
+}
+}
+;
 
 // not working yet.
 
