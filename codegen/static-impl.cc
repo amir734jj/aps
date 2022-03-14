@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string.h>
 extern "C" {
 #include <stdio.h>
 #include "aps-ag.h"
@@ -37,6 +38,14 @@ Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
 				     Block block,
 				     Expression from[])
 {
+  if (!strcmp("assign_stmt", decl_name(aug_graph->syntax_decl)))
+  {
+    printf("interesting\n");
+  }
+  else{
+    printf("aug_graph->syntax_decl: %s\n", decl_name(aug_graph->syntax_decl));
+  }
+
   int n = aug_graph->instances.length;
   Expression* array = new Expression[n];
 
@@ -47,6 +56,9 @@ Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
   } else {
     for (int i=0; i < n; ++i) {
       INSTANCE *in = &aug_graph->instances.array[i];
+      printf(" => ");
+      print_instance(in, stdout);
+      printf("\n");
       array[i] = 0;
       Declaration ad = in->fibered_attr.attr;
       if (ad != 0 && in->fibered_attr.fiber == 0 &&
@@ -68,11 +80,20 @@ Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
   
   Declarations ds = block_body(block);
   for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d)) {
+          printf("line %d\n", tnode_line_number(d));
     switch (Declaration_KEY(d)) {
     case KEYassign:
-      if (INSTANCE* in = Expression_info(assign_rhs(d))->value_for) {
-	if (in->index >= n) fatal_error("bad index for instance");
-	array[in->index] = assign_rhs(d);
+      {
+        INSTANCE* in;
+        if ((in = Expression_info(assign_rhs(d))->value_for)) {
+
+        printf(" |=> ");
+        print_instance(in, stdout);
+        printf("\n");
+
+    if (in->index >= n) fatal_error("bad index for instance");
+    array[in->index] = assign_rhs(d);
+        }        
       }
       break;
     default:
@@ -83,25 +104,23 @@ Expression* make_instance_assignment(AUG_GRAPH* aug_graph,
   return array;
 }
 
-int global_suffix = 0;
-
 /**
  * Utility function to dump fixed-point child visit call
  * @param decl child node decl which will be used as parameter
  * @param n phylum graph index of child
  * @param ph phase of visit
- * @param suffix suffix to prevent duplicate variable name
+ * @param ch child index
  * @param os FILE out
  */
-static void dump_fixed_point_loop_visit(Declaration decl, int n, int ph, int ch, int suffix, ostream& os)
+static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short ch, ostream& os)
 {
 #ifdef APS2SCALA
-  os << indent(nesting_level) << "val prevChanged" << n << "_" << ph << "_" << suffix << " = changed;\n";
+  os << indent(nesting_level) << "val prevChanged_" << ph << "_" << ch << " = changed;\n";
   os << indent(nesting_level) << "do {\n";
   os << indent(nesting_level + 1) << "changed = false;\n";
   os << indent(nesting_level + 1) << "visit_" << n << "_" << ph << "(v_" << decl_name(decl) << ");\n";
   os << indent(nesting_level) << "} while (changed);\n";
-  os << indent(nesting_level) << "changed = prevChanged" << n << "_" << ph << "_" << suffix << ";\n\n";
+  os << indent(nesting_level) << "changed = prevChanged_" << ph << "_" << ch << ";\n\n";
 #endif /* APS2SCALA */
 }
 
@@ -117,13 +136,11 @@ static void dump_fixed_point_loop_visit(Declaration decl, int n, int ph, int ch,
 // return true if there are still more instances after this phase:
 static bool implement_visit_function(AUG_GRAPH* aug_graph,
 				     int phase, /* phase to impl. */
-				     int current, /* phase currently at. */
 				     CTO_NODE* cto,
 				     Expression instance_assignment[],
 				     int nch,
 				     ostream& os)
 {
-  // STATE *s = aug_graph->global_state;
   for (; cto; cto = cto->cto_next) {
     INSTANCE *in = cto->cto_instance;
     int ch = cto->child_phase.ch;
@@ -140,18 +157,18 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       PHY_GRAPH* pg_parent = Declaration_info(aug_graph->lhs_decl)->node_phy_graph;
       int n = PHY_GRAPH_NUM(pg);
 
-      os << indent() << "// parent visit of " << decl_name(pg_parent->phylum) << " at " << phase <<  " is " << (pg_parent->cyclic_flags[phase] ? "circular" : "non-circular") << "\n";
-      os << indent() << "// current visit of " << decl_name(pg->phylum) << " at " << ph << " is " << (pg->cyclic_flags[ph] ? "circular" : "non-circular") << "\n";
-      
+      os << indent() << "// parent visit of " << decl_name(pg_parent->phylum) << " at phase " << phase <<  " is " << (pg_parent->cyclic_flags[phase] ? "circular" : "non-circular") << "\n";
+      os << indent() << "// child visit of " << decl_name(pg->phylum) << " at phase " << ph <<  " is " << (pg->cyclic_flags[ph] ? "circular" : "non-circular") << "\n";
+
       // If current phase is not circular but visit is circular then fixed-point loop is needed
       if (!pg_parent->cyclic_flags[phase] && pg->cyclic_flags[ph])
       {
         os << indent() << "// Fixed-point is needed here.\n";
-        dump_fixed_point_loop_visit(cto->child_decl, n, ph, ch, global_suffix++, os);
+        dump_fixed_point_loop_visit(cto->child_decl, n, ph, ch, os);
       }
       else
       {
-      os << indent() << "visit_" << n
+        os << indent() << "visit_" << n
         << "_" << ph << "(";	
 #ifdef APS2SCALA
         os << "v_" << decl_name(cto->child_decl);
@@ -167,8 +184,6 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
     // Visit marker for when visit ends
     if (in == NULL && ch == -1)
     {
-      if (current == phase) return true; // phase is over
-
       bool is_mod = false;
       switch (Declaration_KEY(aug_graph->syntax_decl))
       {
@@ -201,8 +216,10 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
         os << indent() << "}\n";        
       }
 
-      current++;
-      // Phase is over
+      os << indent() << "// End of parent (" << decl_name(aug_graph->syntax_decl) << ") phase visit marker for phase: " << phase << "\n"; 
+
+      if (ph == phase) return false;
+
       continue;
     }
 
@@ -213,10 +230,16 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       fatal_error("total_order is malformed: Instance should not be null for non-visit marker CTO nodes.");
     }
 
+
+
     Declaration ad = in->fibered_attr.attr;
     
     bool node_is_lhs = in->node == aug_graph->lhs_decl;
     bool node_is_syntax = ch < nch || node_is_lhs;
+
+    printf(" =>x ");
+    print_instance(in, stdout);
+    printf("\n");
 
     if (if_rule_p(ad)) {
       bool is_match = ABSTRACT_APS_tnode_phylum(ad) == KEYMatch;
@@ -264,7 +287,7 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       }
       Expression* true_assignment =
 	make_instance_assignment(aug_graph,if_true,instance_assignment);
-      implement_visit_function(aug_graph,phase,current,cto->cto_if_true,
+      implement_visit_function(aug_graph,phase,cto->cto_if_true,
 			       true_assignment,
 			       nch,os);
       delete[] true_assignment;
@@ -283,7 +306,7 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       Expression* false_assignment = if_false
 	? make_instance_assignment(aug_graph,if_false,instance_assignment)
 	: instance_assignment;
-      bool cont = implement_visit_function(aug_graph,phase,current,
+      bool cont = implement_visit_function(aug_graph,phase,
 					   cto->cto_if_false,
 					   false_assignment,
 					   nch,os);
@@ -301,9 +324,35 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       return cont;
     }
 
-    // otherwise, if we're not yet in proper phase,
-    // we skip along:
-    // if (phase != current) continue;
+
+    if (phase == 2 && ph == -2 && ch == -1 && !strcmp(decl_name(aug_graph->syntax_decl), "assign_stmt")){
+      printf("why? %d %s\n", Declaration_KEY(in->fibered_attr.attr), decl_name(in->fibered_attr.attr));
+    }
+
+    // if (in->node != NULL && ABSTRACT_APS_tnode_phylum(tnode_parent(in->node)) == KEYDeclaration)
+    // {
+    //   switch (Declaration_KEY(in->node))
+    //   {
+    //   case KEYcollect_assign:
+    //     {
+    //       Expression lhs = assign_lhs(parent);
+    //       switch (Expression_KEY(lhs))
+    //       {
+    //         case KEYvalue_use:
+    //           {
+    //             Declaration field = USE_DECL(value_use_use(lhs));
+    //             printf("found it %s\n", decl_name(field));
+    //           }
+    //           break;
+    //         default:
+    //           break;
+    //       }
+    //     }
+    //     break;
+    //   default:
+    //     break;
+    //   }
+    // }
 
     Symbol asym = ad ? def_name(declaration_def(ad)) : 0;
     
@@ -314,6 +363,8 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
     }
 
     Expression rhs = instance_assignment[in->index];
+
+    if (rhs == NULL) continue;
 
     if (in->node && Declaration_KEY(in->node) == KEYnormal_assign) {
       // parameter value will be filled in at call site
@@ -379,7 +430,7 @@ static bool implement_visit_function(AUG_GRAPH* aug_graph,
       if (rhs) {
 	if (Declaration_info(ad)->decl_flags & LOCAL_ATTRIBUTE_FLAG) {
 	  os << "a" << LOCAL_UNIQUE_PREFIX(ad) << "_" << asym << DEREF;
-	  if (debug) os << "assign"; else os << "set";
+	  if (debug) os << "assign"; else os << "set2";
 	  os << "(anchor," << rhs << ");\n";
 	} else {
 	  int i = LOCAL_UNIQUE_PREFIX(ad);
@@ -485,7 +536,7 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
   for (Declaration ch = aug_graph->first_rhs_decl; ch != 0; ch=DECL_NEXT(ch))
     ++nch;
 
-  int phase = 0;
+  int phase;
 
   Expression* instance_assignment =
     make_instance_assignment(aug_graph,block,0);
@@ -495,9 +546,8 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
   // (2) otherwise, total_order never changes,
   //     but eventually when scheduling a phase, we find out
   //     that it is the last phase and we break the loop
-  while (total_order) {
-    ++phase;
-
+  for (phase = 1; phase < phy_graph->max_phase; phase++)
+  {
 #ifdef APS2SCALA
     os << indent() << "def visit_" << pgn << "_" << phase << "_" << j
        << "(anchor : T_" << decl_name(phy_graph->phylum)
@@ -519,7 +569,7 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 
     os << indent() << "// Implementing visit function for " << decl_name(aug_graph->syntax_decl) << " phase: " << phase << "\n";
     bool cont =
-      implement_visit_function(aug_graph,phase,0,total_order,
+      implement_visit_function(aug_graph,phase,total_order,
 			       instance_assignment,
 			       nch,os);
 
@@ -529,8 +579,6 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
     --nesting_level;
 #endif /* APS2SCALA */
     os << indent() << "}\n";
-
-    if (!cont) break;
   }
     
   delete[] instance_assignment;
@@ -745,17 +793,17 @@ void dump_visit_functions(STATE*s, output_streams& oss)
   os << "\n"; // blank line
 #endif /* APS2SCALA */
 
-  int phase = 1;
+  // printf("sp: %s and pointer %ld %d\n", decl_name(sp), (long) (Declaration_info(s->start_phylum)->node_phy_graph), tnode_line_number(s->));
+  int phase = Declaration_info(s->module)->node_phy_graph->max_phase;
 
   Expression* instance_assignment =
     make_instance_assignment(&s->global_dependencies,
 			     module_decl_contents(s->module),0);
   
-  while (implement_visit_function(&s->global_dependencies,phase,0,
-				  s->global_dependencies.total_order,
-				  instance_assignment,
-				  1,os))
-    ++phase;
+  implement_visit_function(&s->global_dependencies,phase,
+        s->global_dependencies.total_order,
+        instance_assignment,
+        1,os);
 
   delete[] instance_assignment;
 
@@ -814,7 +862,7 @@ void dump_scheduled_function_body(Declaration fd, STATE*s, ostream& bs)
     make_instance_assignment(aug_graph,function_decl_body(fd),0);
 
 
-  bool cont = implement_visit_function(aug_graph,1,0,schedule,
+  bool cont = implement_visit_function(aug_graph,1,schedule,
 				       instance_assignment,0,bs);
 
   Declaration returndecl = first_Declaration(function_type_return_values(ft));
@@ -830,7 +878,7 @@ void dump_scheduled_function_body(Declaration fd, STATE*s, ostream& bs)
     int phase = 2;
     bs << "    /*\n";
     bs << "    // phase 2\n";
-    while (implement_visit_function(aug_graph,phase,0,schedule,
+    while (implement_visit_function(aug_graph,phase,schedule,
 				    instance_assignment,0,bs)) 
       bs << "    // phase " << ++phase << "\n";
     bs << "    */\n";
