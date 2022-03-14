@@ -7,8 +7,6 @@ SCALAFLAGS= -cp .:${APSLIB}
 SCALACFLAGS= ${SCALAFLAGS}
 APS2SCALA = ${APSTOP}/bin/aps2scala
 APS2SCALAFLAGS = -p ..:${APSTOP}/base -G
-SCALABISON=/home/hesamian/Documents/Courses/sp22-cs655/etc/scala-bison.jar
-SCALAFLEX=JFlex.jar
 
 SCALAGEN = simple.scala classic-binding.scala tiny.scala \
 	test-coll.scala test-use-coll.scala test-cycle.scala use-global.scala \
@@ -34,7 +32,13 @@ all	: nested_cycles_implicit.class NestedCyclesDriver.class
 
 run: Classic.run TestCollDriver.run TestCycleDriver.run NestedCyclesDriver.run
 
-nested-cycles.scala first.scala follow.scala : ../$(basename $(@F)).aps ${APS2SCALA}
+nested-cycles.scala: ../nested-cycles.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
+
+first.scala: ../first.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
+
+follow.scala: ../follow.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
 
 %.scala: ../%.aps ${APS2SCALA}
@@ -124,7 +128,7 @@ UseGlobal.class : use-global-driver.scala
 .PHONY: %.run
 
 %.run : %.class
-	scala ${SCALAFLAGS} $*
+	scala ${SCALAFLAGS} $* $(ARGS)
 
 clean:
 	rm -f *.class ${SCALAGEN} ${MISCSCALAGEN}
