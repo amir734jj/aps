@@ -78,6 +78,7 @@ typedef struct summary_dependency_graph {
   struct summary_dependency_graph *next_in_phy_worklist;
   int *summary_schedule; /* one-d array, indexed by instance number */
   BOOL* cyclic_flags; /* one-d array, indexed by phase number indicating whether phase is circular or not */
+  int max_phase;
 } PHY_GRAPH;
 extern const char *phy_graph_name(PHY_GRAPH *);
   

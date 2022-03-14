@@ -328,6 +328,90 @@ static bool instance_is_local(INSTANCE* i)
   return (fibered_attr_direction(&i->fibered_attr)) == instance_local;
 }
 
+static void assert_circular_declaration(STATE *s)
+{
+  int i, j, k;
+
+  // Forall phylum in the phylum_graph
+  for (i = 0; i < s->phyla.length; i++)
+  {
+    PHY_GRAPH *phy = &s->phy_graphs[i];
+    int n = phy->instances.length;
+    int phylum_index = phylum_instance_start[i];
+    INSTANCE *array = phy->instances.array;
+
+    for (j = 0; j < n; j++)
+    {
+      INSTANCE *instance = &array[j];
+      bool any_cycle = false;
+      bool declared_circular = instance_circular(instance);
+
+      for (k = 0; k < s->cycles.length; k++)
+      {
+        CYCLE *cyc = &s->cycles.array[k];
+        if (parent_index[j + phylum_index] == cyc->internal_info)
+        {
+          if (declared_circular)
+          {
+            any_cycle = true;
+          }
+          else if (!if_rule_p(instance->fibered_attr.attr))
+          {
+            print_instance(instance, stdout);
+            printf(" is involved in a cycle but was not declared circular in phylum graph.\n");
+          }
+        }
+      }
+
+      if (declared_circular && !any_cycle)
+      {
+        print_instance(instance, stdout);
+        printf(" is declared circular but does not involve with any cycles in phylum graph.\n");
+      }
+    }
+  }
+
+  // Forall edges in the augmented dependency graph
+  for (i = 0; i <= s->match_rules.length; i++)
+  {
+    AUG_GRAPH *aug_graph =
+        (i == s->match_rules.length) ? &s->global_dependencies : &s->aug_graphs[i];
+    int n = aug_graph->instances.length;
+    int constructor_index = constructor_instance_start[i];
+    INSTANCE *array = aug_graph->instances.array;
+    for (j = 0; j < n; j++)
+    {
+      INSTANCE *instance = &array[j];
+      bool any_cycle = false;
+      bool declared_circular = instance_circular(instance);
+
+      // Forall cycles in the graph
+      for (k = 0; k < s->cycles.length; k++)
+      {
+        CYCLE *cyc = &s->cycles.array[k];
+        if (parent_index[j + constructor_index] == cyc->internal_info)
+        {
+          if (declared_circular)
+          {
+            any_cycle = true;
+          }
+          else if (!if_rule_p(instance->fibered_attr.attr))
+          {
+            print_instance(instance, stdout);
+            printf(" is involved in a cycle but was not declared circular in aug graph.\n");
+          }
+        }
+      }
+
+      if (declared_circular && !any_cycle)
+      {
+        print_instance(instance, stdout);
+        printf(" is declared circular but does not involve with any cycles in aug graph.\n");
+      }
+    }
+  }
+}
+
 static bool edge_can_be_deleted(int index1, int index2, INSTANCE *array, bool direction)
 {
   INSTANCE *attr1 = (&array[index1]);
@@ -752,6 +836,7 @@ void break_fiber_cycles(Declaration module,STATE *s,DEPENDENCY dep) {
   init_indices(s);
   make_cycles(s);
   get_fiber_cycles(s);
+  assert_circular_declaration(s);
 
   bool direction = !(dep & DEPENDENCY_NOT_JUST_FIBER);
   add_up_down_attributes(s,direction);

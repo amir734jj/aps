@@ -168,6 +168,13 @@ void schedule_summary_dependency_graph(PHY_GRAPH* phy_graph) {
 
   } while (count_non_circular || count_circular);
 
+  phy_graph->max_phase = phase;
+  printf("phy_graph->phylum: %s and max phase: %d\n", decl_name(phy_graph->phylum), phase);
+
+  if (!strcmp("Grammar", decl_name(phy_graph->phylum))){
+    printf("found it %ld :%d\n", (long) phy_graph, tnode_line_number(phy_graph->phylum));
+  }
+
   if (done < n) {
     if (cycle_debug & PRINT_CYCLE) {
       for (i = 0; i < n; ++i) {
