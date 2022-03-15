@@ -371,6 +371,61 @@ static char* trim_string_const_token(char* p) {
   return p;
 }
 
+static void* validate_assignments(void* ignore, void*node)
+{
+  switch (ABSTRACT_APS_tnode_phylum(node))
+  {
+  case KEYDeclaration:
+  {
+    Declaration decl = (Declaration) node;
+    bool is_collection_assign = false;
+    switch (Declaration_KEY(decl))
+    {
+    case KEYcollect_assign:
+    {
+        is_collection_assign = true;
+        /* fall through */
+    }
+    case KEYnormal_assign:
+    {
+      Expression lhs = assign_lhs(decl);
+      Declaration lhs_decl = NULL;
+      Direction dir = NULL;
+
+      switch (Expression_KEY(lhs))
+      {
+      case KEYvalue_use:
+      {
+        lhs_decl = USE_DECL(value_use_use(lhs));
+        dir = value_decl_direction(lhs_decl);
+        break;
+      }
+      case KEYfuncall:
+      {
+        lhs_decl = USE_DECL(value_use_use(funcall_f(lhs)));
+        dir = attribute_decl_direction(lhs_decl);
+        break;
+      }
+      }
+
+      if (lhs_decl != NULL)
+      {
+        if (is_collection_assign && !direction_is_collection(dir))
+        {
+          aps_error(decl, "Non-collection node should not use `:>` operator (use `=` instead).");
+        }
+        else if (!is_collection_assign && direction_is_collection(dir))
+        {
+          aps_error(decl, "Collection node should not use `=` operator (use `:>` instead).");
+        }
+      }
+    }
+    }
+  }
+  }
+  return node;
+}
+
 static void* validate_canonicals(void* ignore, void*node) {
   int BUFFER_SIZE = 1000;
   Symbol symb_test_canonical_type = intern_symbol("test_canonical_type");
@@ -490,6 +545,7 @@ void type_Program(Program p)
   initialize_canonical_signature(module_TYPE, module_PHYLUM);
 
   traverse_Program(validate_canonicals,p,p);
+  traverse_Program(validate_assignments,p,p);
 }
 
 Type infer_expr_type(Expression e)
