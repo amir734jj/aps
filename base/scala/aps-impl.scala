@@ -11,7 +11,7 @@ object Debug {
   private var print_level : Int = 3;
 
   def active = _active;
-  
+
   def activate() : Unit = _active = true;
 
   def indent() {
@@ -52,7 +52,7 @@ object Debug {
 	print_level += 1;
       }
     }
-      
+
 }
 
 class Module(val mname : String) {
@@ -61,11 +61,11 @@ class Module(val mname : String) {
     if (Debug.active) {
       println("Type " + mname + " is now finished.");
     }
-    complete = true; 
+    complete = true;
   }
   def isComplete : Boolean = complete;
 };
- 
+
 /**
  * The class of all constructed APS values.
  */
@@ -94,7 +94,7 @@ class I_TYPE[T](name : String) extends Module(name) with C_TYPE[T] {
   def f_node_equivalent(x : T_Result, y : T_Result) : Boolean = x != null && y != null && x.equals(y);
   def f_string(x : T_Result) : String = x.toString();
 }
-    
+
 class T_TYPE(t_Result : C_TYPE[T_TYPE]) extends Value(t_Result) { };
 
 class M_TYPE(name : String) extends I_TYPE[T_TYPE](name) {
@@ -145,7 +145,7 @@ trait C_PHYLUM[T_Result <: Node] extends C_TYPE[T_Result] {
 }
 
 class I_PHYLUM[T_Result <: Node](name : String)
-	 extends I_TYPE[T_Result](name) with C_PHYLUM[T_Result] 
+	 extends I_TYPE[T_Result](name) with C_PHYLUM[T_Result]
 {
   val v_identical = f_identical _;
   val v_object_id = f_object_id _;
@@ -153,13 +153,13 @@ class I_PHYLUM[T_Result <: Node](name : String)
 
   override def f_equal(x : T_Result, y : T_Result) : Boolean = f_identical(x,y);
   def f_identical(x : T_Result, y : T_Result) : Boolean = x eq y;
-  def f_object_id(x : T_Result) : Int = 
+  def f_object_id(x : T_Result) : Int =
     x match {
       case n:Node => n.nodeNumber;
     };
   def f_object_id_less(x1 : T_Result, x2 : T_Result) : Boolean =
     f_object_id(x1) < f_object_id(x2);
-  override def f_string(x : T_Result) : String = 
+  override def f_string(x : T_Result) : String =
     super.f_string(x) + "@" + f_object_id(x);
 
   val v_nil : T_Result = null.asInstanceOf[T_Result];
@@ -171,7 +171,7 @@ class I_PHYLUM[T_Result <: Node](name : String)
   }
 }
 
-abstract class T_PHYLUM(t_Result : C_PHYLUM[T_PHYLUM]) 
+abstract class T_PHYLUM(t_Result : C_PHYLUM[T_PHYLUM])
 extends Node(t_Result) { }
 
 class M_PHYLUM(name : String) extends I_PHYLUM[T_PHYLUM](name)
@@ -208,8 +208,8 @@ class Evaluation[T_P, T_V](val anchor : T_P, val name : String)
 
   var status : EvalStatus = UNINITIALIZED;
   var value : ValueType = null.asInstanceOf[ValueType];
-  var checkForLateUpdate = true;  // Flag that can be overridden to prevent testing for TooLateError 
- 
+  var checkForLateUpdate = true;  // Flag that can be overridden to prevent testing for TooLateError
+
   def inCycle : CircularEvaluation[_,_] = null;
   def setInCycle(ce : CircularEvaluation[_,_]) : Unit = {
     throw new CyclicAttributeException(name);
@@ -262,7 +262,7 @@ class Evaluation[T_P, T_V](val anchor : T_P, val name : String)
   def evaluateCycle : Unit = {
     throw new CyclicAttributeException("internal cyclic error: " + anchor+"."+name);
   }
-  
+
   def detectedCycle : ValueType = {
     throw new CyclicAttributeException(anchor+"."+name);
   }
@@ -277,7 +277,7 @@ class Evaluation[T_P, T_V](val anchor : T_P, val name : String)
 class Attribute[T_P <: Node, T_V]
                (val t_P : C_PHYLUM[T_P],
 		val t_V : Any, // unused
-		val name : String) 
+		val name : String)
 extends Module("Attribute " + name)
 {
   type NodeType = T_P;
@@ -293,7 +293,7 @@ extends Module("Attribute " + name)
     set(n,v);
     Debug.end();
   }
-    
+
   override def finish() : Unit = {
     if (!isComplete) {
       // We only demand values of rooted trees
@@ -321,7 +321,7 @@ extends Module("Attribute " + name)
     };
     evaluations(num)
   }
-  
+
   def set(n : NodeType, v : ValueType) : Unit = {
     checkNode(n).set(v);
   }
@@ -329,7 +329,7 @@ extends Module("Attribute " + name)
   def get(n : Any) : ValueType = {
     checkNode(n.asInstanceOf[NodeType]).get;
   }
-  
+
   def createEvaluation(anchor : NodeType) : Evaluation[NodeType,ValueType] = {
     return new Evaluation(anchor, anchor + "." + name);
   }
@@ -369,7 +369,7 @@ trait CollectionEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
 
 class CircularHelper(var cycleLast : CircularEvaluation[_,_]) {
   var modified : Boolean = false;
-  
+
   {
     Debug.out("Created cycle helper " + this + " for " + cycleLast.name);
   }
@@ -381,7 +381,7 @@ class CircularHelper(var cycleLast : CircularEvaluation[_,_]) {
     cycleLast.cycleNext = c;
     cycleLast = c;
   }
-  
+
   def addAll(c : CircularEvaluation[_,_]) : Unit = {
     {
       Debug.out("Adding all from " + c.helper + " to cycle " + this);
@@ -408,7 +408,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
   import Evaluation._;
 
   def lattice : C_LATTICE[ValueType];
-  
+
   // a union-find link
   var cycleParent :  CircularEvaluation[_,_] = null;
 
@@ -482,7 +482,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
     }
   }
 
-  private def check(newValue : ValueType) : Unit = {
+  def check(newValue : ValueType) : Unit = {
     if (!lattice.v_equal(value,newValue)) {
       inCycle.helper.modified = true;
       if (!lattice.v_compare(value,newValue)) {
@@ -490,12 +490,12 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
       }
     }
   };
-  
+
   override def set(newValue : ValueType) : Unit = {
     check(newValue);
     super.set(newValue);
   }
-  
+
   def recompute() : Unit = {
     val newValue = compute;
     check(newValue);

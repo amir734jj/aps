@@ -1213,9 +1213,6 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
     }
   }
 
-  // This is used in the static code generation
-  aug_graph->max_phase = state->max_parent_ph;
-
   if (oag_debug & DEBUG_ORDER)
   {
     printf("\nInstances %s:\n", decl_name(aug_graph->syntax_decl));
