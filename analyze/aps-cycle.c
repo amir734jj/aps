@@ -328,6 +328,61 @@ static bool instance_is_local(INSTANCE* i)
   return (fibered_attr_direction(&i->fibered_attr)) == instance_local;
 }
 
+static bool is_inside_some_function(Declaration decl, Declaration* func)
+{
+  void *current = decl;
+  Declaration current_decl;
+  while (current != NULL && (current = tnode_parent(current)) != NULL)
+  {
+    switch (ABSTRACT_APS_tnode_phylum(current))
+    {
+    case KEYDeclaration:
+      current_decl = (Declaration)current;
+      switch (Declaration_KEY(current_decl))
+      {
+      case KEYsome_function_decl:
+        *func = current_decl;
+        return some_function_decl_result(current_decl) == decl;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * This function determines whether attribute instance should be considered for circularity check
+ * @param instance attribute instance
+ * @return true if instance not is not: If, Match and some formal 
+ * @return false everything else
+ */
+static bool instance_can_be_considered_for_circularity_check(INSTANCE* instance)
+{
+  // If and Match statements can show up in a cycle but are never declared circular or non-circular
+  if (if_rule_p(instance->fibered_attr.attr)) return false;
+
+  Declaration node = instance->fibered_attr.attr;
+  Declaration func = NULL;
+  
+  // The result in a function/procedure may show up in a cycle but are never declared circular or non-circular
+  if (is_inside_some_function(node, &func) && some_function_decl_result(func) == node) return false;
+
+  // Formals may show up in a cycle as well
+  switch (ABSTRACT_APS_tnode_phylum(node))
+  {
+    case KEYDeclaration:
+    {
+      switch (Declaration_KEY(node))
+      {
+        case KEYformal:
+          return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 static void assert_circular_declaration(STATE *s)
 {
   int i, j, k;
@@ -343,8 +398,17 @@ static void assert_circular_declaration(STATE *s)
     for (j = 0; j < n; j++)
     {
       INSTANCE *instance = &array[j];
+      Declaration node = instance->fibered_attr.attr;
+
+      if (!instance_can_be_considered_for_circularity_check(instance)) continue;
+
       bool any_cycle = false;
       bool declared_circular = instance_circular(instance);
+
+      char instance_to_str[BUFFER_SIZE];
+      FILE *f = fmemopen(instance_to_str, sizeof(instance_to_str), "w");
+      print_instance(instance, f);
+      fclose(f);
 
       for (k = 0; k < s->cycles.length; k++)
       {
@@ -355,18 +419,16 @@ static void assert_circular_declaration(STATE *s)
           {
             any_cycle = true;
           }
-          else if (!if_rule_p(instance->fibered_attr.attr))
+          else
           {
-            print_instance(instance, stdout);
-            printf(" is involved in a cycle but was not declared circular in phylum graph.\n");
+            aps_error(node, "Instance (%s) involves in a cycle but it is not declared circular.", instance_to_str);
           }
         }
       }
 
       if (declared_circular && !any_cycle)
       {
-        print_instance(instance, stdout);
-        printf(" is declared circular but does not involve with any cycles in phylum graph.\n");
+        aps_warning(node, "Instance (%s) is declared circular but does not involve in any cycle.", instance_to_str);
       }
     }
   }
@@ -382,8 +444,17 @@ static void assert_circular_declaration(STATE *s)
     for (j = 0; j < n; j++)
     {
       INSTANCE *instance = &array[j];
+      Declaration node = instance->fibered_attr.attr;
+
+      if (!instance_can_be_considered_for_circularity_check(instance)) continue;
+
       bool any_cycle = false;
       bool declared_circular = instance_circular(instance);
+
+      char instance_to_str[BUFFER_SIZE];
+      FILE *f = fmemopen(instance_to_str, sizeof(instance_to_str), "w");
+      print_instance(instance, f);
+      fclose(f);
 
       // Forall cycles in the graph
       for (k = 0; k < s->cycles.length; k++)
@@ -395,18 +466,16 @@ static void assert_circular_declaration(STATE *s)
           {
             any_cycle = true;
           }
-          else if (!if_rule_p(instance->fibered_attr.attr))
+          else
           {
-            print_instance(instance, stdout);
-            printf(" is involved in a cycle but was not declared circular in aug graph.\n");
+            aps_error(node, "Instance (%s) involves in a cycle but it is not declared circular.", instance_to_str);
           }
         }
       }
 
       if (declared_circular && !any_cycle)
       {
-        print_instance(instance, stdout);
-        printf(" is declared circular but does not involve with any cycles in aug graph.\n");
+        aps_warning(node, "Instance (%s) is declared circular but does not involve in any cycle.", instance_to_str);
       }
     }
   }
