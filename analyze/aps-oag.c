@@ -153,7 +153,11 @@ void schedule_summary_dependency_graph(PHY_GRAPH* phy_graph) {
     if (count_non_circular) {
       done += count_non_circular;
       circular_phase[phase] = false;
-      printf("^^^ non-circular\n");
+      phy_graph->max_phase = phase;
+
+      if (oag_debug & TOTAL_ORDER) {
+        printf("^^^ non-circular\n");
+      }
       continue;
     }
 
@@ -162,18 +166,15 @@ void schedule_summary_dependency_graph(PHY_GRAPH* phy_graph) {
     if (count_circular) {
       done += count_circular;
       circular_phase[phase] = true;
-      printf("^^^ circular\n");
+      phy_graph->max_phase = phase;
+
+      if (oag_debug & TOTAL_ORDER) {
+        printf("^^^ circular\n");
+      }
       continue;
     }
 
   } while (count_non_circular || count_circular);
-
-  phy_graph->max_phase = phase;
-  printf("phy_graph->phylum: %s and max phase: %d\n", decl_name(phy_graph->phylum), phase);
-
-  if (!strcmp("Grammar", decl_name(phy_graph->phylum))){
-    printf("found it %ld :%d\n", (long) phy_graph, tnode_line_number(phy_graph->phylum));
-  }
 
   if (done < n) {
     if (cycle_debug & PRINT_CYCLE) {
@@ -1041,6 +1042,7 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
 /**
  * Utility function to get children of augmented dependency graph as array of declarations
  * @param aug_graph Augmented dependency graph
+ * @param state State
  */
 static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state)
 {
@@ -1048,14 +1050,14 @@ static void set_aug_graph_children(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* stat
   int children_count = 0;
 
   Declaration current;
-  for(current = aug_graph->first_rhs_decl; current != NULL; current = DECL_NEXT(current))
+  for (current = aug_graph->first_rhs_decl; current != NULL; current = DECL_NEXT(current))
   {
     children_count++;
   }
 
   int i = 0;
   children_arr = (Declaration*)HALLOC(sizeof(Declaration) * children_count);
-  for(current = aug_graph->first_rhs_decl; current != NULL; current = DECL_NEXT(current))
+  for (current = aug_graph->first_rhs_decl; current != NULL; current = DECL_NEXT(current))
   {
     children_arr[i++] = current;
   }
@@ -1117,6 +1119,8 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
     }
   }
 
+  TOTAL_ORDER_STATE* state = (TOTAL_ORDER_STATE *)alloca(sizeof(TOTAL_ORDER_STATE));
+
   size_t instance_groups_size = n * sizeof(CHILD_PHASE);
   CHILD_PHASE* instance_groups = (CHILD_PHASE*) alloca(instance_groups_size);
   memset(instance_groups, (int)0, instance_groups_size);
@@ -1141,34 +1145,18 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
       int ph = attribute_schedule(npg,&(in->fibered_attr));
       instance_groups[i].ph = (short) ph;
       instance_groups[i].ch = (short) ch;
-      instance_groups[i].cycle = i;
-
-      int k, l;
-      for (k = 0; k < cycles.length; k++)
-      {
-        CYCLE cyc = cycles.array[k];
-        for (l = 0; l < cyc.instances.length; l++)
-        {
-          INSTANCE source = cyc.instances.array[l];
-          if (source.index == i)
-          {
-            instance_groups[i].cycle = k;
-          }
-        }
-      }
     }
   }
 
-  TOTAL_ORDER_STATE* state = (TOTAL_ORDER_STATE *)alloca(sizeof(TOTAL_ORDER_STATE));
   state->instance_groups = instance_groups;
 
   // Find children of augmented graph: this will be used as argument to visit calls
   set_aug_graph_children(aug_graph, state);
 
   size_t schedule_size = n * sizeof(bool);
-  bool* schedule = (bool *)alloca(schedule_size);
+  bool* schedule = (bool *) alloca(schedule_size);
 
-  /* This means: not scheduled yet */
+  /* False here means nothing is scheduled yet */
   memset(schedule, false, schedule_size);
   state->schedule = schedule;
 
@@ -1199,11 +1187,11 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
 
   // Collect parent_inh and parent_synth
   size_t parent_inh_synth_size = (state->max_parent_ph + 1) * sizeof(bool);
-  bool* any_parent_inh = (bool *)alloca(parent_inh_synth_size);
-  bool* any_parent_synth = (bool *)alloca(parent_inh_synth_size);
+  bool* any_parent_inh = (bool *) alloca(parent_inh_synth_size);
+  bool* any_parent_synth = (bool *) alloca(parent_inh_synth_size);
 
-  memset(any_parent_inh, (int)0, parent_inh_synth_size);
-  memset(any_parent_synth, (int)0, parent_inh_synth_size);
+  memset(any_parent_inh, false, parent_inh_synth_size);
+  memset(any_parent_synth, false, parent_inh_synth_size);
 
   state->any_parent_inh = any_parent_inh;
   state->any_parent_synth = any_parent_synth;
@@ -1225,13 +1213,16 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
     }
   }
 
+  // This is used in the static code generation
+  aug_graph->max_phase = state->max_parent_ph;
+
   if (oag_debug & DEBUG_ORDER)
   {
     printf("\nInstances %s:\n", decl_name(aug_graph->syntax_decl));
     for (i = 0; i < n; i++)
     {
       INSTANCE *in = &(aug_graph->instances.array[i]);
-      CHILD_PHASE group = instance_groups[i];
+      CHILD_PHASE group = state->instance_groups[i];
       print_instance(in, stdout);
       printf(": ");
       
