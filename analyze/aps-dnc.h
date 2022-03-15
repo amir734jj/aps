@@ -134,6 +134,8 @@ extern void print_edgeset(EDGESET, FILE *);
 extern void print_analysis_state(STATE *, FILE *);
 extern void print_cycles(STATE *, FILE *);
 
+extern BOOL decl_is_circular(Declaration d);
+
 extern int analysis_debug;
 #define ADD_EDGE 16
 #define SUMMARY_EDGE 32

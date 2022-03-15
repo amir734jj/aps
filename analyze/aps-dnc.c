@@ -961,7 +961,7 @@ static BOOL decl_is_collection(Declaration d) {
   }
 }
 
-static BOOL decl_is_circular(Declaration d)
+BOOL decl_is_circular(Declaration d)
 {
   if (!d) return FALSE;
   switch (Declaration_KEY(d)) {
@@ -2501,8 +2501,9 @@ void dnc_close(STATE*s) {
     }
     changed = FALSE;
     for (j=0; j < s->match_rules.length; ++j) {
-      if (analysis_debug & DNC_ITERATE) {
-	printf("Checking rule %d\n",j);
+      // if (analysis_debug & DNC_ITERATE)
+      {
+	printf("Checking rule %s\n",decl_name(s->aug_graphs[j].syntax_decl));
       }
       changed |= close_augmented_dependency_graph(&s->aug_graphs[j]);
     }
