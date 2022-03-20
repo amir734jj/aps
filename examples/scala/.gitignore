@@ -4,7 +4,8 @@
 !tests/
 !*.lex.scala
 !*.y.scala
-Simple.y
-Simple.lex
-Simple.output
-!SimpleParserBase.scala
+*.lex
+*.y
+*.output
+!*Base.scala
+*.scala~
