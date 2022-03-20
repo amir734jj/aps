@@ -35,6 +35,12 @@ run: Classic.run TestCollDriver.run TestCycleDriver.run NestedCyclesDriver.run
 nested-cycles.scala: ../nested-cycles.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
 
+nested_cycles_dynamic.scala:  ../nested-cycles.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -m nested_cycles_dynamic nested-cycles
+
+nested_cycles_static.scala:  ../nested-cycles.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -m nested_cycles_static nested-cycles
+
 first.scala: ../first.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
 
@@ -73,11 +79,11 @@ SimpleParserBase.class : SimpleParserBase.scala simple_implicit.class
 SimpleTokens.class : SimpleTokens.scala
 	${SCALAC} ${SCALACFLAGS} $<
 
-nested-cycles.class: nested-cycles.scala simple_implicit.class
-	${SCALAC} ${SCALACFLAGS} nested-cycles.scala
+nested-cycles.class nested_cycles_static.class nested_cycles_dynamic.class: simple_implicit.class nested-cycles.scala nested_cycles_static.scala nested_cycles_dynamic.scala
+	${SCALAC} ${SCALACFLAGS} $(basename $(@F)).scala
 
 .PHONY: nested_cycles_implicit.class
-nested_cycles_implicit.class : nested-cycles.class simple_implicit.class ;
+nested_cycles_implicit.class : nested-cycles.class nested_cycles_static.class nested_cycles_dynamic.class simple_implicit.class ;
 
 NestedCyclesDriver.class: nested_cycles_implicit.class SimpleParser.class
 	${SCALAC} ${SCALACFLAGS} nested-cycles-driver.scala
@@ -132,4 +138,3 @@ UseGlobal.class : use-global-driver.scala
 
 clean:
 	rm -f *.class ${SCALAGEN} ${MISCSCALAGEN}
-

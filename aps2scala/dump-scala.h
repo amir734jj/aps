@@ -1,6 +1,7 @@
 #ifndef DUMP_SCALA_H
 #include <iostream>
 #include <string>
+#include <algorithm> 
 
 using std::ostream;
 using std::string;
@@ -15,6 +16,12 @@ extern bool incremental;
 extern bool static_schedule;
 extern int verbose;
 extern int debug;
+
+// The name of module being exported in Scala code
+extern string module_name;
+
+#define TO_UPPER_IN_PLACE(sp) (void(transform((sp).begin(), (sp).end(), (sp).begin(), ::toupper)))
+#define TO_LOWER_IN_PLACE(sp) (void(transform((sp).begin(), (sp).end(), (sp).begin(), ::tolower)))
 
 class Implementation;
 
