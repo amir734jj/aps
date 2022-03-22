@@ -36,93 +36,64 @@ Expression default_init(Default def)
  * If "from" is not NULL, then initialize the new array
  * with it.
  */
-Expression *make_instance_assignment(AUG_GRAPH *aug_graph,
+vector<vector<Expression>> make_instance_assignment(AUG_GRAPH *aug_graph,
                                      Block block,
-                                     Expression from[])
+                                     vector<vector<Expression>> from)
 {
   int n = aug_graph->instances.length;
-  Expression *array = new Expression[n];
+  vector<vector<Expression>> array(from);
 
-  if (from)
+  for (int i = 0; i < n; ++i)
   {
-    for (int i = 0; i < n; ++i)
+    INSTANCE *in = &aug_graph->instances.array[i];
+    Declaration ad = in->fibered_attr.attr;
+    if (ad != 0 && in->fibered_attr.fiber == 0 &&
+        ABSTRACT_APS_tnode_phylum(ad) == KEYDeclaration)
     {
-      array[i] = from[i];
-    }
-  }
-  else
-  {
-    for (int i = 0; i < n; ++i)
-    {
-      INSTANCE *in = &aug_graph->instances.array[i];
-      // printf(" => ");
-      // print_instance(in, stdout);
-      // printf("\n");
-      array[i] = 0;
-      Declaration ad = in->fibered_attr.attr;
-      if (ad != 0 && in->fibered_attr.fiber == 0 &&
-          ABSTRACT_APS_tnode_phylum(ad) == KEYDeclaration)
+      // get default!
+      switch (Declaration_KEY(ad))
       {
-        // get default!
-        switch (Declaration_KEY(ad))
-        {
-        case KEYattribute_decl:
-          array[i] = default_init(attribute_decl_default(ad));
-          break;
-        case KEYvalue_decl:
-          array[i] = default_init(value_decl_default(ad));
-          break;
-        default:
-          break;
-        }
+      case KEYattribute_decl:
+        array[i].push_back(default_init(attribute_decl_default(ad)));
+        break;
+      case KEYvalue_decl:
+        array[i].push_back(default_init(value_decl_default(ad)));
+        break;
+      default:
+        break;
       }
     }
   }
 
-  Declarations ds = block_body(block);
-  for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d))
+  int step = 0;
+  while (step < 2)
   {
-    switch (Declaration_KEY(d))
+    Declarations ds = block_body(block);
+    for (Declaration d = first_Declaration(ds); d; d = DECL_NEXT(d))
     {
-    case KEYcollect_assign:
-    {
-      if (INSTANCE *in = Expression_info(assign_rhs(d))->value_for)
+      switch (Declaration_KEY(d))
       {
-        if (in->index >= n)
-          fatal_error("bad index for instance");
+      case KEYassign:
+      {
+        if (INSTANCE *in = Expression_info(assign_rhs(d))->value_for)
+        {
+          if (in->index >= n)
+            fatal_error("bad index for instance");
 
-        if (array[in->index] != NULL)
-        {
-          Expression new_expr = assign_rhs(d);
-          Expression_info(new_expr)->collect_next = array[in->index];
-          array[in->index] = new_expr;
+          if (step == 0)
+            array[in->index].clear();
+          else
+            array[in->index].push_back(assign_rhs(d));
         }
-        else
-        {
-          array[in->index] = assign_rhs(d);
-        }
+        break;
       }
       break;
-    }
-    case KEYnormal_assign:
-    {
-      INSTANCE *in;
-      if ((in = Expression_info(assign_rhs(d))->value_for))
-      {
-
-        // printf(" |=> ");
-        // print_instance(in, stdout);
-        // printf("\n");
-
-        if (in->index >= n)
-          fatal_error("bad index for instance");
-        array[in->index] = assign_rhs(d);
+      default:
+        break;
       }
     }
-    break;
-    default:
-      break;
-    }
+
+    step++;
   }
 
   return array;
@@ -148,6 +119,13 @@ static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short
 #endif /* APS2SCALA */
 }
 
+static void dump_cached_visit(Declaration decl, int n, short ph, short ch, ostream &os)
+{
+#ifdef APS2SCALA
+  os << indent(nesting_level) << "once(() => visit_" << n << "_" << ph << "(v_" << decl_name(decl) << "), (anchor," << ph << "," << ch << "));\n";
+#endif /* APS2SCALA */
+}
+
 // visit procedures are called:
 // visit_n_m
 // where n is the number of the phy_graph and m is the phase.
@@ -161,7 +139,7 @@ static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short
 static bool implement_visit_function(AUG_GRAPH *aug_graph,
                                      int phase, /* phase to impl. */
                                      CTO_NODE *cto,
-                                     Expression instance_assignment[],
+                                     vector<vector<Expression>> instance_assignment,
                                      int nch,
                                      ostream &os)
 {
@@ -190,6 +168,14 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       {
         os << indent() << "// Fixed-point is needed here.\n";
         dump_fixed_point_loop_visit(cto->child_decl, n, ph, ch, os);
+      }
+      // once guard is needed when:
+      //  - current phase is non-circular and child visit is non-circular
+      //  - current phase is circular and child visit is non-circular
+      else if ((!pg_parent->cyclic_flags[phase] && !pg->cyclic_flags[ph]) || (pg_parent->cyclic_flags[phase] && !pg->cyclic_flags[ph]))
+      {
+        os << indent() << "// Visit cache is needed here.\n";
+        dump_cached_visit(cto->child_decl, n, ph, ch, os);
       }
       else
       {
@@ -221,14 +207,6 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
 
       if (is_mod)
       {
-      // PHY_GRAPH *pg = Declaration_info(cto->child_decl)->node_phy_graph;
-      // PHY_GRAPH *pg_parent = Declaration_info(aug_graph->lhs_decl)->node_phy_graph;
-      // int n = PHY_GRAPH_NUM(pg);
-
-      // os << indent() << "// parent visit of " << decl_name(pg_parent->phylum) << " at phase " << phase << " is " << (pg_parent->cyclic_flags[phase] ? "circular" : "non-circular") << "\n";
-      // os << indent() << "// child visit of " << decl_name(pg->phylum) << " at phase " << ph << " is " << (pg->cyclic_flags[ph] ? "circular" : "non-circular") << "\n";
-
-
         int n = PHY_GRAPH_NUM(Declaration_info(aug_graph->syntax_decl)->node_phy_graph);
 
 #ifdef APS2SCALA
@@ -249,7 +227,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
         os << indent() << "}\n";
       }
 
-      os << indent() << "// End of parent (" << decl_name(aug_graph->syntax_decl) << ") phase visit marker for phase: " << phase << "\n";
+      os << indent() << "// End of parent (" << decl_name(aug_graph->syntax_decl) << ") phase visit marker for phase: " << ph << "\n";
 
       if (ph == phase)
         return false;
@@ -325,12 +303,11 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
         if_true = if_stmt_if_true(ad);
         if_false = if_stmt_if_false(ad);
       }
-      Expression *true_assignment =
+      vector<vector<Expression>> true_assignment =
           make_instance_assignment(aug_graph, if_true, instance_assignment);
       implement_visit_function(aug_graph, phase, cto->cto_if_true,
                                true_assignment,
                                nch, os);
-      delete[] true_assignment;
       --nesting_level;
 #ifdef APS2SCALA
       if (is_match)
@@ -346,15 +323,13 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       os << indent() << "} else {\n";
 #endif /* APS2SCALA */
       ++nesting_level;
-      Expression *false_assignment = if_false
+      vector<vector<Expression>> false_assignment = if_false
                                          ? make_instance_assignment(aug_graph, if_false, instance_assignment)
                                          : instance_assignment;
       bool cont = implement_visit_function(aug_graph, phase,
                                            cto->cto_if_false,
                                            false_assignment,
                                            nch, os);
-      if (if_false)
-        delete[] false_assignment;
       --nesting_level;
 #ifdef APS2SCALA
       if (is_match)
@@ -380,13 +355,12 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       continue;
     }
 
-    Expression rhs = instance_assignment[in->index];
-
-    if (rhs == NULL)
-      continue;
-
-    do
+    for (vector<Expression>::iterator rhs_it = instance_assignment[in->index].begin(); rhs_it != instance_assignment[in->index].end(); rhs_it++)
     {
+      Expression rhs = *rhs_it;
+
+      if (rhs == NULL)
+        continue;
 
       if (in->node && Declaration_KEY(in->node) == KEYnormal_assign)
       {
@@ -581,7 +555,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       }
       cout << "Problem assigning " << in << "\n";
       os << "// Not sure what to do for " << in << "\n";
-    } while (rhs != NULL && (rhs = Expression_info(rhs)->collect_next) != NULL);
+    }
   }
 
   return 0; // no more!
@@ -618,8 +592,9 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 
   int phase;
 
-  Expression *instance_assignment =
-      make_instance_assignment(aug_graph, block, 0);
+  vector<vector<Expression>> default_instance_assignments(aug_graph->instances.length, vector<Expression>(0));
+  vector<vector<Expression>> instance_assignment =
+      make_instance_assignment(aug_graph, block, default_instance_assignments);
 
   // the following loop is controlled in two ways:
   // (1) if total order is zero, there are no visits at all.
@@ -660,8 +635,6 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 #endif /* APS2SCALA */
     os << indent() << "}\n";
   }
-
-  delete[] instance_assignment;
 }
 
 // The following function is only for Scala code generation
@@ -887,17 +860,15 @@ void dump_visit_functions(STATE *s, output_streams &oss)
   // printf("sp: %s and pointer %ld %d\n", decl_name(sp), (long) (Declaration_info(s->start_phylum)->node_phy_graph), tnode_line_number(s->));
   int phase = Declaration_info(s->module)->node_phy_graph->max_phase;
 
-  Expression *instance_assignment =
+  vector<vector<Expression>> default_instance_assignments(s->global_dependencies.instances.length, vector<Expression>(0));
+  vector<vector<Expression>> instance_assignment =
       make_instance_assignment(&s->global_dependencies,
-                               module_decl_contents(s->module), 0);
+                               module_decl_contents(s->module), default_instance_assignments);
 
   implement_visit_function(&s->global_dependencies, phase,
                            s->global_dependencies.total_order,
                            instance_assignment,
                            1, os);
-
-  delete[] instance_assignment;
-
   --nesting_level;
   os << indent() << "}\n";
 }
@@ -955,8 +926,9 @@ void dump_scheduled_function_body(Declaration fd, STATE *s, ostream &bs)
   AUG_GRAPH *aug_graph = &s->aug_graphs[index];
   CTO_NODE *schedule = aug_graph->total_order;
 
-  Expression *instance_assignment =
-      make_instance_assignment(aug_graph, function_decl_body(fd), 0);
+  vector<vector<Expression>> default_instance_assignments(aug_graph->instances.length, vector<Expression>(0));
+  vector<vector<Expression>> instance_assignment =
+      make_instance_assignment(aug_graph, function_decl_body(fd), default_instance_assignments);
 
   bool cont = implement_visit_function(aug_graph, 1, schedule,
                                        instance_assignment, 0, bs);
@@ -983,8 +955,6 @@ void dump_scheduled_function_body(Declaration fd, STATE *s, ostream &bs)
       bs << "    // phase " << ++phase << "\n";
     bs << "    */\n";
   }
-
-  delete[] instance_assignment;
 }
 
 class Static : public Implementation

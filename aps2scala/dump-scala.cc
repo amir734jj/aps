@@ -108,7 +108,11 @@ void dump_static_circular_trait(std::ostream& oss)
   oss << indent(nesting_level + 1) << "override def set(newValue : ValueType) : Unit = {\n";
   oss << indent(nesting_level + 2) << "val prevValue = value;\n";
   oss << indent(nesting_level + 2) << "super.set(newValue);\n";
-  oss << indent(nesting_level + 2) << "changed = prevValue != value;\n";
+  oss << indent(nesting_level + 2) << "if (prevValue == null && getDefault == newValue) {\n";
+  oss << indent(nesting_level + 2) << "changed |= false\n";
+  oss << indent(nesting_level + 2) << "} else {\n";
+  oss << indent(nesting_level + 2) << "changed |= prevValue != value;\n";
+  oss << indent(nesting_level + 2) << "}\n";
   oss << indent(nesting_level + 1) << "}\n\n";
   oss << indent(nesting_level + 1) << "override def check(newValue : ValueType) : Unit = {\n";
   oss << indent(nesting_level + 2) << "if (value != null) {\n";        // value is null during the first check() invocation
@@ -120,7 +124,19 @@ void dump_static_circular_trait(std::ostream& oss)
   oss << indent(nesting_level + 2) << "}\n";
   oss << indent(nesting_level + 1) << "}\n\n";
   oss << indent(nesting_level + 1) << "checkForLateUpdate = false;\n"; // Needed to prevent TooLateError
-  oss << indent(nesting_level) << "}\n\n";
+  oss << indent(nesting_level) << "}\n";
+}
+
+void dump_visit_cache(std::ostream& oss)
+{
+  oss << "\n";
+  oss << indent(nesting_level) << "var visitCache: Map[Any, Boolean] = Map()\n";
+  oss << indent(nesting_level) << "def once[T](fn: () => T, key: Any): Unit = {\n";
+  oss << indent(nesting_level + 1) << "if (!visitCache.getOrElse(key, false)) {\n";
+  oss << indent(nesting_level + 2) << "visitCache += (key -> true);\n";
+  oss << indent(nesting_level + 2) << "fn();\n";
+  oss << indent(nesting_level + 1) << "}\n";
+  oss << indent(nesting_level) << "}\n";
 }
 
 void dump_scala_Declaration_header(Declaration, std::ostream&);
@@ -1605,6 +1621,7 @@ void dump_scala_Declaration(Declaration decl,ostream& oss)
       {
         activate_static_circular = s->loop_required;
         dump_static_circular_trait(oss);
+        dump_visit_cache(oss);
       }
 
       if (result_typeval != "") {
