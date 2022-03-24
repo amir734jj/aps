@@ -169,10 +169,8 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
         os << indent() << "// Fixed-point is needed here.\n";
         dump_fixed_point_loop_visit(cto->child_decl, n, ph, ch, os);
       }
-      // once guard is needed when:
-      //  - current phase is non-circular and child visit is non-circular
-      //  - current phase is circular and child visit is non-circular
-      else if ((!pg_parent->cyclic_flags[phase] && !pg->cyclic_flags[ph]) || (pg_parent->cyclic_flags[phase] && !pg->cyclic_flags[ph]))
+      // once guard is needed when current phase is circular and child visit is non-circular
+      else if (pg_parent->cyclic_flags[phase] && !pg->cyclic_flags[ph])
       {
         os << indent() << "// Visit cache is needed here.\n";
         dump_cached_visit(cto->child_decl, n, ph, ch, os);
