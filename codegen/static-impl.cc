@@ -8,6 +8,7 @@ extern "C"
 #include "dump.h"
 #include "implement.h"
 #include <sstream>
+#include <set>
 
 #define LOCAL_VALUE_FLAG (1 << 28)
 
@@ -36,12 +37,12 @@ Expression default_init(Default def)
  * If "from" is not NULL, then initialize the new array
  * with it.
  */
-vector<vector<Expression>> make_instance_assignment(AUG_GRAPH *aug_graph,
+vector<set<Expression>> make_instance_assignment(AUG_GRAPH *aug_graph,
                                      Block block,
-                                     vector<vector<Expression>> from)
+                                     vector<set<Expression>> from)
 {
   int n = aug_graph->instances.length;
-  vector<vector<Expression>> array(from);
+  vector<set<Expression>> array(from);
 
   for (int i = 0; i < n; ++i)
   {
@@ -54,10 +55,10 @@ vector<vector<Expression>> make_instance_assignment(AUG_GRAPH *aug_graph,
       switch (Declaration_KEY(ad))
       {
       case KEYattribute_decl:
-        array[i].push_back(default_init(attribute_decl_default(ad)));
+        array[i].insert(default_init(attribute_decl_default(ad)));
         break;
       case KEYvalue_decl:
-        array[i].push_back(default_init(value_decl_default(ad)));
+        array[i].insert(default_init(value_decl_default(ad)));
         break;
       default:
         break;
@@ -83,7 +84,7 @@ vector<vector<Expression>> make_instance_assignment(AUG_GRAPH *aug_graph,
           if (step == 0)
             array[in->index].clear();
           else
-            array[in->index].push_back(assign_rhs(d));
+            array[in->index].insert(assign_rhs(d));
         }
         break;
       }
@@ -139,7 +140,7 @@ static void dump_cached_visit(Declaration decl, int n, short ph, short ch, ostre
 static bool implement_visit_function(AUG_GRAPH *aug_graph,
                                      int phase, /* phase to impl. */
                                      CTO_NODE *cto,
-                                     vector<vector<Expression>> instance_assignment,
+                                     vector<set<Expression>> instance_assignment,
                                      int nch,
                                      ostream &os)
 {
@@ -301,7 +302,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
         if_true = if_stmt_if_true(ad);
         if_false = if_stmt_if_false(ad);
       }
-      vector<vector<Expression>> true_assignment =
+      vector<set<Expression>> true_assignment =
           make_instance_assignment(aug_graph, if_true, instance_assignment);
       implement_visit_function(aug_graph, phase, cto->cto_if_true,
                                true_assignment,
@@ -321,7 +322,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       os << indent() << "} else {\n";
 #endif /* APS2SCALA */
       ++nesting_level;
-      vector<vector<Expression>> false_assignment = if_false
+      vector<set<Expression>> false_assignment = if_false
                                          ? make_instance_assignment(aug_graph, if_false, instance_assignment)
                                          : instance_assignment;
       bool cont = implement_visit_function(aug_graph, phase,
@@ -353,7 +354,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       continue;
     }
 
-    for (vector<Expression>::iterator rhs_it = instance_assignment[in->index].begin(); rhs_it != instance_assignment[in->index].end(); rhs_it++)
+    for (set<Expression>::iterator rhs_it = instance_assignment[in->index].begin(); rhs_it != instance_assignment[in->index].end(); rhs_it++)
     {
       Expression rhs = *rhs_it;
 
@@ -590,8 +591,8 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 
   int phase;
 
-  vector<vector<Expression>> default_instance_assignments(aug_graph->instances.length, vector<Expression>(0));
-  vector<vector<Expression>> instance_assignment =
+  vector<set<Expression>> default_instance_assignments(aug_graph->instances.length, set<Expression>());
+  vector<set<Expression>> instance_assignment =
       make_instance_assignment(aug_graph, block, default_instance_assignments);
 
   // the following loop is controlled in two ways:
@@ -858,8 +859,8 @@ void dump_visit_functions(STATE *s, output_streams &oss)
   // printf("sp: %s and pointer %ld %d\n", decl_name(sp), (long) (Declaration_info(s->start_phylum)->node_phy_graph), tnode_line_number(s->));
   int phase = Declaration_info(s->module)->node_phy_graph->max_phase;
 
-  vector<vector<Expression>> default_instance_assignments(s->global_dependencies.instances.length, vector<Expression>(0));
-  vector<vector<Expression>> instance_assignment =
+  vector<set<Expression>> default_instance_assignments(s->global_dependencies.instances.length, set<Expression>());
+  vector<set<Expression>> instance_assignment =
       make_instance_assignment(&s->global_dependencies,
                                module_decl_contents(s->module), default_instance_assignments);
 
@@ -924,8 +925,8 @@ void dump_scheduled_function_body(Declaration fd, STATE *s, ostream &bs)
   AUG_GRAPH *aug_graph = &s->aug_graphs[index];
   CTO_NODE *schedule = aug_graph->total_order;
 
-  vector<vector<Expression>> default_instance_assignments(aug_graph->instances.length, vector<Expression>(0));
-  vector<vector<Expression>> instance_assignment =
+  vector<set<Expression>> default_instance_assignments(aug_graph->instances.length, set<Expression>());
+  vector<set<Expression>> instance_assignment =
       make_instance_assignment(aug_graph, function_decl_body(fd), default_instance_assignments);
 
   bool cont = implement_visit_function(aug_graph, 1, schedule,

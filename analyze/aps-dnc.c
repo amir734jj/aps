@@ -1378,6 +1378,22 @@ static void record_lhs_dependencies(Expression lhs, CONDITION *cond,
   }
 }
 
+Match get_match(Declaration f)
+{
+  void* node = f;
+  while (f)
+  {
+    // printf("%d\n", ABSTRACT_APS_tnode_phylum(f));
+    if (ABSTRACT_APS_tnode_phylum(f) == KEYMatch)
+    {
+      return (Match)f;
+    }
+    f = tnode_parent(f);
+  }
+
+  return NULL;
+}
+
 /* Initialize the edge set in the augmented dependency graph
  * from each rule for the production.  This is the meat of
  * the analysis process.  We use fiber information to get the
@@ -1425,6 +1441,18 @@ static void *get_edges(void *vaug_graph, void *node) {
 	    f.node = 0;
 	    f.attr = decl;
 	    f.modifier = NO_MODIFIER;
+
+      Match m = get_match(decl);
+      if (m != NULL)
+      {
+        VERTEX c;
+        c.node = 0;
+        c.attr = m;
+        c.modifier = NO_MODIFIER;
+
+        add_edges_to_graph(&c, &f, cond, control_dependency, aug_graph);
+      }
+
 	    record_condition_dependencies(&f,cond,aug_graph);
 	    record_expression_dependencies(&f,cond,dependency,NO_MODIFIER,
 					   expr,aug_graph);
