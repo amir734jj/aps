@@ -108,8 +108,8 @@ void dump_static_circular_trait(std::ostream& oss)
   oss << indent(nesting_level + 1) << "override def set(newValue : ValueType) : Unit = {\n";
   oss << indent(nesting_level + 2) << "val prevValue = value;\n";
   oss << indent(nesting_level + 2) << "super.set(newValue);\n";
-  oss << indent(nesting_level + 2) << "if (prevValue == null && getDefault == newValue) {\n";
-  oss << indent(nesting_level + 2) << "changed |= false\n";
+  oss << indent(nesting_level + 2) << "if (prevValue == null) {\n";
+  oss << indent(nesting_level + 2) << "changed |= false;\n";
   oss << indent(nesting_level + 2) << "} else {\n";
   oss << indent(nesting_level + 2) << "changed |= prevValue != value;\n";
   oss << indent(nesting_level + 2) << "}\n";

@@ -386,6 +386,8 @@ static bool instance_can_be_considered_for_circularity_check(INSTANCE* instance)
   // The result in a function/procedure may show up in a cycle but are never declared circular or non-circular
   if (is_inside_some_function(node, &func) && some_function_decl_result(func) == node) return false;
 
+  if (instance->fibered_attr.fiber != NULL) return false;
+
   // Formals may show up in a cycle as well
   switch (ABSTRACT_APS_tnode_phylum(node))
   {
@@ -561,52 +563,18 @@ static bool edge_can_be_deleted(int index1, int index2, INSTANCE *array, bool di
 
   if (index1 != index2 &&
       (dep & DEPENDENCY_MAYBE_DIRECT) &&
+      (dep & DEPENDENCY_NOT_JUST_FIBER) &&
       instance_is_local(attr1))
   {
-    printf(" preserved critical: ");
-    print_instance(attr1, stdout);
-    printf(" -> ");
-    print_instance(attr2, stdout);
-    printf("\n");
+    // if (cycle_debug & DEBUG_UP_DOWN)
+    {
+      printf(" preserved critical: ");
+      print_instance(attr1, stdout);
+      printf(" -> ");
+      print_instance(attr2, stdout);
+      printf("\n");
+    }
     return false;
-  }
-
-  return true;
-
-  // UP-DOWN
-  if (direction)
-  {
-    if ((instance_is_up(attr1) && instance_is_local(attr2)) || (instance_is_local(attr1) && instance_is_down(attr2)))
-    {
-      if (cycle_debug & DEBUG_UP_DOWN)
-      {
-        printf(" preserved up-down: ");
-        print_instance(attr1, stdout);
-        printf(" -> ");
-        print_instance(attr2, stdout);
-        printf("\n");
-      }
-
-      return false;
-    }
-  }
-  
-  // DOWN-UP
-  if (!direction)
-  {
-    if ((instance_is_down(attr1) && instance_is_local(attr2)) || (instance_is_local(attr1) && instance_is_up(attr2)))
-    {
-      if (cycle_debug & DEBUG_UP_DOWN)
-      {
-        printf(" preserved down-up: ");
-        print_instance(attr1, stdout);
-        printf(" -> ");
-        print_instance(attr2, stdout);
-        printf("\n");
-      }
-
-      return false;
-    }
   }
 
   // Kill the edge
@@ -850,7 +818,7 @@ static void add_up_down_attributes(STATE *s, bool direction)
       int constructor_index = constructor_instance_start[j];
       INSTANCE *array = aug_graph->instances.array;
 
-      printf("\naug decl is: %s\n\n", decl_name(aug_graph->syntax_decl));
+      // printf("\naug decl is: %s\n\n", decl_name(aug_graph->syntax_decl));
       for (k = 0; k < n; k++)
       {
         INSTANCE *instance = &array[k];

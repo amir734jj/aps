@@ -423,8 +423,8 @@ static void *get_match_tests(void *vpexpr, void *node)
   default:
     return NULL;
   case KEYMatch:
-    traverse_Pattern(get_match_tests,vpexpr,matcher_pat((Match)node));
     Match_info((Match)node)->match_test = *pexpr;
+    traverse_Pattern(get_match_tests,vpexpr,matcher_pat((Match)node));
     return NULL;
   case KEYMatches:
   case KEYPatternActuals:
@@ -433,7 +433,8 @@ static void *get_match_tests(void *vpexpr, void *node)
     { Pattern pat = (Pattern)node;
       switch (Pattern_KEY(pat)) {
       case KEYcondition:
-	{ Expression cond = condition_e(pat);
+	{ 
+    Expression cond = condition_e(pat);
 	  Expression expr = *pexpr;
 	  Expression_info(cond)->next_expr = expr;
 	  *pexpr = cond;
@@ -524,6 +525,9 @@ static void *init_decl_cond(void *vcond, void *node) {
 	CONDITION new_cond = *cond;
 	Match m;
 
+  // printf("line %d\n", tnode_line_number(decl));
+
+  // dump_lisp_Expression(testvar);
 	Expression_info(testvar)->next_expr = 0;
 	traverse_Matches(get_match_tests,&testvar,ms);
 	for (m = first_Match(ms); m; m=MATCH_NEXT(m)) {
@@ -1009,7 +1013,7 @@ static BOOL vertex_is_output(VERTEX* v)
 }
 
 /**
- * Connect the two vertices together, and if the kind is not indirect,
+ * Connect the two vertices together, and if the kind is carrying,
  * add fiber dependencies too.
  */
 void add_edges_to_graph(VERTEX* v1,
@@ -1020,7 +1024,8 @@ void add_edges_to_graph(VERTEX* v1,
   STATE *s = aug_graph->global_state;
   int i;
 
-  if (analysis_debug & ADD_EDGE) {
+  if (analysis_debug & ADD_EDGE) 
+  {
     print_dep_vertex(v1,stdout);
     fputs("->",stdout);
     print_dep_vertex(v2,stdout);
@@ -1028,6 +1033,11 @@ void add_edges_to_graph(VERTEX* v1,
     print_edge_helper(kind,cond,stdout);
     puts("");
   }
+
+  // if (ABSTRACT_APS_tnode_phylum(v2->attr) == KEYMatch)
+  // {
+  //   printf(" ");
+  // }
 
   // first add simple edge
   {
@@ -1450,6 +1460,7 @@ static void *get_edges(void *vaug_graph, void *node) {
         c.attr = m;
         c.modifier = NO_MODIFIER;
 
+        // Add an edge between Match and formal of the match without any condition
         add_edges_to_graph(&c, &f, cond, control_dependency, aug_graph);
       }
 
@@ -1579,12 +1590,18 @@ static void *get_edges(void *vaug_graph, void *node) {
 	  VERTEX sink;
 	  sink.node = 0;
 	  sink.modifier = NO_MODIFIER;
+
+    // printf("line %d %d %s\n", tnode_line_number(tnode_parent(decl)), tnode_line_number(decl), decl_name(match_first_rhs_decl(first_Match(case_stmt_matchers(decl)))));
+
 	  for (m=first_Match(case_stmt_matchers(decl)); m; m=MATCH_NEXT(m)) {
 	    Expression test = Match_info(m)->match_test;
 	    sink.attr = (Declaration)m;
 	    record_condition_dependencies(&sink,cond,aug_graph);
 
 	    for (; test != 0; test = Expression_info(test)->next_expr) {
+        // dump_lisp_Expression(test);
+        // printf("\n");
+
 	      record_expression_dependencies(&sink,cond,control_dependency,
 					     NO_MODIFIER, test, aug_graph);
 	    }
@@ -2529,7 +2546,7 @@ void dnc_close(STATE*s) {
     }
     changed = FALSE;
     for (j=0; j < s->match_rules.length; ++j) {
-      // if (analysis_debug & DNC_ITERATE)
+      if (analysis_debug & DNC_ITERATE)
       {
 	printf("Checking rule %s\n",decl_name(s->aug_graphs[j].syntax_decl));
       }
@@ -2647,6 +2664,10 @@ void print_edge_helper(DEPENDENCY kind, CONDITION *cond, FILE* stream) {
   if (!(kind & DEPENDENCY_MAYBE_DIRECT))
   {
     fputc('?',stream);  // indirect dependency
+  }
+  else
+  {
+    fputc('d',stream);
   }
   if (kind & DEPENDENCY_MAYBE_SIMPLE)
   {

@@ -14,7 +14,7 @@ SCALAGEN = simple.scala classic-binding.scala tiny.scala \
 
 MISC_SCALAGEN = nested-cycles.scala GrammarParser.scala SimpleParser.scala \
 	GrammarTokens.scala SimpleTokens.scala *.scala~ GrammarScanner.scala \
-	*.output *.lex *.y  *Tokens.scala
+	*.output *.lex *.y  *Tokens.scala *_static.scala *_dynamic.scala *.scala~
 
 .PHONY: all clean
 
@@ -39,13 +39,34 @@ nested_cycles_dynamic.scala:  ../nested-cycles.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -m nested_cycles_dynamic nested-cycles
 
 nested_cycles_static.scala:  ../nested-cycles.aps ${APS2SCALA}
-	${APS2SCALA} ${APS2SCALAFLAGS} -m nested_cycles_static nested-cycles
+	${APS2SCALA} ${APS2SCALAFLAGS} -S -m nested_cycles_static nested-cycles
 
 first.scala: ../first.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
 
+first_static.scala: ../first.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S -m first_static first
+
+first_dynamic.scala: ../first.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -m first_dynamic first
+
 follow.scala: ../follow.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
+
+follow_static.scala: ../follow.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S -m follow_static follow
+
+follow_dynamic.scala: ../follow.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -m follow_dynamic follow
+
+nullable.scala: ../nullable.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S $(basename $(@F))
+
+nullable_static.scala: ../nullable.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -S -m nullable_static nullable
+
+nullable_dynamic.scala: ../nullable.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -m nullable_dynamic nullable
 
 %.scala: ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} $*
@@ -108,6 +129,9 @@ SimpleTokens.class : SimpleTokens.scala
 nested-cycles.class nested_cycles_static.class nested_cycles_dynamic.class: simple_implicit.class nested-cycles.scala nested_cycles_static.scala nested_cycles_dynamic.scala
 	${SCALAC} ${SCALACFLAGS} $(basename $(@F)).scala
 
+first.class follow.class first_static.class first_dynamic.class follow_static.class follow_dynamic.class nullable_static.class nullable_dynamic.class: grammar_implicit.class first.scala follow.scala first_static.scala first_dynamic.scala follow_static.scala follow_dynamic.scala  nullable_static.scala nullable_dynamic.scala
+	${SCALAC} ${SCALACFLAGS} $(basename $(@F)).scala
+
 .PHONY: nested_cycles_implicit.class
 nested_cycles_implicit.class : nested-cycles.class nested_cycles_static.class nested_cycles_dynamic.class simple_implicit.class ;
 
@@ -144,7 +168,7 @@ TestCycleDriver.class : test_cycle_implicit.class test-cycle-driver.scala
 grammar_implicit.class : grammar.scala first.scala follow.scala nullable.scala
 	${SCALAC} ${SCALACFLAGS} $^
 
-GrammarDriver.class : grammar_implicit.class GrammarParser.class
+GrammarDriver.class : grammar_implicit.class GrammarParser.class first_static.class first_dynamic.class follow_static.class follow_dynamic.class  nullable_static.class nullable_dynamic.class
 	${SCALAC} ${SCALACFLAGS} grammar-driver.scala
 
 TinyParser.class : tiny-parser.handcode.scala tiny_implicit.class

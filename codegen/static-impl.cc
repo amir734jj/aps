@@ -123,7 +123,7 @@ static void dump_fixed_point_loop_visit(Declaration decl, int n, short ph, short
 static void dump_cached_visit(Declaration decl, int n, short ph, short ch, ostream &os)
 {
 #ifdef APS2SCALA
-  os << indent(nesting_level) << "once(() => visit_" << n << "_" << ph << "(v_" << decl_name(decl) << "), (anchor," << ph << "," << ch << "));\n";
+  os << indent(nesting_level) << "once(() => visit_" << n << "_" << ph << "(v_" << decl_name(decl) << "), (anchor.nodeNumber," << ph << "," << ch << "));\n";
 #endif /* APS2SCALA */
 }
 
