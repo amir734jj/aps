@@ -964,7 +964,7 @@ void break_fiber_cycles(Declaration module,STATE *s,DEPENDENCY dep) {
   make_cycles(s);
   get_fiber_cycles(s);
   assert_circular_declaration(s);
-  print_stuff(s);
+  // print_stuff(s);
 
   bool direction = !(dep & DEPENDENCY_NOT_JUST_FIBER);
   add_up_down_attributes(s,direction);

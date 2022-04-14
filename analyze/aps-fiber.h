@@ -97,7 +97,7 @@ extern Declaration responsible_node_declaration(void *);
 extern Declaration shared_use_p(Expression);
 extern Declaration responsible_node_shared_info(void *,
 						struct analysis_state *);
-extern Declaration formal_in_case_p(Declaration);
+extern Declaration formal_in_case_p(Declaration, Match*);
 
 
 

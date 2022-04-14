@@ -1034,10 +1034,10 @@ void add_edges_to_graph(VERTEX* v1,
     puts("");
   }
 
-  // if (ABSTRACT_APS_tnode_phylum(v2->attr) == KEYMatch)
-  // {
-  //   printf(" ");
-  // }
+  if (ABSTRACT_APS_tnode_phylum(v1->attr) == KEYMatch)
+  {
+    // printf(" ");
+  }
 
   // first add simple edge
   {
@@ -1228,12 +1228,17 @@ void record_condition_dependencies(VERTEX *sink, CONDITION *cond,
 				   AUG_GRAPH *aug_graph) {
   int i;
   unsigned bits=cond->positive|cond->negative;
-  /*
-  { print_instance(sink,stdout);
-    printf(" <- ");
-    print_condition(cond,stdout);
-    printf(" = 0%o\n",bits); }
-    */
+  
+  // { 
+  //   INSTANCE* a = (INSTANCE*) alloca(sizeof(INSTANCE));
+  //   a->fibered_attr.attr = sink->attr;
+  //   a->node = sink->node;
+    
+  //   print_instance(a,stdout);
+  //   printf(" <- ");
+  //   print_condition(cond,stdout);
+  //   printf(" = 0%o\n",bits); }
+
   for (i=0; i < aug_graph->if_rules.length; ++i) {
     int mask = (1 << i);
     if (mask & bits) {
@@ -1244,7 +1249,12 @@ void record_condition_dependencies(VERTEX *sink, CONDITION *cond,
       if_vertex.node = 0;
       if_vertex.attr = if_rule;
       if_vertex.modifier = NO_MODIFIER;
-      add_edges_to_graph(&if_vertex,sink,cond2,control_dependency,aug_graph);
+
+      CONDITION re;
+      re.positive = cond->positive | cond2->positive;
+      re.negative = cond->negative | cond2->negative;
+      
+      add_edges_to_graph(&if_vertex,sink,&re,control_dependency,aug_graph);
     }
   }
 }
@@ -1388,22 +1398,6 @@ static void record_lhs_dependencies(Expression lhs, CONDITION *cond,
   }
 }
 
-Match get_match(Declaration f)
-{
-  void* node = f;
-  while (f)
-  {
-    // printf("%d\n", ABSTRACT_APS_tnode_phylum(f));
-    if (ABSTRACT_APS_tnode_phylum(f) == KEYMatch)
-    {
-      return (Match)f;
-    }
-    f = tnode_parent(f);
-  }
-
-  return NULL;
-}
-
 /* Initialize the edge set in the augmented dependency graph
  * from each rule for the production.  This is the meat of
  * the analysis process.  We use fiber information to get the
@@ -1444,7 +1438,9 @@ static void *get_edges(void *vaug_graph, void *node) {
 	/* Don't look in nested things */
 	return NULL;
       case KEYformal:
-	{ Declaration case_stmt = formal_in_case_p(decl);
+	{
+    Match m;
+    Declaration case_stmt = formal_in_case_p(decl, &m);
 	  if (case_stmt != NULL) {
 	    Expression expr = case_stmt_expr(case_stmt);
 	    VERTEX f;
@@ -1452,17 +1448,13 @@ static void *get_edges(void *vaug_graph, void *node) {
 	    f.attr = decl;
 	    f.modifier = NO_MODIFIER;
 
-      Match m = get_match(decl);
-      if (m != NULL)
-      {
-        VERTEX c;
-        c.node = 0;
-        c.attr = m;
-        c.modifier = NO_MODIFIER;
+      VERTEX c;
+      c.node = 0;
+      c.attr = (Declaration)m;
+      c.modifier = NO_MODIFIER;
 
-        // Add an edge between Match and formal of the match without any condition
-        add_edges_to_graph(&c, &f, cond, control_dependency, aug_graph);
-      }
+      // Add an edge between Match and formal of the match without any condition
+      add_edges_to_graph(&c, &f, cond, control_dependency, aug_graph);
 
 	    record_condition_dependencies(&f,cond,aug_graph);
 	    record_expression_dependencies(&f,cond,dependency,NO_MODIFIER,
@@ -1871,6 +1863,8 @@ static void init_augmented_dependency_graph(AUG_GRAPH *aug_graph,
     }
     break;
   }
+
+  // printf("\n\naug is: %s\n", decl_name(aug_graph->syntax_decl));
 
   /* initialize the if_rules vector */
   { int num_if_rules = 0;

@@ -622,8 +622,7 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 #endif /* APS2SCALA */
 
     os << indent() << "// Implementing visit function for " << decl_name(aug_graph->syntax_decl) << " phase: " << phase << "\n";
-    bool cont =
-        implement_visit_function(aug_graph, phase, total_order,
+    implement_visit_function(aug_graph, phase, total_order,
                                  instance_assignment,
                                  nch, os);
 

@@ -623,7 +623,7 @@ Declaration responsible_node_shared_info(void *node, STATE *s) {
 
 // return true if this pattern variable is controlled by a case
 // statement and if so what the case statement is.
-Declaration formal_in_case_p(Declaration formal) {
+Declaration formal_in_case_p(Declaration formal, Match* match) {
   if (Declaration_KEY(formal) != KEYnormal_formal) return NULL;
   if (ABSTRACT_APS_tnode_phylum(tnode_parent(formal)) == KEYPattern) {
     /* move up to the case statement */
@@ -635,6 +635,7 @@ Declaration formal_in_case_p(Declaration formal) {
     }
     if (ABSTRACT_APS_tnode_phylum(parent) != KEYMatch)
       fatal_error("%d: not a Match",tnode_line_number(parent));
+    *match = (Match)parent;
     parent = tnode_parent(parent);
     while (ABSTRACT_APS_tnode_phylum(parent) == KEYMatches) {
       parent = tnode_parent(parent);

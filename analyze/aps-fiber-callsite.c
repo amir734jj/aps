@@ -170,7 +170,8 @@ CALLSITE_SET interpret(void *node) {
         { 
           /* first check if it is declared in case statement */
 	  Declaration case_stmt;
-	  if ((case_stmt = formal_in_case_p(udecl)) != NULL) {
+    Match m;
+	  if ((case_stmt = formal_in_case_p(udecl, &m)) != NULL) {
 	    Expression expr = case_stmt_expr(case_stmt);
 	    CALLSITE_SET case_expr_sites = interpret(expr);
 	    DEBUG_INFO("\t\tin case statement [%d]\n", tnode_line_number(case_stmt));

@@ -524,7 +524,7 @@ static bool instance_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state,
  */
 static bool group_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state, const CONDITION cond, const int i)
 {
-  // if (oag_debug & DEBUG_ORDER)
+  if (oag_debug & DEBUG_ORDER)
   {
     printf("Checking group readyness of: ");
     print_instance(&aug_graph->instances.array[i], stdout);
@@ -534,29 +534,6 @@ static bool group_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state, co
   int n = aug_graph->instances.length;
   CHILD_PHASE group = state->instance_groups[i];
   int j, k;
-
-  // No two locals belong to the same group, this means below check will always allow
-  // locals to get scheduled if they have not been scheduled yet. This is why this
-  // function is needed to schedule locals if scheduling this local does not break
-  // conditional total order.
-  if (instance_is_local(aug_graph, state, i))
-  {
-    EDGESET edges;
-    for (k = 0; k < n; k++)
-    {
-      int index = k * n + i;  // k (source) >--> i (sink) edge
-
-      /* Look at all dependencies from k to i */
-      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
-      {
-        /* If the merge condition is impossible, ignore this edge */
-        if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
-        {
-          return false;
-        }
-      }
-    }
-  }
 
   for (j = 0; j < n; j++)
   {
@@ -569,6 +546,26 @@ static bool group_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state, co
 
       if (!instance_ready_to_go(aug_graph, state, cond, i, j))
       {
+        return false;
+      }
+    }
+  }
+
+
+  EDGESET edges;
+  for (j = 0; j < n; j++)
+  {
+    // Already scheduled then continue
+    if (!state->schedule[j]) continue;
+
+    int index = j * n + i;  // j (source) >--> i (sink) edge
+
+    /* Look at all dependencies from k to i */
+    for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+    {
+      /* If the merge condition is impossible, ignore this edge */
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
+      {  
         return false;
       }
     }
@@ -640,14 +637,14 @@ static void followed_by(CTO_NODE* current, short ph, short ch, bool immediate, b
 
   followed_by(current->cto_next, ph, ch, immediate, visit_marker_only, &if_false_any);
 
-  if (node_is_cond && (if_true_any || if_false_any))
-  {
-    // If something is true in one branch, it has to be in the second branch
-    if (if_true_any != if_false_any)
-    {
-      fatal_error("Inconsistencies between true and false branch of conditional.");
-    }
-  }
+  // if (node_is_cond && (if_true_any || if_false_any))
+  // {
+  //   // If something is true in one branch, it has to be in the second branch
+  //   if (if_true_any != if_false_any)
+  //   {
+  //     fatal_error("Inconsistencies between true and false branch of conditional.");
+  //   }
+  // }
 
   *any |= (if_true_any || if_false_any);
 }
@@ -924,18 +921,27 @@ static CTO_NODE* schedule_transition_end_of_group(AUG_GRAPH *aug_graph, CTO_NODE
  * @param aug_graph Augmented dependency graph
  * @param prev previous CTO node
  * @param instance_groups array of <ph,ch> indexed by INSTANCE index
+ * @param parent_ph current parent phase being worked on
  * @return head of linked list
  */
-static CTO_NODE* schedule_visit_end(AUG_GRAPH *aug_graph, CTO_NODE* prev, TOTAL_ORDER_STATE* state)
+static CTO_NODE* schedule_visit_end(AUG_GRAPH *aug_graph, CTO_NODE* prev, TOTAL_ORDER_STATE* state, short parent_ph)
 {
   CTO_NODE* cto_node = (CTO_NODE*)HALLOC(sizeof(CTO_NODE));
   cto_node->cto_prev = prev;
   cto_node->cto_instance = NULL;
-  cto_node->child_phase.ph = state->max_parent_ph;
+  cto_node->child_phase.ph = parent_ph;
   cto_node->child_phase.ch = -1;
   return cto_node;
 }
 
+/**
+ * Utility function to check whether there is any instance that could be scheduled
+ * but it was not scheduled
+ * @param aug_graph Augmented dependency graph
+ * @param cond current CONDITION
+ * @param state state
+ * @return true if any possible instance that could be scheduled but it was not
+ */
 static CTO_NODE* any_possible_edge(AUG_GRAPH *aug_graph, CONDITION cond, TOTAL_ORDER_STATE* state)
 {
   int n = aug_graph->instances.length;
@@ -944,26 +950,24 @@ static CTO_NODE* any_possible_edge(AUG_GRAPH *aug_graph, CONDITION cond, TOTAL_O
   EDGESET edges;
   for (i = 0; i < n; i++)
   {
+    // Already scheduled, continue
     if (state->schedule[i]) continue;
 
-    for (j = 0; j < n; j++)
+    if (group_ready_to_go(aug_graph, state, cond, i))
     {
-      int index = j * n + i;  // j (source) >--> i (sink) edge
-
-      /* Look at all dependencies from k to i */
-      for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+      if (oag_debug & DEBUG_ORDER)
       {
-        /* If the merge condition is impossible, ignore this edge */
-        if (!MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
-        {
-          print_instance(&aug_graph->instances.array[j], stdout);
-          printf(" => can be schedule => ");
-          print_instance(&aug_graph->instances.array[i], stdout);
-          printf("\n");
+        CHILD_PHASE source_group = state->instance_groups[j];
+        CHILD_PHASE sink_group = state->instance_groups[i];
 
-          // return true;
-        }
+        printf("can be schedule: ");
+        print_instance(&aug_graph->instances.array[j], stdout);
+        printf(" <%d,%d> => ", source_group.ph, source_group.ch);
+        print_instance(&aug_graph->instances.array[i], stdout);
+        printf(" <%d,%d>\n", sink_group.ph, sink_group.ch);
       }
+
+      return true;
     }
   }
 
@@ -986,13 +990,12 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
 
   int i;
   int n = aug_graph->instances.length;
-  int sane_remaining = 0;
   CTO_NODE* cto_node = prev;
   
   /* If nothing more to do, we are done. */
   if (remaining == 0)
   {
-    return schedule_visit_end(aug_graph, prev, state);
+    return schedule_visit_end(aug_graph, prev, state, parent_ph);
   }
 
   /* Outer condition is impossible, its a dead-end branch */
@@ -1006,8 +1009,6 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
     // Already scheduled then ignore
     if (state->schedule[i]) continue;
 
-    sane_remaining++;
-
     // Check if everything is in the same group, don't check for dependencies
     // Locals will never end-up in this function
     if (instance_group->ph == group->ph && instance_group->ch == group->ch)
@@ -1020,9 +1021,9 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
 
       state->schedule[i] = true; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
-      printf("just scheduled: ");
-      print_instance(instance, stdout);
-      printf(" <%d,%d>\n", group->ph, group->ch);
+      // printf("just scheduled: ");
+      // print_instance(instance, stdout);
+      // printf(" <%d,%d>\n", group->ph, group->ch);
 
       if (if_rule_p(instance->fibered_attr.attr))
       {
@@ -1054,16 +1055,13 @@ static CTO_NODE* schedule_visits_group(AUG_GRAPH *aug_graph, CTO_NODE* prev, CON
   if (any_possible_edge(aug_graph, cond, state))
   {
     fflush(stdout);
-    if (sane_remaining != remaining)
-    {
-      fprintf(stderr,"remaining out of sync %d != %d\n", sane_remaining, remaining);
-    }
-
     print_schedule_error_debug(aug_graph, state, prev, cond, stderr);
     fatal_error("Cannot make conditional total order!");
+
+    return NULL;
   }
 
-  return NULL;
+  return schedule_visit_end(aug_graph, prev, state, parent_ph);
 }
 
 /**
@@ -1079,15 +1077,12 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
 {
   int i;
   int n = aug_graph->instances.length;
-  int sane_remaining = 0;
   CTO_NODE* cto_node = NULL;
 
-  bool just_started = remaining == n;
-  
   /* If nothing more to do, we are done. */
   if (remaining == 0)
   {
-    return schedule_visit_end(aug_graph, prev, state);
+    return schedule_visit_end(aug_graph, prev, state, parent_ph);
   }
 
   /* Outer condition is impossible, its a dead-end branch */
@@ -1100,8 +1095,6 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
 
     // Already scheduled then ignore
     if (state->schedule[i]) continue;
-
-    sane_remaining++;
 
     // If edgeset condition is not impossible then go ahead with scheduling
     if (group_ready_to_go(aug_graph, state, cond, i))
@@ -1117,9 +1110,9 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
 
         state->schedule[i] = true; // instance has been scheduled (and will not be considered for scheduling in the recursive call)
 
-        printf("just scheduled: ");
-        print_instance(instance, stdout);
-        printf(" <%d,%d>\n", group->ph, group->ch);
+        // printf("just scheduled: ");
+        // print_instance(instance, stdout);
+        // printf(" <%d,%d>\n", group->ph, group->ch);
 
         if (if_rule_p(instance->fibered_attr.attr))
         {
@@ -1151,16 +1144,13 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
   if (any_possible_edge(aug_graph, cond, state))
   {
     fflush(stdout);
-    if (sane_remaining != remaining)
-    {
-      fprintf(stderr,"remaining out of sync %d != %d\n", sane_remaining, remaining);
-    }
-
     print_schedule_error_debug(aug_graph, state, prev, cond, stderr);
     fatal_error("Cannot make conditional total order!");
+
+    return NULL;
   }
 
-  return NULL;
+  return schedule_visit_end(aug_graph, prev, state, parent_ph);
 }
 
 /**
