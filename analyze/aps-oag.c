@@ -497,7 +497,7 @@ static bool instance_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state,
     for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
     {
       /* If the merge condition is impossible, ignore this edge */
-      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) return false;
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
 
       if (oag_debug & DEBUG_ORDER)
       {
@@ -531,6 +531,7 @@ static bool group_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state, co
     printf("\n");
   }
 
+  INSTANCE in = aug_graph->instances.array[i];
   int n = aug_graph->instances.length;
   CHILD_PHASE group = state->instance_groups[i];
   int j, k;
@@ -546,26 +547,6 @@ static bool group_ready_to_go(AUG_GRAPH *aug_graph, TOTAL_ORDER_STATE* state, co
 
       if (!instance_ready_to_go(aug_graph, state, cond, i, j))
       {
-        return false;
-      }
-    }
-  }
-
-
-  EDGESET edges;
-  for (j = 0; j < n; j++)
-  {
-    // Already scheduled then continue
-    if (!state->schedule[j]) continue;
-
-    int index = j * n + i;  // j (source) >--> i (sink) edge
-
-    /* Look at all dependencies from k to i */
-    for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
-    {
-      /* If the merge condition is impossible, ignore this edge */
-      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond))
-      {  
         return false;
       }
     }
@@ -944,34 +925,67 @@ static CTO_NODE* schedule_visit_end(AUG_GRAPH *aug_graph, CTO_NODE* prev, TOTAL_
  */
 static CTO_NODE* any_possible_edge(AUG_GRAPH *aug_graph, CONDITION cond, TOTAL_ORDER_STATE* state)
 {
-  int n = aug_graph->instances.length;
-  int i, j;
+  // int n = aug_graph->instances.length;
+  // int i, j;
 
-  EDGESET edges;
-  for (i = 0; i < n; i++)
-  {
-    // Already scheduled, continue
-    if (state->schedule[i]) continue;
+  // EDGESET edges;
+  // for (i = 0; i < n; i++)
+  // {
+  //   // Already scheduled, continue
+  //   if (state->schedule[i]) continue;
 
-    if (group_ready_to_go(aug_graph, state, cond, i))
-    {
-      if (oag_debug & DEBUG_ORDER)
-      {
-        CHILD_PHASE source_group = state->instance_groups[j];
-        CHILD_PHASE sink_group = state->instance_groups[i];
+  //   // CHILD_PHASE source_group = state->instance_groups[j];
+  //   CHILD_PHASE sink_group = state->instance_groups[i];
 
-        printf("can be schedule: ");
-        print_instance(&aug_graph->instances.array[j], stdout);
-        printf(" <%d,%d> => ", source_group.ph, source_group.ch);
-        print_instance(&aug_graph->instances.array[i], stdout);
-        printf(" <%d,%d>\n", sink_group.ph, sink_group.ch);
-      }
+  //   printf("can be schedule: ");
+  //   print_instance(&aug_graph->instances.array[i], stdout);
+  //   printf(" <%d,%d>\n", sink_group.ph, sink_group.ch);
 
-      return true;
-    }
-  }
+  //   // if (group_ready_to_go(aug_graph, state, cond, i))
+  //   // {
+  //   //   if (oag_debug & DEBUG_ORDER)
+  //   //   {
+
+  //   //     printf("can be schedule: ");
+  //   //     print_instance(&aug_graph->instances.array[j], stdout);
+  //   //     printf(" <%d,%d> => ", source_group.ph, source_group.ch);
+  //   //     print_instance(&aug_graph->instances.array[i], stdout);
+  //   //     printf(" <%d,%d>\n", sink_group.ph, sink_group.ch);
+  //   //   }
+
+  //   //   return true;
+  //   // }
+  // }
 
   return false;
+}
+
+static bool any_edge(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION cond, TOTAL_ORDER_STATE* state, int i)
+{
+  int n = aug_graph->instances.length;
+
+  int j;
+  int index = k * n + j;  // k (source) >--> j (sink) edge
+
+  for (j = 0; j < n; j++)
+  {
+    /* Look at all dependencies from j to i */
+    for (edges = aug_graph->graph[index]; edges != NULL; edges=edges->rest)
+    {
+      /* If the merge condition is impossible, ignore this edge */
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, edges->cond)) continue;
+
+      if (oag_debug & DEBUG_ORDER)
+      {
+        // Can't continue with scheduling if a dependency with a "possible" condition has not been scheduled yet
+        printf("This edgeset was not ready to be scheduled because of:\n");
+        print_edgeset(edges, stdout);
+        printf("\n");
+      }
+
+      return false;
+    }
+  }
 }
 
 /**
@@ -1099,6 +1113,25 @@ static CTO_NODE* schedule_visits(AUG_GRAPH *aug_graph, CTO_NODE* prev, CONDITION
     // If edgeset condition is not impossible then go ahead with scheduling
     if (group_ready_to_go(aug_graph, state, cond, i))
     {
+      /* 
+      * check to see if makes sense
+      * (No need to schedule something that
+      * occurs only in a different condition branch.)
+      */
+      if (MERGED_CONDITION_IS_IMPOSSIBLE(cond, instance_condition(instance)))
+      {
+        printf("ignored because its impossible: ");
+        print_instance(instance, stdout);
+        printf(" <%d,%d>\n", group->ph, group->ch);
+
+        state->schedule[i] = true;
+        cto_node = schedule_visits(aug_graph, prev, cond, state, remaining-1, prev_group, parent_ph);
+        state->schedule[i] = false;
+        return cto_node;
+      }
+
+
+
       // If it is local then continue scheduling
       if (instance_is_local(aug_graph, state, i))
       {
@@ -1327,7 +1360,7 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
     }
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     printf("\nInstances %s:\n", decl_name(aug_graph->syntax_decl));
     for (i = 0; i < n; i++)
@@ -1351,6 +1384,11 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
   cond.negative = 0;
   cond.positive = 0;
 
+  if (!strcmp("type_lub", decl_name(aug_graph->syntax_decl)))
+  {
+    printf("found it");
+  }
+
   // It is safe to assume inherited attribute of parents have no dependencies and should be scheduled right away
   aug_graph->total_order = schedule_visits_group(aug_graph, NULL, cond, state, n, &parent_inherited_group, 1);
 
@@ -1359,7 +1397,7 @@ void schedule_augmented_dependency_graph(CYCLES cycles, AUG_GRAPH *aug_graph) {
     fatal_error("Failed to create total order.");
   }
 
-  if (oag_debug & DEBUG_ORDER)
+  // if (oag_debug & DEBUG_ORDER)
   {
     printf("\nSchedule for %s (%d children):\n", decl_name(aug_graph->syntax_decl), state->children.length);
     print_total_order(aug_graph->total_order, 0, stdout);
