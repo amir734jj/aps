@@ -103,7 +103,7 @@ static string program_id(string name)
 void dump_static_circular_trait(std::ostream& oss)
 {
   oss << "\n";
-  oss << indent(nesting_level) << "var changed: Boolean = false;\n";
+  oss << indent(nesting_level) << "private var changed: Boolean = false;\n";
   oss << indent(nesting_level) << "trait StaticCircularEvaluation[V_P, V_T] extends CircularEvaluation[V_P, V_T] {\n";
   oss << indent(nesting_level + 1) << "override def set(newValue : ValueType) : Unit = {\n";
   oss << indent(nesting_level + 2) << "val prevValue = value;\n";
@@ -130,10 +130,10 @@ void dump_static_circular_trait(std::ostream& oss)
 void dump_visit_cache(std::ostream& oss)
 {
   oss << "\n";
-  oss << indent(nesting_level) << "var visitCache: Map[Any, Boolean] = Map()\n";
-  oss << indent(nesting_level) << "def once[T](fn: () => T, key: Any): Unit = {\n";
-  oss << indent(nesting_level + 1) << "if (!visitCache.getOrElse(key, false)) {\n";
-  oss << indent(nesting_level + 2) << "visitCache += (key -> true);\n";
+  oss << indent(nesting_level) << "private val visitCache = scala.collection.mutable.HashMap[String, Boolean]();\n";
+  oss << indent(nesting_level) << "private def once[T](fn: () => T, key: Any): Unit = {\n";
+  oss << indent(nesting_level + 1) << "if (!visitCache.getOrElse(key.toString, false)) {\n";
+  oss << indent(nesting_level + 2) << "visitCache.update(key.toString, true);\n";
   oss << indent(nesting_level + 2) << "fn();\n";
   oss << indent(nesting_level + 1) << "}\n";
   oss << indent(nesting_level) << "}\n";
@@ -1608,7 +1608,10 @@ void dump_scala_Declaration(Declaration decl,ostream& oss)
       }
 
       // define with
-      oss << indent() << "  with C_" << name << "[" << result_type;
+      TO_UPPER_IN_PLACE(module_name);
+      string id = module_name == "" ? name : module_name;
+
+      oss << indent() << "  with C_" << id << "[" << result_type;
       for (Declaration tf=first_Declaration(tfs); tf ; tf = DECL_NEXT(tf)) {
 	oss << ",T_" << decl_name(tf);
       }

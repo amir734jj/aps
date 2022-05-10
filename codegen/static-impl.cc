@@ -74,7 +74,14 @@ vector<set<Expression>> make_instance_assignment(AUG_GRAPH *aug_graph,
     {
       switch (Declaration_KEY(d))
       {
-      case KEYassign:
+      case KEYnormal_assign:
+      {
+        INSTANCE *in = Expression_info(assign_rhs(d))->value_for;
+        array[in->index].clear();
+        array[in->index].insert(assign_rhs(d));
+        break;
+      }
+      case KEYcollect_assign:
       {
         if (INSTANCE *in = Expression_info(assign_rhs(d))->value_for)
         {
@@ -142,6 +149,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
                                      CTO_NODE *cto,
                                      vector<set<Expression>> instance_assignment,
                                      int nch,
+                                     CONDITION* cond,
                                      ostream &os)
 {
   for (; cto; cto = cto->cto_next)
@@ -149,6 +157,12 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
     INSTANCE *in = cto->cto_instance;
     int ch = cto->child_phase.ch;
     int ph = cto->child_phase.ph;
+
+    // Code generate if CTO_NODE belongs to this visit OR CTO_NODE is conditional
+    if (cto->visit != phase && !(cto->cto_instance != NULL && if_rule_p(cto->cto_instance->fibered_attr.attr)))
+    {
+      continue;
+    }
 
     // Visit marker for when child visit happens
     if (in == NULL && ch > -1)
@@ -228,6 +242,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
 
       os << indent() << "// End of parent (" << decl_name(aug_graph->syntax_decl) << ") phase visit marker for phase: " << ph << "\n";
 
+      // If ph == phase to implement then stop
       if (ph == phase)
         return false;
 
@@ -246,10 +261,18 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
     bool node_is_lhs = in->node == aug_graph->lhs_decl;
     bool node_is_syntax = ch < nch || node_is_lhs;
 
-    // printf(" =>x ");
-    // print_instance(in, stdout);
-    // printf("\n");
-
+    CONDITION icond = instance_condition(in);
+    if (MERGED_CONDITION_IS_IMPOSSIBLE(*cond, icond))
+    {
+      char instance_str[BUFFER_SIZE];
+      FILE* f = fmemopen(instance_str, sizeof(instance_str), "w");
+      print_instance(in, f);
+      fclose(f);
+      os << indent() << "// '" << string(instance_str) << "' attribute instance is impossible.\n";
+      
+      continue;
+    }
+    
     if (if_rule_p(ad))
     {
       bool is_match = ABSTRACT_APS_tnode_phylum(ad) == KEYMatch;
@@ -302,11 +325,17 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
         if_true = if_stmt_if_true(ad);
         if_false = if_stmt_if_false(ad);
       }
+
+      int cmask = 1 << (if_rule_index(in->fibered_attr.attr));
       vector<set<Expression>> true_assignment =
           make_instance_assignment(aug_graph, if_true, instance_assignment);
+
+      cond->positive |= cmask;
       implement_visit_function(aug_graph, phase, cto->cto_if_true,
                                true_assignment,
-                               nch, os);
+                               nch, cond, os);
+      cond->positive &= ~cmask;
+
       --nesting_level;
 #ifdef APS2SCALA
       if (is_match)
@@ -325,10 +354,12 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
       vector<set<Expression>> false_assignment = if_false
                                          ? make_instance_assignment(aug_graph, if_false, instance_assignment)
                                          : instance_assignment;
+      cond->negative |= cmask;
       bool cont = implement_visit_function(aug_graph, phase,
                                            cto->cto_if_false,
                                            false_assignment,
-                                           nch, os);
+                                           nch, cond, os);
+      cond->negative &= cmask;
       --nesting_level;
 #ifdef APS2SCALA
       if (is_match)
@@ -374,9 +405,9 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
         continue;
       }
 
-      if (in->fibered_attr.fiber != 0)
+      if (in->fibered_attr.fiber != NULL)
       {
-        if (rhs == 0)
+        if (rhs == NULL)
         {
           os << indent() << "// " << in << "\n";
           continue;
@@ -434,7 +465,7 @@ static bool implement_visit_function(AUG_GRAPH *aug_graph,
 
       os << indent();
 
-      if (in->node == 0 && ad != 0)
+      if (in->node == 0 && ad != NULL)
       {
         if (rhs)
         {
@@ -622,9 +653,13 @@ void dump_visit_functions(PHY_GRAPH *phy_graph,
 #endif /* APS2SCALA */
 
     os << indent() << "// Implementing visit function for " << decl_name(aug_graph->syntax_decl) << " phase: " << phase << "\n";
+
+    CONDITION cond;
+    cond.positive = 0;
+    cond.negative = 0;
     implement_visit_function(aug_graph, phase, total_order,
                                  instance_assignment,
-                                 nch, os);
+                                 nch, &cond, os);
 
     --nesting_level;
 #ifdef APS2SCALA
@@ -863,10 +898,13 @@ void dump_visit_functions(STATE *s, output_streams &oss)
       make_instance_assignment(&s->global_dependencies,
                                module_decl_contents(s->module), default_instance_assignments);
 
+  CONDITION cond;
+  cond.positive = 0;
+  cond.negative = 0;
   implement_visit_function(&s->global_dependencies, phase,
                            s->global_dependencies.total_order,
                            instance_assignment,
-                           1, os);
+                           1, &cond, os);
   --nesting_level;
   os << indent() << "}\n";
 }
@@ -928,8 +966,12 @@ void dump_scheduled_function_body(Declaration fd, STATE *s, ostream &bs)
   vector<set<Expression>> instance_assignment =
       make_instance_assignment(aug_graph, function_decl_body(fd), default_instance_assignments);
 
+  CONDITION cond;
+  cond.positive = 0;
+  cond.negative = 0;
+
   bool cont = implement_visit_function(aug_graph, 1, schedule,
-                                       instance_assignment, 0, bs);
+                                       instance_assignment, 0, &cond, bs);
 
   Declaration returndecl = first_Declaration(function_type_return_values(ft));
   if (returndecl == 0)
@@ -948,10 +990,11 @@ void dump_scheduled_function_body(Declaration fd, STATE *s, ostream &bs)
     int phase = 2;
     bs << "    /*\n";
     bs << "    // phase 2\n";
+
     while (implement_visit_function(aug_graph, phase, schedule,
-                                    instance_assignment, 0, bs))
-      bs << "    // phase " << ++phase << "\n";
-    bs << "    */\n";
+                                    instance_assignment, 0, &cond, bs))
+    bs << indent() << "// phase " << ++phase << "\n";
+    bs << indent() << "*/\n";
   }
 }
 

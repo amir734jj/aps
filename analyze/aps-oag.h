@@ -12,7 +12,6 @@ struct child_phase_type
 { 
   short ph; // Phase: ph is negative for inherited attributes of the visit/phase, positive for synthesized attributes
   short ch; // Child number: ch is -1 for parent, and otherwise [0,nch)
-  int cycle;
 };
 
 /** A conditional total order is a tree of cto nodes.
@@ -30,6 +29,9 @@ struct cto_node {
   CTO_NODE* cto_if_true;
   CHILD_PHASE child_phase;
   Declaration child_decl;
+  CONDITION cond;
+  CONDITION icond;
+  short visit;
 #define cto_if_false cto_next
 };
       
@@ -39,3 +41,8 @@ extern int oag_debug;
 #define PROD_ORDER 4
 #define PROD_ORDER_DEBUG 8
 #define TYPE_3_DEBUG 16
+
+#define CONDITION_IS_IMPOSSIBLE(cond) ((cond).positive & (cond).negative)
+#define MERGED_CONDITION_IS_IMPOSSIBLE(cond1, cond2) (((cond1).positive|(cond2).positive) & ((cond1).negative|(cond2).negative))
+
+CONDITION instance_condition(INSTANCE *in);
