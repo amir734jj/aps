@@ -1,4 +1,4 @@
-module TEST_CYCLE[] begin
+module TEST_CYCLE[T :: var TINY[]] extends T begin
   phylum Wood;
   
   constructor branch(x,y : Wood) : Wood;
