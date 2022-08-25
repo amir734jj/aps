@@ -1584,13 +1584,10 @@ USET doUO(Expression e, OSET oset) {
     // * 2> w.f (field_ref)
     // 
     {	Declaration fdecl;
-      
-      // attr ref: X.a 
-      if ((fdecl = attr_ref_p(e)) != NULL) {
-	add_to_oset(fdecl,oset);
-	RETURN get_uset(fdecl);
-      } else if ((fdecl = field_ref_p(e))!= NULL) {
+// NOTE: for attributes that are remote we need to include their dependencies
+if ((fdecl = field_ref_p(e))!= NULL || (fdecl = attr_ref_p(e)) != NULL) {
 	// field ref: w.f
+  // attr ref: X.a
 	Expression object = field_ref_object(e);
 	
 	USET newuset = (USET)malloc(sizeof(struct uset));
@@ -1598,8 +1595,16 @@ USET doUO(Expression e, OSET oset) {
 	newuset->rest = NULL;
 	newuset->u = e;
 	o_w = doOU(object, newuset);
-	RETURN EMPTY_USET;
       }
+
+      // attr ref: X.a
+      if ((fdecl = attr_ref_p(e)) != NULL) {
+	add_to_oset(fdecl,oset);
+	RETURN get_uset(fdecl);
+      }
+
+      return EMPTY_USET;
+
     }  // case funcall
   } // switch
   fatal_error("doUO was about to return undefined.\n");
@@ -1749,13 +1754,10 @@ OSET doOU(Expression e, USET uset)
 	{
 	  Declaration fdecl;
 	  OSET oset = EMPTY_OSET;
-	  
+
 //		printf("	%d: decl is funcall.\n", tnode_line_number(e));
 	  // attr ref: X.a 
-	  if ((fdecl = attr_ref_p(e)) != NULL) {
-	    add_to_uset(fdecl,uset);
-	    RETURN get_oset(fdecl);
-	  } else if ((fdecl = field_ref_p(e))!= NULL) {
+	 if ((fdecl = field_ref_p(e))!= NULL || (fdecl = attr_ref_p(e)) != NULL) {
 	    // field ref: w.f
 	    Expression object = field_ref_object(e);
 	    
@@ -1789,7 +1791,13 @@ OSET doOU(Expression e, USET uset)
 		} // if
 	      } // for q
 	    } // for p
-	    RETURN oset;	
+	  
+      if ((fdecl = attr_ref_p(e)) != NULL) {
+        add_to_uset(fdecl,uset);
+        RETURN get_oset(fdecl);
+      } else {
+        RETURN oset;
+      }
 	   } 
 	  } else if ((fdecl = local_call_p(e)) != NULL) {
 	    // local function
@@ -2044,7 +2052,7 @@ void *count_node(void *u, void *node)
       }; break;
       case KEYfuncall: {
 	Declaration fdecl;
-	if ((fdecl = field_ref_p(e)) != NULL) { // field ref:w.f
+	if ((fdecl = field_ref_p(e)) != NULL || (fdecl = attr_ref_p(e)) != NULL) { // field ref:w.f
 	  // node Qu, Qu-
 	  (void)id_expr_node(e);
 	}
@@ -2602,10 +2610,7 @@ NODESET link_expr_rhs(Expression e, NODESET ns){
 	case KEYfuncall: {
 	  Declaration fdecl;
 	  
-	  if ((fdecl = attr_ref_p(e)) != NULL) { // attr ref: X.a
-				// same as value_use
-	    return set_of_node(get_node_decl(fdecl)); //{Qd}
-	  } else if ((fdecl = field_ref_p(e)) != NULL) { //field ref: w.f
+	  if ((fdecl = field_ref_p(e)) != NULL || (fdecl = attr_ref_p(e)) != NULL) { //field ref: w.f
 	    NODESET n;
 	    if (fiber_debug & ADD_FSA_EDGE) printf("Starting to add edges for field ref of %s\n",decl_name(fdecl));
 	    for (n=ns; n; n = n->rest) {
@@ -2620,7 +2625,13 @@ NODESET link_expr_rhs(Expression e, NODESET ns){
 	      {
 		OSET oset = doOU(e, EMPTY_USET);
 	    if (fiber_debug & ADD_FSA_EDGE) printf("ending to add edges for field ref of %s\n",decl_name(fdecl));
-		return oset_to_nodeset(oset);
+
+      if ((fdecl = attr_ref_p(e)) != NULL) { // attr ref: X.a
+				// same as value_use
+	      return set_of_node(get_node_decl(fdecl)); //{Qd}
+      } else {
+        return oset_to_nodeset(oset);
+      }
 	      }
 	    }
 	    
@@ -2700,10 +2711,7 @@ NODESET link_expr_lhs(Expression e, NODESET ns) {
   } // case value_use
   case KEYfuncall: {
     Declaration fdecl;
-    if ((fdecl = attr_ref_p(e)) != NULL) { // attr ref: X.a
-      // same as value_use
-      return set_of_node(get_node_decl(fdecl)+1); //{Qd(-)}
-    } else if ((fdecl = field_ref_p(e)) != NULL) { //field ref: w.f
+    if ((fdecl = field_ref_p(e)) != NULL || (fdecl = attr_ref_p(e)) != NULL) { //field ref: w.f
       NODESET n;
       for (n=ns; n; n = n->rest) {
         // Qe(-)----f.--->n
@@ -2712,16 +2720,22 @@ NODESET link_expr_lhs(Expression e, NODESET ns) {
         // Qe(-) to n: bar node is even number.
         // the edge is reverse_field(fdecl);
       } // for end
+      
       {
         Expression object = field_ref_object(e);
         link_expr_lhs(object, set_of_node(get_node_expr(e)+1) );	// Qe(-)
         {
           USET uset = doUO(e, EMPTY_OSET);
           // printf("DEBUG: after doUO in link_expr.\n");
-          return uset_to_nodeset(uset);
+
+          if ((fdecl = attr_ref_p(e)) != NULL) { // attr ref: X.a
+            // same as value_use
+            return set_of_node(get_node_decl(fdecl)+1); //{Qd(-)}
+          } else {
+            return uset_to_nodeset(uset);
+          }
         }
-      }
-    } else {
+      } } else {
       aps_error(e, "wrong: not a proper funcall to add edges.");
       return EMPTY_NODESET;
     }
