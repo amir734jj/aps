@@ -1,12 +1,14 @@
 APSTOP= ../..
 SCALAC= scalac
 SCALA= scala
-SCALAV= 2.12
+SCALAV= 2.13
 APSLIB = ${APSTOP}/lib/aps-library-${SCALAV}.jar
 SCALAFLAGS= -cp .:${APSLIB}
 SCALACFLAGS= ${SCALAFLAGS}
 APS2SCALA = ${APSTOP}/bin/aps2scala
 APS2SCALAFLAGS = -p ..:${APSTOP}/base -G
+SCALABISON=../../scala-bison-2.13.jar
+SCALAFLEX= ../../JFlex.jar
 
 SCALAGEN = simple.scala classic-binding.scala tiny.scala \
 	test-coll.scala test-use-coll.scala test-cycle.scala use-global.scala \
