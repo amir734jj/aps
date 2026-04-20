@@ -43,7 +43,8 @@ jobs:
     - name: Build aps-library jar and run base tests
       run: |
         cd base/scala
-        make SVERSION=$SCALA_MAJOR aps-library-$SCALA_MAJOR.jar
+        make aps-library.jar
+        cp aps-library.jar aps-library-$SCALA_MAJOR.jar
         make SVERSION=$SCALA_MAJOR install
         make SVERSION=$SCALA_MAJOR test
 
@@ -56,6 +57,11 @@ jobs:
       run: |
         cd examples/scala/tests
         make SCALAV=$SCALA_MAJOR all
+
+    - name: Run canonical types tests
+      run: |
+        cd examples
+        ../bin/aps2scala -DCOTo -G -p .:../base test-canonicals
 
     - name: Clean up
       if: always()
