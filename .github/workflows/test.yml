@@ -14,6 +14,7 @@ jobs:
     
     env:
       SCALA_VERSION: "2.12.13"
+      SCALA_MAJOR: "2.12"
 
     steps:
     - name: Checkout code
@@ -38,25 +39,24 @@ jobs:
 
     - name: Build project
       run: make
-      
+
+    - name: Build aps-library jar and run base tests
+      run: |
+        cd base/scala
+        make SVERSION=$SCALA_MAJOR aps-library-$SCALA_MAJOR.jar
+        make SVERSION=$SCALA_MAJOR install
+        make SVERSION=$SCALA_MAJOR test
+
     - name: Run utilities tests
       run: |
         cd utilities/tests
         make all
-      continue-on-error: true
-      
-    - name: Run Scala base tests
-      run: |
-        cd base/scala
-        make test || echo "Base Scala tests completed with status $?"
-      continue-on-error: true
-      
+
     - name: Run examples Scala tests
       run: |
         cd examples/scala/tests
-        make all || echo "Example Scala tests completed with status $?"
-      continue-on-error: true
-      
+        make SCALAV=$SCALA_MAJOR all
+
     - name: Clean up
       if: always()
       run: make clean
