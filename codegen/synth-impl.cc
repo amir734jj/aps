@@ -955,6 +955,10 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
       os << indent() << "}\n";
     }
 
+    // Define anchor as alias for node so that dump_Expression's
+    // anchor-passing logic (for phylum constructors) works correctly.
+    os << indent() << "val anchor = node;\n";
+
     if (synth_functions_state->is_fiber_evaluation) {
       os << indent() << "node match {\n";
     } else {
@@ -1366,7 +1370,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
         if (tracking_fiber_convergence) {
           o << ", changed";
         }
-        o << ")";
+        o << ");\n";
 #else  /* APS2SCALA */
           o << "v_" << decl_name(field) << "=";
           switch (Default_KEY(value_decl_default(field))) {
@@ -1409,7 +1413,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
           o << "assign";
         else
           o << "set";
-        o << "(anchor," << rhs << ");\n";
+        o << "(node," << rhs << ");\n";
       } else {
         int i = LOCAL_UNIQUE_PREFIX(ad);
         if (i == 0) {
@@ -1526,7 +1530,10 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
         any_assignment_dump = true;
 
         if (instance->fibered_attr.fiber != NULL) {
+          bool first = true;
           for (auto it = valid_rhs.begin(); it != valid_rhs.end(); it++) {
+            if (!first) o << indent();
+            first = false;
             dump_assignment(instance, *it, o);
           }
         } else if (valid_rhs.size() == 1) {
