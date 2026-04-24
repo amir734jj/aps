@@ -1,0 +1,77 @@
+-- A (typed) tree language for Cool abstract syntax trees
+
+with "cool-symbol";
+
+module COOL[] begin
+  phylum Program;
+
+  pragma root_phylum(type Program);
+
+  phylum Class;
+  phylum Classes := SEQUENCE[Class];
+
+  phylum Feature;
+  phylum Features := SEQUENCE[Feature];
+
+  phylum Formal;
+  phylum Formals := SEQUENCE[Formal];
+
+  phylum Expression;
+  phylum Expressions := SEQUENCE[Expression];
+
+  phylum Case;
+  phylum Cases := SEQUENCE[Case];
+
+  constructor program(classes : Classes) : Program;
+  constructor class_decl(name : Symbol; parent: Symbol; 
+			 features : Features; filename : Symbol): Class;
+
+  -- Features:
+  constructor method(overridep : Boolean;
+		     name : Symbol;
+		     formals : Formals;
+		     return_type : Symbol;
+		     expr : Expression) : Feature;
+  constructor attr(name, of_type : Symbol) : Feature;
+
+  -- Formals
+  constructor formal(name, of_type: Symbol) : Formal;
+
+  -- Case
+  constructor branch(name, local_type: Symbol; expr: Expression): Case;
+
+  -- Expressions
+  constructor assign(name : Symbol; expr : Expression) : Expression;
+  constructor static_dispatch(expr: Expression; 
+                              type_name : Symbol;                              
+                              name : Symbol; 
+                              actuals : Expressions) : Expression;
+  constructor dispatch(expr : Expression; 
+		       name : Symbol;
+		       actuals : Expressions) : Expression;
+  constructor cond(pred, then_exp, else_exp : Expression): Expression;
+  constructor loop(pred, body: Expression) : Expression;
+  constructor typecase(expr: Expression; cases: Cases): Expression;
+  constructor block(body: Expressions) : Expression;
+  constructor let(identifier, local_type: Symbol; 
+		  init, body: Expression): Expression;
+  constructor  add(e1, e2: Expression) : Expression;
+  constructor  sub(e1, e2: Expression) : Expression;
+  constructor  mul(e1, e2: Expression) : Expression;
+  constructor  div(e1, e2: Expression) : Expression;
+  constructor  neg(e1: Expression) : Expression;
+  constructor   lt(e1, e2: Expression) : Expression;
+  constructor  leq(e1, e2: Expression) : Expression;
+  constructor comp(e1: Expression) : Expression;
+  constructor int_lit(token: Symbol) : Expression;
+  constructor bool_lit(val: Boolean) : Expression;
+  constructor string_lit(token: Symbol) : Expression;
+  constructor alloc(type_name: Symbol): Expression;
+  constructor nil(): Expression;
+  constructor unit(): Expression;
+  constructor no_expr(): Expression;  
+  constructor variable(name: Symbol): Expression;
+  
+  input attribute Class.inheritablep : Boolean := true;
+
+end;

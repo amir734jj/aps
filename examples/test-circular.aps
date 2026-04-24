@@ -1,0 +1,89 @@
+with "cool-symbol";
+with "cool-tree";
+with "table";
+module COOL_SEMANT[T :: var COOL[]] extends T begin
+
+  Object : Symbol := make_symbol("Object");
+  empty : Symbol := make_symbol("");
+
+  -- ---------------------
+  -- class table
+  -- ---------------------
+  
+  type ClassReference := remote Class;
+  type ClassReferences := BAG[ClassReference];
+  type ClassTable := TABLE[Symbol,ClassReferences];
+
+  var collection class_table : ClassTable;
+  
+  var function find_class(name : Symbol) : ClassReference begin
+    case ClassTable$select(class_table,name) begin
+      match ClassTable$table_entry(?,{?cl,...}) begin
+	result := cl;
+      end;
+    else
+      result := Class$nil;
+    end;
+  end;
+  
+  var function class_parent(name : Symbol) : Symbol begin
+    cl : ClassReference := find_class(name);
+    if cl = Class$nil then
+      result := empty;
+    else
+      case cl begin
+	match class_decl(?,?parent,?,?) begin
+	  result := parent;
+	end;
+      end;
+    endif;
+  end;
+
+  type Messages := BAG[String];
+  var collection messages : Messages;
+  
+  -- -------------------
+  -- Circularity Testing
+  -- -------------------
+
+  circular attribute Class.class_is_circular : AndLattice;
+  
+  -- -------------
+  -- class match
+  -- -------------
+  match ?cl : Class = class_decl(?name : Symbol,?parent : Symbol,
+			      ?features : Features, ?filename : Symbol) 
+  begin
+    pcl : ClassReference;
+
+    if name = Object then
+      cl.class_is_circular := false;
+      pcl := Class$nil;
+    else
+      pcl := find_class(parent);
+      if pcl = Class$nil then
+	messages :> {cl.lineno || ": superclass not defined: " || parent};
+	cl.class_is_circular := false;
+      else
+	cl.class_is_circular := pcl.class_is_circular;
+      endif;
+    endif;
+    
+    class_table :> ClassTable$table_entry(name,{cl});
+    if find_class(name) /= cl then
+      messages :> {cl.lineno || ": class " || name || " is multiply defined"};
+    endif;
+
+    if cl.class_is_circular then
+      messages :> {cl.lineno || ": class " || name || 
+		       " is involved in circular inheritance"};
+    endif;
+    
+    if pcl /= Class$nil then
+      if not pcl.inheritablep then
+	messages :> {cl.lineno || ": cannot inherit from " || parent};
+      endif;
+    endif;
+  end;
+
+end;

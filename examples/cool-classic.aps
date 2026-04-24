@@ -1,0 +1,1644 @@
+-- Solution Cool semantic checker written in APS
+-- Tien Nguyen
+-- Spring 2001
+--
+-- The following line is for the students: ##
+-- (Partial solution only)
+
+with "cool-symbol";
+with "cool-tree";
+module COOL_SEMANT[T :: var COOL[]] extends T begin
+  
+  -- -----------------------------------------
+  -- Define Symbol constants for basic classes
+  -- -----------------------------------------
+
+  Object : Symbol := make_symbol ("Object");
+  Int    : Symbol := make_symbol ("Integer");
+  Bool   : Symbol := make_symbol ("Boolean");
+  Str    : Symbol := make_symbol("String");
+  Self   : Symbol := make_symbol ("self");
+  Native : Symbol := make_symbol("native");
+
+  empty  : Symbol := make_symbol("");
+  
+  pragma fiber_untracked(Object,Int,Bool,Str,Self,empty);
+  
+  -- ---------------------
+  -- class_parent table
+  -- ---------------------
+
+  type Inherits := PAIR[Symbol,Symbol];
+  -- type InheritsR := SET[Inherits];
+  type InheritsR := BAG[Inherits];
+
+  attribute Classes.classes_class_parent : InheritsR;
+  attribute Class.class_class_parent : InheritsR;
+  
+  -- 
+  attribute Features.features_class_parent : InheritsR;
+  attribute Feature.feature_class_parent : InheritsR;
+  attribute Formals.formals_class_parent : InheritsR;
+  attribute Formal.formal_class_parent : InheritsR;
+  attribute Expressions.exprs_class_parent : InheritsR; --##
+  attribute Expression.expr_class_parent : InheritsR;   --##
+  attribute Cases.cases_class_parent : InheritsR;       --##
+  attribute Case.case_class_parent : InheritsR;         --##
+  
+  pragma inherited (features_class_parent, feature_class_parent,
+                    formals_class_parent,formal_class_parent);
+  pragma inherited (cases_class_parent,case_class_parent,  --##
+                    exprs_class_parent,expr_class_parent); --##
+  --
+  pragma inherited (classes_class_parent, class_class_parent);
+
+  attribute Class.class_inherit : Inherits;
+  attribute Classes.classes_inherit : InheritsR;
+
+  pragma synthesized (class_inherit,classes_inherit);
+
+  -- --------------
+  -- error messages
+  -- --------------
+
+  type Messages := BAG[String];
+  attribute Program.prog_msgs : Messages;
+  attribute Classes.classes_msgs : Messages;
+  attribute Class.class_msgs : Messages;
+  attribute Features.features_msgs : Messages;
+  attribute Feature.feature_msgs : Messages;
+  attribute Formals.formals_msgs : Messages;
+  attribute Formal.formal_msgs : Messages;
+  attribute Case.case_msgs : Messages;		--##
+  attribute Cases.cases_msgs : Messages;	--##
+  attribute Expressions.exprs_msgs : Messages;	--##
+  attribute Expression.expr_msgs : Messages;	--##
+  pragma synthesized(prog_msgs,classes_msgs,class_msgs,
+                     features_msgs,feature_msgs,formals_msgs,formal_msgs);
+  pragma synthesized(case_msgs,cases_msgs,exprs_msgs,expr_msgs); --##
+
+  -- ----------------
+  -- Attribute table
+  -- ----------------
+  
+  type AttrEntry;
+  constructor attr_entry(name, type_decl : Symbol) : AttrEntry;
+  type AttrTblElement := PAIR[Symbol,AttrEntry];
+
+  emptyAttrEntry : AttrEntry := attr_entry(empty,empty);
+
+  -- type AttrTable := SET[AttrTblElement];
+  type AttrTable := LIST[AttrTblElement];
+
+  attribute Class.class_attr_tbl : AttrTable;
+  attribute Class.class_attr_tbl_inherit : AttrTable;
+  attribute Features.features_attr_tbl_inherit : AttrTable;
+  attribute Feature.feature_attr_tbl_inherit : AttrTblElement;
+  
+  -- AttrTable
+  -- attribute Feature.feature_attr_tbl : AttrTable;
+  -- attribute Features.features_attr_tbl : AttrTable;
+
+  pragma inherited(class_attr_tbl);
+  pragma synthesized(class_attr_tbl_inherit,
+                     features_attr_tbl_inherit,
+                     feature_attr_tbl_inherit);
+
+  -- -------------
+  -- Method table
+  -- -------------
+
+  type FormalEntry;
+  constructor formal_entry(n,type_decl : Symbol) : FormalEntry;
+  type FormalEntries := LIST[FormalEntry];
+
+  -- emptyFormalEntry : FormalEntry := formal_entry(empty,empty);
+
+  type MethodEntry;
+  constructor method_entry(name : Symbol;
+              formals : FormalEntries;
+              ret_type : Symbol) : MethodEntry;
+  type MethodTblElement := PAIR[Symbol,MethodEntry];
+
+  emptyMethodEntry : MethodEntry := 
+      method_entry(empty, FormalEntries$none(),empty);  
+  
+  pragma fiber_untracked(emptyMethodEntry);
+
+  -- type MethodTable := SET[MethodTblElement];
+  type MethodTable := LIST[MethodTblElement];  
+
+  attribute Class.class_meth_tbl : MethodTable;
+  attribute Class.class_meth_tbl_inherit : MethodTable;
+  attribute Features.features_meth_tbl_inherit : MethodTable;
+  attribute Feature.feature_meth_tbl_inherit : MethodTblElement;
+
+  -- Methtable
+  -- attribute Features.features_meth_tbl : MethodTable;
+  -- attribute Feature.feature_meth_tbl : MethodTable;
+  --
+  pragma inherited(class_meth_tbl);
+  pragma synthesized(features_meth_tbl_inherit,
+                     class_meth_tbl_inherit,
+                     feature_meth_tbl_inherit);
+
+  -- ---------------------
+  -- building classtable
+  -- ---------------------
+
+  type ClassEntry;
+  constructor class_entry(n : Symbol;
+                          p : Symbol;
+                          attrtable : AttrTable;
+                          methtable : MethodTable) : ClassEntry;
+    
+  type ClassTblElement := PAIR[Symbol,ClassEntry];
+  -- type ClassTable := SET[ClassTblElement];
+  type ClassTable := BAG[ClassTblElement];
+
+  attribute Classes.classes_class_table : ClassTable;
+  attribute Class.class_class_table : ClassTable;
+  
+  -- 
+  attribute Features.features_class_table : ClassTable;
+  attribute Feature.feature_class_table : ClassTable;
+  attribute Formals.formals_class_table : ClassTable;
+  attribute Formal.formal_class_table : ClassTable;
+  attribute Expressions.exprs_class_table : ClassTable; --##
+  attribute Expression.expr_class_table : ClassTable;	--##
+  attribute Cases.cases_class_table : ClassTable;	--##
+  attribute Case.case_class_table : ClassTable;		--##
+
+  pragma inherited (features_class_table, feature_class_table,
+		    formals_class_table,formal_class_table);
+  pragma inherited (cases_class_table,case_class_table, --##
+		    exprs_class_table,expr_class_table);--##
+  --
+  pragma inherited (classes_class_table, class_class_table);
+
+  attribute Class.class_tbl_inherit : ClassTblElement;
+  attribute Classes.classes_tbl_inherit : ClassTable;
+
+  pragma synthesized (class_tbl_inherit,classes_tbl_inherit);
+  emptyClassEntry : ClassEntry := class_entry(empty,empty,
+                                AttrTable${},MethodTable${});
+
+  -- ---------------------
+  -- Environment & Shape
+  -- ---------------------
+
+  type Shape;
+  constructor shape_create(name : Symbol) : Shape;
+  type Entity := PAIR[Symbol,Shape];
+  type Environment := LIST[Entity];
+
+  emptyShape : Shape := shape_create(empty);
+  pragma fiber_untracked(emptyShape);
+
+  attribute Class.class_env : Environment;
+  attribute Class.class_env_inherit : Environment;
+
+  attribute Features.features_env : Environment;
+  attribute Feature.feature_env : Environment;
+
+  attribute Formals.formals_envin : Environment;
+  attribute Formals.formals_envout : Environment;
+
+  attribute Formal.formal_envin : Environment;
+  attribute Formal.formal_envout : Environment;
+  
+  --#(
+  attribute Case.case_env : Environment;
+  attribute Cases.cases_env : Environment;
+
+  attribute Expressions.exprs_env : Environment;
+  attribute Expression.expr_env : Environment;
+  
+  pragma inherited(expr_env,exprs_env,case_env,cases_env);
+  --#)
+
+  pragma inherited(class_env,features_env,feature_env,
+		   formals_envin,formal_envin);
+  pragma synthesized(formals_envout,formal_envout);
+  pragma synthesized(class_env_inherit);
+  
+  -- #(
+  -- ---------------------
+  -- ShapeList definition
+  -- ---------------------
+
+  attribute Expression.shape : Shape;
+  attribute Cases.cases_shape : Shape;
+  attribute Case.case_shape : Shape;
+  
+  type ShapeList := LIST[Shape];
+  attribute Expressions.exprs_shape : ShapeList;
+  pragma synthesized(shape,cases_shape,case_shape,exprs_shape);
+  
+  --#)
+  
+  -- --------------------
+  -- Define basic Shapes
+  -- --------------------
+
+  Object_shape : Shape := shape_create(Object);
+  Int_shape    : Shape := shape_create(Int);
+  Bool_shape   : Shape := shape_create(Bool);
+  Str_shape    : Shape := shape_create(Str);
+  
+  pragma fiber_untracked(Object_shape,Int_shape,Bool_shape,Str_shape);
+
+  -- -------------
+  -- Classes match
+  -- -------------
+  match ?cls : Classes = Classes$append(?cls1 : Classes, ?cls2 : Classes)
+  begin
+    -- Should do something to check if
+    -- there's a redefinition of classes ????
+    cls.classes_inherit := InheritsR$combine(cls1.classes_inherit,
+                                            cls2.classes_inherit);
+    cls1.classes_class_parent := cls.classes_class_parent;
+    cls2.classes_class_parent := cls.classes_class_parent;
+
+    cls.classes_tbl_inherit := ClassTable$combine(cls1.classes_tbl_inherit,
+                              cls2.classes_tbl_inherit);
+
+    cls1.classes_class_table := cls.classes_class_table;
+    cls2.classes_class_table := cls.classes_class_table;
+
+    cls.classes_msgs := Messages$append(cls1.classes_msgs,
+                        cls2.classes_msgs);
+  end;
+
+  match ?cls : Classes = Classes$single(?cl : Class) begin
+    
+    cls.classes_inherit := InheritsR$single(cl.class_inherit);
+    cl.class_class_parent := cls.classes_class_parent;
+
+    cls.classes_tbl_inherit := ClassTable$single(cl.class_tbl_inherit);
+    cl.class_class_table := cls.classes_class_table;
+
+    cls.classes_msgs := cl.class_msgs;
+
+    --  
+    cl.class_attr_tbl := cl.class_attr_tbl_inherit;
+    cl.class_meth_tbl := cl.class_meth_tbl_inherit;
+    cl.class_env := cl.class_env_inherit;
+  end;
+
+  match ?cls : Classes = Classes$none() begin
+
+    cls.classes_inherit := InheritsR$none();
+    cls.classes_tbl_inherit := ClassTable$none();
+    cls.classes_msgs := Messages$none();
+  end;
+
+  -- -------------
+  -- class match
+  -- -------------
+  match ?cl : Class = class_decl(?name : Symbol,?parent : Symbol,
+                      ?features : Features, ?filename : Symbol) begin
+
+        if name = Object then
+           cl.class_inherit := Inherits$pair(name,empty);
+        else
+           cl.class_inherit := Inherits$pair(name,parent);
+        endif;
+
+        -- Its own attrtable and methodtable
+        cl.class_attr_tbl_inherit := AttrTable$cons( 
+              AttrTblElement$pair(Self,attr_entry(Self,name)),
+              features.features_attr_tbl_inherit);
+
+        cl.class_meth_tbl_inherit := features.features_meth_tbl_inherit;
+
+        cl.class_tbl_inherit := ClassTblElement$pair(name,
+                                     class_entry(name,parent,
+                                     cl.class_attr_tbl,cl.class_meth_tbl));
+
+        -- Passing classtable, class_parent table
+        features.features_class_table := cl.class_class_table;
+        features.features_class_parent := cl.class_class_parent;
+
+        -- Passing Environment
+        cl.class_env_inherit := init_env(name,cl.class_attr_tbl,
+                        cl.class_class_parent,cl.class_class_table);
+        features.features_env := cl.class_env;
+      
+        cl.class_msgs := features.features_msgs;
+  end;
+
+  -- ----------------------------------------------------
+  -- Return a parent of a class if any. Empty, otherwise.
+  -- ----------------------------------------------------
+  function parent_of_class(n : Symbol; ct : InheritsR) : Symbol begin
+    case ct begin
+      match InheritsR$single(?i : Inherits) begin
+        case i begin
+          match Inherits$pair(?m : Symbol, ?p : Symbol) begin
+            if (m = n) then
+              result := p;
+            else
+              result := empty;
+            endif;
+          end;
+        end;
+      end;
+
+      match InheritsR$append(?ct1 : InheritsR,?ct2 : InheritsR) begin
+        result := comb(parent_of_class(n,ct1),parent_of_class(n,ct2));
+      end;
+      
+      match InheritsR$none() begin
+        result := empty;
+      end;
+
+    end;
+  end;
+
+  function comb(p1 : Symbol; p2 : Symbol) : Symbol begin
+    if p1 = empty then
+      result := p2;
+    else
+      result := p1;
+    endif;
+  end;
+
+  -- -----------------------------------------
+  -- Lookup a class name in a ClassTable
+  -- return emptyClassEntry or the classentry
+  -- -----------------------------------------
+  function ct_lookup(n : Symbol; ct : ClassTable) : ClassEntry begin
+    case ct begin
+      match ClassTable$single (?e : ClassTblElement) begin
+         case e begin
+           match ClassTblElement$pair(?m : Symbol, ?cl : ClassEntry) begin
+             if m = n then
+               result := cl;
+             else
+               result := emptyClassEntry;
+             endif;
+           end;
+         end;
+       end;
+
+       match ClassTable$append(?ct1 : ClassTable,?ct2 : ClassTable) begin
+         result := comb2(ct_lookup(n,ct1),ct_lookup(n,ct2));
+      end;
+
+       match ClassTable$none() begin
+         result := emptyClassEntry;
+       end;
+    end;
+  end;
+
+  function comb2(cl1,cl2 : ClassEntry) : ClassEntry begin
+     if isClassEntryEmpty(cl1) then
+       result := cl2;
+     else
+       result := cl1;
+     endif;
+  end;
+
+  -- --------------
+  -- program match
+  -- --------------
+  match ?p = program(?cls : Classes) begin
+    
+    cls.classes_class_parent := cls.classes_inherit;
+    cls.classes_class_table := cls.classes_tbl_inherit;
+    p.prog_msgs := cls.classes_msgs;
+
+  end;
+
+  -- ----------------
+  -- Features match
+  -- ----------------
+  match ?feas : Features = Features$append(?fs1,?fs2 : Features) begin
+    -- duplicate attrs, methods ????
+    feas.features_attr_tbl_inherit := AttrTable$append(
+                                            fs1.features_attr_tbl_inherit,
+                                            fs2.features_attr_tbl_inherit);
+
+    feas.features_meth_tbl_inherit := MethodTable$append(
+                                            fs1.features_meth_tbl_inherit,
+                                            fs2.features_meth_tbl_inherit);
+    --
+    -- Passing Environment
+    fs1.features_env := feas.features_env;
+    fs2.features_env := feas.features_env;
+
+    -- Passing classtable, class_parent table
+    fs1.features_class_table := feas.features_class_table;
+    fs2.features_class_table := feas.features_class_table;
+    fs1.features_class_parent := feas.features_class_parent;
+    fs2.features_class_parent := feas.features_class_parent;
+
+    -- Error msgs
+    feas.features_msgs := Messages$append(fs1.features_msgs,fs2.features_msgs);
+  end;
+
+
+  match ?feas : Features = Features$single(?f : Feature) begin
+    feas.features_attr_tbl_inherit := AttrTable$single
+                                      (f.feature_attr_tbl_inherit);
+
+    feas.features_meth_tbl_inherit := MethodTable$single
+                                      (f.feature_meth_tbl_inherit);
+
+    -- Passing environment
+    f.feature_env := feas.features_env;
+
+    -- Passing classtable, class_parent table
+    f.feature_class_table := feas.features_class_table;
+    f.feature_class_parent := feas.features_class_parent;
+
+    -- Error msgs
+    feas.features_msgs := f.feature_msgs;
+  end;
+
+  match ?feas : Features = Features$none() begin
+    feas.features_attr_tbl_inherit := AttrTable$none();
+    feas.features_meth_tbl_inherit := MethodTable$none();
+    -- Error msgs
+    feas.features_msgs := Messages$none();
+  end;
+
+  -- -----------
+  -- attr match
+  -- -----------
+  match ?f : Feature = attr(?name : Symbol,?type_decl : Symbol) begin
+    -- We can check type_decl exists by class_parent
+    if (parent_of_class(type_decl,f.feature_class_parent) = empty) and
+      (type_decl /= Native) then
+        f.feature_attr_tbl_inherit := AttrTblElement$pair(empty,emptyAttrEntry);
+        f.feature_meth_tbl_inherit := MethodTblElement$pair(empty,emptyMethodEntry);
+        f.feature_msgs := Messages$single(symbol_name(type_decl) ++ 
+				" is not defined yet.");
+    else 
+        f.feature_attr_tbl_inherit := AttrTblElement$pair(name,
+                                         attr_entry(name,type_decl));
+        f.feature_meth_tbl_inherit := MethodTblElement$pair(empty,emptyMethodEntry);
+        f.feature_msgs := Messages$none();
+    endif;
+  end;
+
+  -- -------------
+  -- method match
+  -- -------------
+  match ?f : Feature = method(?over : Boolean, ?name : Symbol,?formals : Formals,
+                              ?ret_type : Symbol, ?expr : Expression) begin
+    
+   -- TODO: check over?
+    body_msgs : Messages -- needs to get error messages from body
+       := expr.expr_msgs -- Here they are! ##
+	;
+
+    -- check ret_type is valid
+    if (parent_of_class(ret_type,f.feature_class_parent) = empty) and
+       (ret_type /= Object) then
+        f.feature_meth_tbl_inherit := MethodTblElement$pair(empty,
+				emptyMethodEntry);
+        f.feature_msgs := Messages$append(
+                            Messages$single(symbol_name(ret_type) ++ "is not defined"),
+                            Messages$append(formals.formals_msgs,body_msgs));
+    else
+        f.feature_meth_tbl_inherit := MethodTblElement$pair(name,
+                                         method_entry(name,
+                                      create_formalentries(formals),ret_type));
+        f.feature_msgs := Messages$append(formals.formals_msgs,body_msgs);
+    endif;
+
+    f.feature_attr_tbl_inherit := AttrTblElement$pair(empty,emptyAttrEntry);
+
+    -- Passing environment
+    formals.formals_envin := f.feature_env;
+    expr.expr_env := formals.formals_envout; --##
+  
+    -- Passing classtable, class_parent table
+    formals.formals_class_table := f.feature_class_table;
+    formals.formals_class_parent := f.feature_class_parent;
+    expr.expr_class_table := f.feature_class_table;   --##
+    expr.expr_class_parent := f.feature_class_parent; --##
+
+  end;
+
+  function create_formalentries(formals : Formals) : FormalEntries
+  begin
+    case formals begin
+      match Formals$single(?f : Formal) begin
+        case f begin
+          match formal(?n,?type_decl : Symbol) begin
+            result := FormalEntries$single(formal_entry(n,type_decl));
+          end;
+        end;
+      end;
+      match Formals$append(?f1,?f2 : Formals) begin
+        result := FormalEntries$append(
+                    create_formalentries(f1),create_formalentries(f2));
+      end;
+      match Formals$none() begin
+        result := FormalEntries$none();
+      end;
+    end;
+  end;
+
+  -- --------------------------------------
+  -- Initialize the environment for class
+  -- by attrtable and ancestors' attrtables
+  -- --------------------------------------
+  function init_env(n : Symbol; attr_tbl : AttrTable;
+                    c_parent : InheritsR; ct : ClassTable) : Environment begin
+
+    case attr_tbl begin
+      match AttrTable$single(?e : AttrTblElement) begin
+        case e begin
+          match AttrTblElement$pair(?na : Symbol, ?at : AttrEntry) begin
+            case at begin
+              match attr_entry(?m : Symbol, ?type_decl : Symbol) begin
+                if n = Object then 
+                  result := Environment$single(
+                            Entity$pair(m,shape_create(type_decl)));
+                else
+                    parent : Symbol := parent_of_class(n,c_parent);
+                    cl : ClassEntry := ct_lookup(parent,ct);
+                    case cl begin
+                      match class_entry(?name : Symbol, ?p : Symbol,
+                                        ?attable : AttrTable,
+                                        ?methtable : MethodTable) begin
+                        result := Environment$append(
+                                    Environment$single(Entity$pair(m,
+					shape_create(type_decl))),
+                                    init_env(parent,attable,c_parent,ct));
+                      end;
+                    end; -- case
+                endif;
+              end;
+            end;
+          end;
+        end;
+      end;
+
+      match AttrTable$append(?tbl1, ?tbl2 : AttrTable) begin
+        if n = Object then
+          result := Environment$append(
+	    init_env(n,tbl1,c_parent,ct),
+	    init_env(n,tbl2,c_parent,ct)
+	  );
+        else
+            parent : Symbol := parent_of_class(n,c_parent);
+            cl : ClassEntry := ct_lookup(parent,ct);
+            case cl begin
+              match class_entry(?name : Symbol, ?p : Symbol,
+                      ?attable : AttrTable,
+                      ?methtable : MethodTable) begin
+                result := Environment$append(
+                            Environment$append(
+			    init_env(n,tbl1,c_parent,ct),
+			    init_env(n,tbl2,c_parent,ct)),
+                            init_env(parent,attable,c_parent,ct));
+              end;
+            end;-- case
+        endif;
+      end;
+      
+      match AttrTable$none() begin
+        result := Environment$none();        
+      end;
+
+    end;
+    
+  end;
+
+  -- ---------------
+  -- Formals match
+  -- ---------------
+  match ?fmls : Formals = Formals$single(?f : Formal) begin
+    
+    f.formal_envin := fmls.formals_envin;
+    fmls.formals_envout := f.formal_envout;
+    
+    -- Passing classtable, class_parent table
+    f.formal_class_table := fmls.formals_class_table;
+    f.formal_class_parent := fmls.formals_class_parent;
+
+    -- Error msgs
+    fmls.formals_msgs := f.formal_msgs;
+  end;
+
+  match ?fmls : Formals = Formals$append(?fmls1,?fmls2 : Formals) begin
+    fmls1.formals_envin := fmls.formals_envin;
+    fmls2.formals_envin := fmls1.formals_envout;
+    fmls.formals_envout := fmls2.formals_envout;
+
+    -- Passing classtable, class_parent table
+    fmls1.formals_class_table := fmls.formals_class_table;
+    fmls1.formals_class_parent := fmls.formals_class_parent;
+    fmls2.formals_class_table := fmls.formals_class_table;
+    fmls2.formals_class_parent := fmls.formals_class_parent;  
+
+    -- Error msgs
+    fmls.formals_msgs := Messages$append(fmls1.formals_msgs,fmls2.formals_msgs);
+  end;
+
+
+  match ?fmls : Formals = Formals$none() begin
+    fmls.formals_envout := fmls.formals_envin;
+    -- Error msgs
+    fmls.formals_msgs := Messages$none();
+  end; 
+  
+  -- -------------
+  -- Formal match
+  -- -------------
+  match ?f : Formal = formal(?n : Symbol,?type_decl: Symbol) begin
+    -- check if type_decl in classtable
+    if isClassEntryEmpty(ct_lookup(type_decl,f.formal_class_table)) then
+        f.formal_msgs := Messages$single(symbol_name(type_decl) ++ " is not defined");
+        f.formal_envout := f.formal_envin;
+    else
+        f.formal_envout := Environment$cons(Entity$pair(n,shape_create(type_decl)),
+                          f.formal_envin);
+        f.formal_msgs := Messages$none();
+    endif;
+  end;
+
+  -- -------------------
+  -- ASSIGN expression
+  -- -------------------
+  match ?asgn : Expression = assign(?name : Symbol, ?expr: Expression) begin
+    --#(
+    expr.expr_env := asgn.expr_env;
+    -- Pass classtable, class_parent table
+    expr.expr_class_parent := asgn.expr_class_parent;
+    expr.expr_class_table := asgn.expr_class_table;
+
+    if name = Self then
+        asgn.expr_msgs := Messages$append(
+			    Messages$single("Cannot assign to 'self'"),
+			    expr.expr_msgs);
+        asgn.shape := emptyShape;
+    else
+        sh : Shape := env_lookup(name,asgn.expr_env);
+        if type_equal(sh,emptyShape) then
+            asgn.expr_msgs := Messages$append(
+				Messages$single(symbol_name(name) ++ " is not declared"),
+				expr.expr_msgs);
+            asgn.shape := emptyShape;
+        elsif type_leq(expr.shape,sh,asgn.expr_class_parent) then
+            asgn.expr_msgs := expr.expr_msgs;
+            asgn.shape := expr.shape;
+        else
+            asgn.expr_msgs := Messages$append(
+				Messages$single("Type does not conform for ->"),
+				expr.expr_msgs);
+            asgn.shape := emptyShape;
+        endif; 
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- IF expression
+  -- ---------------
+  match ?cond_expr : Expression = cond (?pred : Expression,
+                                      ?then_exp : Expression,
+                                      ?else_exp : Expression) begin
+    --#(
+    pred.expr_env := cond_expr.expr_env;
+    then_exp.expr_env := cond_expr.expr_env;
+    else_exp.expr_env := cond_expr.expr_env;
+
+    -- Pass classtable, class_parent table
+    pred.expr_class_parent := cond_expr.expr_class_parent;
+    pred.expr_class_table := cond_expr.expr_class_table;
+    then_exp.expr_class_parent := cond_expr.expr_class_parent;
+    then_exp.expr_class_table := cond_expr.expr_class_table;
+    else_exp.expr_class_parent := cond_expr.expr_class_parent;
+    else_exp.expr_class_table := cond_expr.expr_class_table;
+
+    if (not type_equal(pred.shape,Bool_shape)) then
+        cond_expr.expr_msgs := Messages$append(
+				Messages$single(pred.lineno || ":Predicate for 'if' must be Bool"),
+				Messages$append(
+				  Messages$append(pred.expr_msgs,then_exp.expr_msgs),
+				  else_exp.expr_msgs));
+        cond_expr.shape := emptyShape;
+    else
+        cond_expr.shape := type_lub(then_exp.shape,else_exp.shape,
+                          cond_expr.expr_class_parent);
+        cond_expr.expr_msgs := Messages$append(
+                                  Messages$append(pred.expr_msgs,then_exp.expr_msgs),
+                                  else_exp.expr_msgs);
+    endif;
+    --#)
+  end;
+
+  -- ----------------
+  -- LOOP expression 
+  -- ----------------
+  match ?l : Expression = loop  (?pred : Expression,
+                                 ?body : Expression) begin
+    --#(
+    pred.expr_env := l.expr_env;
+    body.expr_env := l.expr_env;
+    
+    -- Pass classtable, class_parent table
+    pred.expr_class_parent := l.expr_class_parent;
+    pred.expr_class_table := l.expr_class_table;
+    body.expr_class_parent := l.expr_class_parent;
+    body.expr_class_table := l.expr_class_table;
+
+    if (not type_equal(pred.shape,Bool_shape)) then
+        l.expr_msgs := Messages$append(
+			Messages$single("Predicate for 'while' must be Bool"),
+			Messages$append(pred.expr_msgs,body.expr_msgs));
+        l.shape := emptyShape;
+    else
+        l.shape := Object_shape;
+        l.expr_msgs := Messages$append(pred.expr_msgs,body.expr_msgs);
+    endif;
+    --#)
+  end;
+  
+  -- -----------------
+  -- BLOCK expression 
+  -- -----------------
+  match ?bl : Expression = block (?body : Expressions) begin
+    --#(
+    body.exprs_env := bl.expr_env;
+    -- Pass classtable, class_parent table
+    body.exprs_class_parent := bl.expr_class_parent;
+    body.exprs_class_table := bl.expr_class_table;
+    
+    bl.expr_msgs := body.exprs_msgs;
+    -- bl.shape := ShapeList$nth_from_end(0,body.exprs_shape);
+    bl.shape := last(body.exprs_shape);	
+    --#)
+  end;
+
+  -- -------------------
+  -- EXPRESSIONS match
+  -- -------------------
+  match ?exprs : Expressions = Expressions$single(?e : Expression) begin
+    --#(
+    e.expr_env := exprs.exprs_env;
+    -- Pass classtable, class_parent table
+    e.expr_class_parent := exprs.exprs_class_parent;
+    e.expr_class_table := exprs.exprs_class_table;
+  
+    exprs.exprs_shape := ShapeList$single(e.shape);
+    exprs.exprs_msgs := e.expr_msgs;
+    --#)
+  end;
+
+  match ?exprs : Expressions = Expressions$append(?es1,?es2 : Expressions) 
+  begin
+    --#(
+    es1.exprs_env := exprs.exprs_env;
+    es2.exprs_env := exprs.exprs_env;
+    -- Pass classtable, class_parent table
+    es1.exprs_class_parent := exprs.exprs_class_parent;
+    es1.exprs_class_table := exprs.exprs_class_table;
+    es2.exprs_class_parent := exprs.exprs_class_parent;
+    es2.exprs_class_table := exprs.exprs_class_table;
+
+    exprs.exprs_shape := ShapeList$append(es1.exprs_shape,es2.exprs_shape);
+    exprs.exprs_msgs := Messages$append(es1.exprs_msgs,es2.exprs_msgs);
+    --#)
+  end;
+
+  match ?exprs : Expressions = Expressions$none() begin
+    --#(
+    exprs.exprs_shape := ShapeList$none();
+    exprs.exprs_msgs := Messages$none();
+    --#)
+  end;
+
+  -- -----------
+  -- LET match
+  -- -----------
+  match ?let_exp : Expression = let(?id : Symbol,
+                                ?type_decl : Symbol,
+                                ?init : Expression,
+				    ?body : Expression) begin
+    --#(
+    init.expr_env := let_exp.expr_env;
+    -- Pass classtable, class_parent table
+    init.expr_class_parent := let_exp.expr_class_parent;    
+    init.expr_class_table := let_exp.expr_class_table;
+
+
+    if isClassEntryEmpty(ct_lookup(type_decl,let_exp.expr_class_table)) then
+        let_exp.expr_msgs := Messages$append(
+				Messages$single(symbol_name(type_decl) ++  "is not defined"),
+				Messages$append(init.expr_msgs,body.expr_msgs));
+        let_exp.shape := emptyShape;
+        body.expr_env := let_exp.expr_env;
+        -- Pass classtable, class_parent table
+        body.expr_class_parent := let_exp.expr_class_parent;
+        body.expr_class_table := let_exp.expr_class_table;
+   
+    else 
+        body.expr_env := Environment$cons(Entity$pair(id,shape_create(type_decl)),
+                                    let_exp.expr_env);
+        -- Pass classtable, class_parent table
+        body.expr_class_parent := let_exp.expr_class_parent;
+        body.expr_class_table := let_exp.expr_class_table;
+
+        if id = Self then
+            let_exp.expr_msgs := Messages$append(
+				   Messages$single("cannot bind 'self' in a let"),
+				   Messages$append(init.expr_msgs,body.expr_msgs));
+            let_exp.shape := emptyShape;
+        elsif (not type_leq(init.shape,shape_create(type_decl),
+              let_exp.expr_class_parent)) then
+            let_exp.expr_msgs := Messages$append(
+				   Messages$single("initialzation is wrong type"),
+				   Messages$append(init.expr_msgs,body.expr_msgs));
+            let_exp.shape := emptyShape;
+        else
+            let_exp.shape := body.shape;
+            let_exp.expr_msgs := Messages$append(init.expr_msgs,body.expr_msgs);
+        endif;
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- ADD expression
+  -- ---------------
+  match ?p : Expression = add (?e1 : Expression,
+			       ?e2 : Expression) begin
+    --#(
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+
+    -- Pass classtable, class_parent table
+    e1.expr_class_parent := p.expr_class_parent;    
+    e1.expr_class_table := p.expr_class_table;
+    e2.expr_class_parent := p.expr_class_parent;    
+    e2.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e1.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			 Messages$single(e1.lineno ||
+					 ":First operand of '+' not an Int"),
+			 Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    elsif (not type_equal(e2.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			 Messages$single("Second operand of '+' not an Int"),
+			 Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    else
+        p.shape := Int_shape;
+        p.expr_msgs := Messages$append(e1.expr_msgs,e2.expr_msgs);
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- SUB expression
+  -- ---------------
+  match ?p : Expression = sub (?e1 : Expression,
+                               ?e2 : Expression) begin
+    --#(
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+
+    -- Pass classtable, class_parent table
+    e1.expr_class_parent := p.expr_class_parent;    
+    e1.expr_class_table := p.expr_class_table;
+    e2.expr_class_parent := p.expr_class_parent;    
+    e2.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e1.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single("First operand of '-' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    elsif (not type_equal(e2.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single("Second operand of '-' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    else
+        p.shape := Int_shape;
+        p.expr_msgs := Messages$append(e1.expr_msgs,e2.expr_msgs);
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- MUL expression
+  -- ---------------
+  match ?p : Expression = mul (?e1 : Expression,
+                               ?e2 : Expression) begin
+    --#(
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+
+    -- Pass classtable, class_parent table
+    e1.expr_class_parent := p.expr_class_parent;    
+    e1.expr_class_table := p.expr_class_table;
+    e2.expr_class_parent := p.expr_class_parent;    
+    e2.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e1.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single(p.lineno || ":First operand of '*' not an Int: " || e1.shape),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    elsif (not type_equal(e2.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single(p.lineno || ":Second operand of '*' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    else
+        p.shape := Int_shape;
+        p.expr_msgs := Messages$append(e1.expr_msgs,e2.expr_msgs);
+    endif;
+    --#)
+  end;
+  
+  -- ------------------
+  -- DIV expression
+  -- ------------------
+  match ?p : Expression = div (?e1 : Expression,
+			       ?e2 : Expression) begin
+    --#(
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+
+    -- Pass classtable, class_parent table
+    e1.expr_class_parent := p.expr_class_parent;    
+    e1.expr_class_table := p.expr_class_table;
+    e2.expr_class_parent := p.expr_class_parent;    
+    e2.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e1.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single(p.lineno || ":First operand of '/' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    elsif (not type_equal(e2.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single(p.lineno || ":Second operand of '/' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    else
+        p.shape := Int_shape;
+        p.expr_msgs := Messages$append(e1.expr_msgs,e2.expr_msgs);
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- NEG expression
+  -- ---------------
+  match ?p : Expression = neg (?e : Expression) begin
+    --#(
+    e.expr_env := p.expr_env;
+    
+    -- Pass classtable, class_parent table
+    e.expr_class_parent := p.expr_class_parent;    
+    e.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single("First operand of negation not an Int"),
+			  e.expr_msgs);
+        p.shape := emptyShape;
+    else
+        p.shape := Int_shape;
+        p.expr_msgs := e.expr_msgs;
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- LT expression
+  -- ---------------
+  match ?p : Expression = lt (?e1 : Expression,
+                              ?e2 : Expression) begin
+    --#(
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+
+    -- Pass classtable, class_parent table
+    e1.expr_class_parent := p.expr_class_parent;    
+    e1.expr_class_table := p.expr_class_table;
+    e2.expr_class_parent := p.expr_class_parent;    
+    e2.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e1.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single("First operand of '<' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    elsif (not type_equal(e2.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single("Second operand of '<' not an Int"),
+			  Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    else
+        p.shape := Bool_shape;
+        p.expr_msgs :=  Messages$append(e1.expr_msgs,e2.expr_msgs);
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- LEQ expression
+  -- ---------------
+  match ?p : Expression = leq (?e1 : Expression,
+                               ?e2 : Expression) begin
+    --#(
+    e1.expr_env := p.expr_env;
+    e2.expr_env := p.expr_env;
+
+    -- Pass classtable, class_parent table
+    e1.expr_class_parent := p.expr_class_parent;    
+    e1.expr_class_table := p.expr_class_table;
+    e2.expr_class_parent := p.expr_class_parent;    
+    e2.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e1.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			Messages$single("First operand of '<=' not an Int"),
+			Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    elsif (not type_equal(e2.shape,Int_shape)) then
+        p.expr_msgs := Messages$append(
+			Messages$single("Second operand of '<=' not an Int"),
+			Messages$append(e1.expr_msgs,e2.expr_msgs));
+        p.shape := emptyShape;
+    else
+        p.shape := Bool_shape;
+        p.expr_msgs := Messages$append(e1.expr_msgs,e2.expr_msgs);
+    endif;
+    --#)
+  end;
+
+  -- ---------------
+  -- COMP expression
+  -- ---------------
+  match ?p : Expression = comp (?e : Expression) begin
+    --#(
+    e.expr_env := p.expr_env;
+    
+    -- Pass classtable, class_parent table
+    e.expr_class_parent := p.expr_class_parent;    
+    e.expr_class_table := p.expr_class_table;
+    
+    if (not type_equal(e.shape,Bool_shape)) then
+        p.expr_msgs := Messages$append(
+			  Messages$single("First operand of negation not an Bool"),
+			  e.expr_msgs);
+        p.shape := emptyShape;
+    else
+        p.shape := Bool_shape;
+        p.expr_msgs := e.expr_msgs;
+    endif;
+    --#)
+  end;
+
+  -- ----------
+  -- INT_CONST
+  -- ----------
+  match ?int_lit : Expression = int_lit(?token : Symbol) begin
+    --#(
+    int_lit.shape := Int_shape;
+    int_lit.expr_msgs := Messages$none();
+    --#)
+  end;
+
+  -- ----------
+  -- STR_CONST
+  -- ----------
+  match ?str_lit : Expression = string_lit(?token : Symbol) begin
+    --#(
+    str_lit.shape := Str_shape;
+    str_lit.expr_msgs := Messages$none();
+    --#)
+  end;
+
+  -- ----------
+  -- BOOL_CONST
+  -- ----------
+  match ?bool_lit : Expression = bool_lit(?val : Boolean) begin
+    --#(
+    bool_lit.shape := Bool_shape;
+    bool_lit.expr_msgs := Messages$none();
+    --#)
+  end;
+
+  -- ----------
+  -- NEW match
+  -- ----------
+  match ?new_exp : Expression = alloc(?type_name : Symbol) begin
+    --#(
+    if isClassEntryEmpty(ct_lookup(type_name,new_exp.expr_class_table)) then
+        new_exp.expr_msgs := Messages$single(symbol_name(type_name) ++ "is not defined");
+        new_exp.shape := emptyShape;
+    else
+        new_exp.shape := shape_create(type_name);
+        new_exp.expr_msgs := Messages$none();
+    endif;
+    --#)
+  end;
+
+  -- --------------
+  -- Object match
+  -- --------------
+  match ?obj : Expression = variable(?name : Symbol) begin
+    --#(
+    sh : Shape := env_lookup(name,obj.expr_env);
+    if type_equal(sh,emptyShape) then
+        obj.expr_msgs := Messages$single(obj.lineno || ":" ++ symbol_name(name) ++ " is undeclared");
+        obj.shape := emptyShape;
+    else
+        obj.shape := sh;
+        obj.expr_msgs := Messages$none();
+    endif;
+    --#)
+  end;
+
+  -- ----------------
+  --  BRANCH match
+  -- ----------------
+  match ?br : Case = branch(?name : Symbol,
+                            ?type_decl : Symbol,
+                            ?expr: Expression) begin
+    --#(
+    -- Pass classtable, class_parent table
+    expr.expr_class_parent := br.case_class_parent;    
+    expr.expr_class_table := br.case_class_table;
+
+    if isClassEntryEmpty(ct_lookup(type_decl,br.case_class_table)) then
+        br.case_msgs := Messages$append(
+			Messages$single(symbol_name(type_decl) ++ "is not defined"),
+			expr.expr_msgs);
+        br.case_shape := emptyShape;
+        expr.expr_env := br.case_env;
+    else
+        expr.expr_env := Environment$cons(Entity$pair(name,shape_create(type_decl)),
+                                          br.case_env);
+        if name = Self then
+            br.case_msgs := Messages$append(
+				Messages$single("Cannot bind self on a branch"),
+				expr.expr_msgs);
+            br.case_shape := emptyShape;
+        else
+            br.case_shape := expr.shape;
+            br.case_msgs := expr.expr_msgs;
+        endif;
+    endif;
+    --#)
+  end;
+
+  -- ------------------
+  -- TYCASE expression
+  -- ------------------
+  match ?ty : Expression = typecase(?expr : Expression,
+                                   ?cases : Cases) begin
+    --#(
+    expr.expr_env := ty.expr_env;
+    -- Pass classtable, class_parent table
+    expr.expr_class_parent := ty.expr_class_parent;    
+    expr.expr_class_table := ty.expr_class_table;
+
+    cases.cases_env := ty.expr_env;
+    -- Pass classtable, class_parent table
+    cases.cases_class_parent := ty.expr_class_parent;
+    cases.cases_class_table := ty.expr_class_table;
+
+    ty.expr_msgs := Messages$append(expr.expr_msgs,cases.cases_msgs);
+    ty.shape := cases.cases_shape;
+    --#)
+  end;
+
+  -- ------------
+  -- CASES match
+  -- ------------
+  match ?cs : Cases = Cases$single(?c : Case) begin
+    --#(
+    c.case_env := cs.cases_env;
+    -- Pass classtable, class_parent table
+    c.case_class_parent := cs.cases_class_parent;
+    c.case_class_table := cs.cases_class_table;
+
+    cs.cases_shape := c.case_shape;
+    cs.cases_msgs := c.case_msgs;
+    --#)
+  end;
+
+  match ?cs :Cases = Cases$append (?c1,?c2 : Cases) begin
+    --#(
+    c1.cases_env := cs.cases_env;
+    c2.cases_env := cs.cases_env;
+    -- Pass classtable, class_parent table
+    c1.cases_class_parent := cs.cases_class_parent;
+    c1.cases_class_table := cs.cases_class_table;
+    c2.cases_class_parent := cs.cases_class_parent;
+    c2.cases_class_table := cs.cases_class_table;
+
+    cs.cases_shape := type_lub(c1.cases_shape,c2.cases_shape,
+                              cs.cases_class_parent);
+    cs.cases_msgs := Messages$append(c1.cases_msgs,c2.cases_msgs);
+    --#)
+  end;
+
+  match ?cs : Cases = Cases$none() begin
+    --#(
+    cs.cases_shape := emptyShape; 
+    -- since type_lub(emptyShape,any) is any
+    cs.cases_msgs := Messages$none();
+    --#)
+  end;
+
+  -- ----------------
+  -- DISPATCH match
+  -- ----------------
+  match ?d : Expression = dispatch (?expr : Expression,
+                                    ?name : Symbol,
+                                    ?actuals : Expressions) begin
+    --#(
+    expr.expr_env := d.expr_env;
+    -- Pass classtable, class_parent table
+    expr.expr_class_parent := d.expr_class_parent;
+    expr.expr_class_table := d.expr_class_table;
+
+    actuals.exprs_env := d.expr_env;
+    -- Pass classtable, class_parent table
+    actuals.exprs_class_parent := d.expr_class_parent;
+    actuals.exprs_class_table := d.expr_class_table;
+
+    if type_equal(expr.shape,emptyShape) then
+        d.shape := emptyShape;
+        d.expr_msgs := Messages$append(
+			Messages$single(expr.lineno || ":type of expr on dispatch is wrong"),
+			Messages$append(expr.expr_msgs,actuals.exprs_msgs));
+    else 
+        case expr.shape begin
+          match shape_create(?n : Symbol) begin
+            meth : MethodEntry := meth_lookup(name,n,d.expr_class_table,
+                                          d.expr_class_parent);
+            if isMethEntryEmpty(meth) then
+                d.expr_msgs := Messages$append(
+			Messages$single("Dispatch on undefined method "
+                               ++ symbol_name(name)),
+			Messages$append(expr.expr_msgs,actuals.exprs_msgs));
+                d.shape := emptyShape; -- Object ????
+            else
+                -- Check matching arguments and formals
+                case meth begin
+                  match method_entry(?na : Symbol,
+                              ?formals : FormalEntries,
+                              ?ret_type : Symbol) begin
+                    res : Messages := check_arguments(actuals.exprs_shape,
+                                        formals,d.expr_class_parent);
+                    case res begin
+                      match Messages$none() begin
+                        d.shape := shape_create(ret_type);
+                        d.expr_msgs := Messages$append(expr.expr_msgs,actuals.exprs_msgs);
+                      end;
+                      match Messages$single(?s : String) begin
+                        d.shape := emptyShape; -- Object ????
+                        d.expr_msgs := res;
+                      end;
+                      match Messages$append(?ms1,?ms2 : Messages) begin
+                        d.shape := emptyShape; -- Object ????
+                        d.expr_msgs := res;
+                      end;
+                    end;
+                  end;
+                end;
+            endif;
+          end; -- match
+        end; -- case
+    endif;
+    --#)
+  end;
+  
+  --#(
+  -- -------------------------------------
+  -- Check conformance of arguments and 
+  -- formals in a method dispatch
+  -- -------------------------------------
+  function check_arguments(args_type : ShapeList; formals : FormalEntries;
+            c_parent : InheritsR)
+          : Messages begin
+    if (formals = FormalEntries${}) and (args_type = ShapeList${}) then
+        result := Messages$none();
+    elsif
+      (formals = FormalEntries${}) and (args_type /= ShapeList${}) then
+        result := Messages$single("Method call with wrong number of args");
+    elsif
+      (formals /= FormalEntries${}) and (args_type = ShapeList${}) then
+        result := Messages$single("Method call with wrong number of args");
+    else
+        case first(formals) begin
+          match formal_entry(?n : Symbol, ?type_decl : Symbol) begin
+            if type_leq(first(args_type),shape_create(type_decl),c_parent) then
+              -- OK , continue checking
+              result := check_arguments(butfirst(args_type),
+                                        butfirst(formals),
+                                        c_parent);
+            else
+              -- not OK
+              result := Messages$append(
+                          Messages$single("Type of parameter " ++
+                                          -- first(args_type) ++
+                                          " does not conform to declared type " ++
+                                          symbol_name(type_decl)),
+                          check_arguments(butfirst(args_type),
+                                          butfirst(formals),
+                                          c_parent));
+
+            endif;
+          end; -- match
+        end; -- case
+    endif;
+  end;
+  --#)
+
+  -- -----------------------
+  -- STATIC DISPATCH match
+  -- -----------------------
+  match ?d : Expression = static_dispatch (?expr : Expression,
+                                    ?type_name : Symbol,
+                                    ?name : Symbol,
+					   ?actuals : Expressions) begin
+    --#(
+    expr.expr_env := d.expr_env;
+    -- Pass classtable, class_parent table
+    expr.expr_class_parent := d.expr_class_parent;
+    expr.expr_class_table := d.expr_class_table;
+
+    actuals.exprs_env := d.expr_env;
+    -- Pass classtable, class_parent table
+    actuals.exprs_class_parent := d.expr_class_parent;
+    actuals.exprs_class_table := d.expr_class_table;
+
+    cl : ClassEntry := ct_lookup(type_name,d.expr_class_table);
+    
+    if isClassEntryEmpty(cl) then
+        d.shape := emptyShape; -- Object ????
+        d.expr_msgs := Messages$append(
+			Messages$single("Dispatch on undeclared class"),
+			Messages$append(expr.expr_msgs,actuals.exprs_msgs));
+    else
+        meth : MethodEntry := meth_lookup(name,type_name,d.expr_class_table,
+                                      d.expr_class_parent);
+        if isMethEntryEmpty(meth) then
+            d.expr_msgs := Messages$append(
+		Messages$single("Dispatch on undefined method "
+			 ++ symbol_name(name)),
+		Messages$append(expr.expr_msgs,actuals.exprs_msgs));
+            d.shape := emptyShape; -- Object ????
+        else
+            -- Check matching arguments and formals
+            case meth begin
+              match method_entry(?n : Symbol, ?formals: FormalEntries,
+                          ?ret_type : Symbol) begin
+                res : Messages := check_arguments(actuals.exprs_shape,formals,
+                                  d.expr_class_parent);
+                case res begin
+                  match Messages$none() begin
+                    d.shape := shape_create(ret_type);
+                    d.expr_msgs := Messages$append(expr.expr_msgs,actuals.exprs_msgs);
+                  end;
+                  match Messages$single(?s : String) begin
+                    d.shape := emptyShape; -- Object ????
+                    d.expr_msgs := res;
+                  end;
+                  match Messages$append(?ms1,?ms2 : Messages) begin
+                    d.shape := emptyShape; -- Object ????
+                    d.expr_msgs := res;
+                  end;
+                end;        
+              end;
+            end; -- case
+        endif;      
+    endif;
+    --#)
+  end;
+
+  --  --------------
+  --  no_expr match
+  --  --------------
+  match ?e : Expression = no_expr() begin
+    --#(
+    e.shape := emptyShape;
+    e.expr_msgs := Messages$none();
+    --#)
+  end;
+
+  --  --------------
+  --  null match
+  --  --------------
+  match ?e : Expression = nil() begin
+    --#(
+    e.shape := emptyShape;
+    e.expr_msgs := Messages$none();
+    --#)
+  end;
+  
+  --#(
+  -- ---------------------------------------
+  -- Compute least upper bound of two types
+  -- ---------------------------------------
+  function type_lub (s1 : Shape; s2 : Shape; c_parent : InheritsR): Shape begin
+    if (type_equal(s1,emptyShape) and (not type_equal(s2,emptyShape))) then
+       result := s2;
+    elsif ((not type_equal(s1,emptyShape)) and type_equal(s2,emptyShape)) then
+       result := s1;
+    elsif (type_equal(s1,emptyShape) and type_equal(s2,emptyShape)) then
+       result := emptyShape;
+    else
+        if (type_equal(s1,Object_shape) or 
+            type_equal(s2,Object_shape)) then 
+          result := Object_shape;
+        elsif (type_leq(s1,s2,c_parent)) then
+          result := s2;
+        elsif (type_leq(s2,s1,c_parent)) then
+          result := s1;
+        else
+            case s1 begin
+              match shape_create (?s1_symbol : Symbol) begin
+                s1_parent : Symbol := parent_of_class(s1_symbol,c_parent);
+                result := type_lub(shape_create(s1_parent),s2,c_parent);
+              end;
+            end;
+        endif;
+    endif;
+    
+  end;
+  --#)
+
+  -- ----------------------
+  -- Compare LEQ two types
+  -- ----------------------
+  function type_leq (s1 : Shape; s2 : Shape; c_parent : InheritsR)
+     : Boolean begin
+    if type_equal(s1,emptyShape) or type_equal(s2,emptyShape) then
+      result := true;
+    elsif (type_equal(s2,Object_shape) or type_equal(s1,s2)) then
+      result := true;
+    else
+        if (type_equal(s1,Object_shape)) then
+          result := false;
+        else
+            case s1 begin
+              match shape_create (?s1_symbol : Symbol) begin
+                s1_parent : Symbol := parent_of_class(s1_symbol,c_parent);
+		if (s1_parent = empty) then
+		  result := type_leq(emptyShape,s2,c_parent);
+		else
+                  result := type_leq(shape_create(s1_parent),s2,c_parent);
+	        endif;
+              end;
+            end;
+        endif;
+    endif;
+  end;
+  
+  -- ----------------------
+  -- Compare EQ two types
+  -- ----------------------
+  function type_equal(s1,s2 : Shape) : Boolean begin
+    case s1 begin
+      match shape_create (?s1_name : Symbol) begin
+        case s2 begin
+          match shape_create (?s2_name : Symbol) begin
+            if (s1_name = s2_name) then
+              result := true;
+            else
+              result := false;
+            endif;
+          end;
+        end;
+      end;
+    end;
+  end;
+
+  -- ------------------------ 
+  -- Look up a method name 
+  -- ------------------------
+  function meth_lookup(meth_name : Symbol;
+                       class_name : Symbol;
+                       ct : ClassTable;
+                       c_parent : InheritsR)
+       : MethodEntry begin
+
+    cl : ClassEntry := ct_lookup(class_name,ct);
+    if isClassEntryEmpty(cl) then result := emptyMethodEntry;
+    else
+      case cl begin
+        match class_entry
+              (?name : Symbol, ?p : Symbol,
+               ?attable : AttrTable,
+               ?methtable : MethodTable) begin
+          meth : MethodEntry := m_lookup(meth_name,methtable);
+          if isMethEntryEmpty(meth) then
+              parent : Symbol := parent_of_class(class_name,c_parent);
+              if parent = empty then
+                result := emptyMethodEntry;
+              else 
+                result := meth_lookup(meth_name,parent,ct,c_parent);
+              endif;
+          else
+             result := meth;
+          endif;
+        end; -- match 
+      end; -- case
+   endif;
+  end;
+
+  -- ------------------------ 
+  -- Look up a method name n
+  -- in a method table
+  -- ------------------------
+  function m_lookup(n : Symbol; meth_tbl : MethodTable)
+       : MethodEntry begin
+    case meth_tbl begin
+      match MethodTable$none() begin
+        result := emptyMethodEntry;
+      end;
+      match MethodTable$single(?e : MethodTblElement) begin
+        case e begin
+          match MethodTblElement$pair(?m : Symbol,
+               ?meth_entry: MethodEntry) begin
+            if m = n then
+              result := meth_entry;
+            else
+              result := emptyMethodEntry;
+            endif;
+          end;
+        end;
+      end;
+      match MethodTable$append(?tbl1, ?tbl2 : MethodTable) begin
+        result := comb3(m_lookup(n,tbl1),m_lookup(n,tbl2));
+      end;
+    end;
+  end;
+
+  function comb3(p1 : MethodEntry; p2 : MethodEntry) : MethodEntry begin
+    if isMethEntryEmpty(p1) then
+      result := p2;
+    else
+      result := p1;
+    endif;
+  end;
+
+  -- ------------------------------
+  -- Look up a name in Environment
+  -- return a shape (Type) if found
+  -- emptyShape : otherwise.
+  -- ------------------------------
+  function env_lookup(n : Symbol; env : Environment) : Shape begin
+    if (env = Environment${}) then
+      result := emptyShape;
+    elsif (Entity$fst(first(env))) = n then
+      result := Entity$snd(first(env));
+    else 
+      result := env_lookup(n,butfirst(env));
+    endif;
+  end;
+
+  -- -------------------------------------------
+  -- Check if a classentry is an emptyClassEntry
+  -- -------------------------------------------
+  function isClassEntryEmpty(c : ClassEntry) : Boolean begin
+    case c begin
+       match class_entry(?n : Symbol, ?p : Symbol,
+			?attrtable : AttrTable,
+			?methtable : MethodTable) begin
+         if n = empty then
+           result := true;
+         else
+           result := false;
+         endif;  
+      end;
+    end;
+  end;
+
+  -- ----------------------------------------------
+  -- Check if a methodentry is an emptyMethodEntry
+  -- ----------------------------------------------
+  function isMethEntryEmpty(c : MethodEntry) : Boolean begin
+    case c begin
+       match method_entry(?n : Symbol, ?fs : FormalEntries,
+                        ?rettype : Symbol) begin
+         if n = empty then
+           result := true;
+         else
+           result := false;
+         endif;
+      end;
+    end;
+  end;
+
+end;

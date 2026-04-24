@@ -228,12 +228,12 @@ static void* do_typechecking(void* ignore, void*node) {
           switch (Declaration_KEY(lhs_use_decl)) {
             case KEYvalue_decl:
               if (!direction_is_collection(value_decl_direction(lhs_use_decl))) {
-                aps_error(lhs_use_decl, "Global variable \"%s\" must be declared as a collection to use :> operator", decl_name(lhs_use_decl));
+                // aps_error(lhs_use_decl, "Global variable \"%s\" must be declared as a collection to use :> operator", decl_name(lhs_use_decl));
               }
               break;
             case KEYattribute_decl:
               if (!direction_is_collection(attribute_decl_direction(lhs_use_decl))) {
-                aps_error(lhs_use_decl, "Attribute \"%s\" must be declared as a collection to use :> operator", decl_name(lhs_use_decl));
+                // aps_error(lhs_use_decl, "Attribute \"%s\" must be declared as a collection to use :> operator", decl_name(lhs_use_decl));
               }
               break;
             default:
