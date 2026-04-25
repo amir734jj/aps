@@ -380,9 +380,22 @@ trait CollectionEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
     set(v);
   }
 
+  def assign(v : ValueType, changed: AtomicBoolean) : Unit = {
+    Debug.out(name + " :> " + v);
+    set(v, changed);
+  }
+
   override def set(v : ValueType) : Unit = {
     initialize;
     super.set(combine(value,v));
+  }
+
+  def set(v : ValueType, changed: AtomicBoolean) : Unit = {
+    val prev = value;
+    set(v);
+    if (prev != value) {
+      changed.set(true);
+    }
   }
 }
 

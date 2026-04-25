@@ -1506,6 +1506,19 @@ static vector<std::set<Expression> > make_instance_assignment() {
   return from;
 }
 
+static bool should_dump_changed( Declaration field) {
+  switch (Declaration_KEY(field)) {
+    case KEYvalue_decl:
+      return direction_is_collection(value_decl_direction(field)) ||
+             direction_is_circular(value_decl_direction(field));
+    case KEYattribute_decl:
+      return direction_is_collection(attribute_decl_direction(field)) ||
+             direction_is_circular(attribute_decl_direction(field));
+    default:
+      return false;
+  }
+}
+
 void dump_assignment(INSTANCE* in, Expression rhs, CodeWriter& cw) {
   Declaration ad = in != NULL ? in->fibered_attr.attr : NULL;
   Symbol asym = ad ? def_name(declaration_def(ad)) : 0;
@@ -1532,7 +1545,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, CodeWriter& cw) {
         else
           cw.code() << "set";
         cw.code() << "(" << rhs;
-        if (synth_impl_ptr->ctx.needs_fixed_point) {
+        if (synth_impl_ptr->ctx.needs_fixed_point && should_dump_changed(field)) {
           cw.code() << ", changed";
         }
         cw.code() << ");\n";
@@ -1559,7 +1572,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, CodeWriter& cw) {
         else
           cw.code() << "set";
         cw.code() << "(" << field_ref_object(lhs) << "," << rhs;
-        if (synth_impl_ptr->ctx.needs_fixed_point) {
+        if (synth_impl_ptr->ctx.needs_fixed_point && should_dump_changed(field)) {
           cw.code() << ", changed";
         }
         cw.code() << ");\n";
