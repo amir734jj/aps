@@ -1789,7 +1789,6 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       vector<INSTANCE*> saved_dumped(synth_impl_ptr->ctx.dumped_instances);
 
       CodeWriter helper_cw(helper_os);
-      helper_os << indent();
       dump_rhs_instance_helper(aug_graph, item, instance, helper_cw);
       helper_cw.flush();
       helper_os << "\n";
@@ -1865,7 +1864,7 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       if (!visited_if_stmt) {
         nesting_level--;
         cw.code() << "\n";
-        cw.code() << indent() << "}";
+        cw.code() << indent() << "}\n";
       }
 	    break;
     }
@@ -1934,7 +1933,7 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       cw.code() << indent() << "}\n";
       if (m == first_Match(case_stmt_matchers(header))) {
         nesting_level--;
-        cw.code() << indent() << "}";
+        cw.code() << indent() << "}\n";
       }
 #else  /* APS2SCALA */
       cw.code() << indent() << "}\n";
