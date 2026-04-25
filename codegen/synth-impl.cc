@@ -71,7 +71,6 @@ struct HelperContext {
   block_item_base* scope_block = NULL;
   vector<block_item_base*> dumped_conditionals;
   vector<INSTANCE*> dumped_instances;
-  bool fiber_convergence = false;
 };
 
 class CodeWriter {
@@ -1097,9 +1096,6 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
         os << indent() << "do {\n";
         nesting_level++;
         os << indent() << "newChanged" << src_idx << ".set(false);\n";
-        if (synth_functions_state->is_fiber_evaluation) {
-          synth_impl_ptr->ctx.fiber_convergence = true;
-        }
         os << indent() << "implicit val " << LOOP_VAR << ": Boolean = true;\n";
         os << indent() << "implicit val changed: AtomicBoolean = newChanged" << src_idx << ";\n";
       }
@@ -1235,7 +1231,6 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
       }
 
       if (dump_fixed_point_loop) {
-        synth_impl_ptr->ctx.fiber_convergence = false;
         if (include_comments) {
           os << indent() << "iterCount" << src_idx << " += 1;\n";
           os << indent() << "Debug.out(\"fixed-point " << synth_functions_state->fdecl_name
@@ -1537,7 +1532,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, CodeWriter& cw) {
         else
           cw.code() << "set";
         cw.code() << "(" << rhs;
-        if (synth_impl_ptr->ctx.fiber_convergence) {
+        if (synth_impl_ptr->ctx.needs_fixed_point) {
           cw.code() << ", changed";
         }
         cw.code() << ");\n";
@@ -1564,7 +1559,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, CodeWriter& cw) {
         else
           cw.code() << "set";
         cw.code() << "(" << field_ref_object(lhs) << "," << rhs;
-        if (synth_impl_ptr->ctx.fiber_convergence) {
+        if (synth_impl_ptr->ctx.needs_fixed_point) {
           cw.code() << ", changed";
         }
         cw.code() << ");\n";
