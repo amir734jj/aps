@@ -25,10 +25,6 @@ typedef struct synth_function_state {
   bool is_fiber_evaluation;
 } SYNTH_FUNCTION_STATE;
 
-static AUG_GRAPH* current_aug_graph = NULL;
-static std::vector<SYNTH_FUNCTION_STATE*> synth_functions_states;
-static SYNTH_FUNCTION_STATE* current_synth_functions_state = NULL;
-
 #define LOCAL_VALUE_FLAG (1 << 28)
 
 #ifdef APS2SCALA
@@ -39,8 +35,86 @@ static SYNTH_FUNCTION_STATE* current_synth_functions_state = NULL;
 
 static const string LOOP_VAR = "isInsideFixedPoint";
 static const string PREV_LOOP_VAR = "prevIsInsideFixedPoint";
+static const string EVAL_PREFIX = "eval_";
+static const string EVAL_FIBER_PREFIX = "eval_Fiber_";
 
-static SynthImplementation* synth_impl_ptr;
+static bool get_env_bool(const char* name, bool default_val) {
+  const char* val = getenv(name);
+  if (val == NULL) return default_val;
+  return string(val) != "0" && string(val) != "false";
+}
+
+static int get_env_int(const char* name, int default_val) {
+  const char* val = getenv(name);
+  if (val == NULL) return default_val;
+  return atoi(val);
+}
+
+static const bool ENABLE_FIBER_HELPERS = get_env_bool("APS_FIBER_HELPERS", true);
+static const int FIBER_DEP_BATCH_SIZE = get_env_int("APS_FIBER_BATCH_SIZE", 20);
+static const int COND_HELPER_THRESHOLD = get_env_int("APS_COND_THRESHOLD", 10);
+
+struct block_item_base;
+
+struct HelperContext {
+  string eval_name;
+  string phylum_type;
+  bool needs_fixed_point = false;
+  string dep_formals;
+  string dep_actuals;
+  vector<string> pending_helpers;
+  int helper_counter = 0;
+  AUG_GRAPH* aug_graph = NULL;
+  SYNTH_FUNCTION_STATE* current_state = NULL;
+  std::vector<SYNTH_FUNCTION_STATE*> synth_states;
+  vector<Block> blocks;
+  block_item_base* scope_block = NULL;
+  vector<block_item_base*> dumped_conditionals;
+  vector<INSTANCE*> dumped_instances;
+  bool fiber_convergence = false;
+};
+
+class CodeWriter {
+  std::ostream& _os;
+  std::ostringstream _buf;
+  bool _has_code = false;
+public:
+  CodeWriter(std::ostream& os) : _os(os) {}
+  ~CodeWriter() { flush(); }
+  CodeWriter(const CodeWriter&) = delete;
+  CodeWriter& operator=(const CodeWriter&) = delete;
+
+  std::ostream& code() { _has_code = true; return _buf; }
+  std::ostream& comment() { return _buf; }
+
+  std::ostream& stream() {
+    flush();
+    return _os;
+  }
+
+  bool has_code() const { return _has_code; }
+
+  void flush() {
+    string s = _buf.str();
+    if (!s.empty()) {
+      _os << s;
+      _buf.str("");
+      _buf.clear();
+    }
+  }
+};
+
+class SynthImplBase : public SynthImplementation {
+public:
+  HelperContext ctx;
+  virtual void dump_synth_instance(INSTANCE*, CodeWriter&) = 0;
+  void dump_synth_instance(INSTANCE* in, ostream& os) {
+    CodeWriter cw(os);
+    dump_synth_instance(in, cw);
+  }
+};
+
+static SynthImplBase* synth_impl_ptr;
 
 #define KEY_BLOCK_ITEM_CONDITION 1
 #define KEY_BLOCK_ITEM_INSTANCE 2
@@ -69,13 +143,6 @@ struct block_item_instance {
   BlockItem* next;
 };
 
-static vector<Block> current_blocks;
-static BlockItem* current_scope_block;
-static vector<BlockItem*> dumped_conditional_block_items;
-static vector<INSTANCE*> dumped_instances;
-static bool tracking_fiber_convergence = false;
-
-// Given a block, it prints its linearized schedule as comments in the output stream.
 static void print_linearized_block(BlockItem* block, ostream& os) {
   if (block != NULL) {
     os << indent() << block->instance << "\n";
@@ -122,7 +189,18 @@ static vector<INSTANCE*> sort_instances(AUG_GRAPH* aug_graph) {
   return result;
 }
 
-// Given an augmented dependency graph, it linearize it recursively
+static int count_conditions(BlockItem* item) {
+  if (item == NULL) return 0;
+  if (item->key == KEY_BLOCK_ITEM_INSTANCE) {
+    struct block_item_instance* bi = (struct block_item_instance*)item;
+    return count_conditions(bi->next);
+  } else if (item->key == KEY_BLOCK_ITEM_CONDITION) {
+    struct block_item_condition* cond = (struct block_item_condition*)item;
+    return 1 + count_conditions(cond->next_positive) + count_conditions(cond->next_negative);
+  }
+  return 0;
+}
+
 static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
                                          const vector<INSTANCE*>& sorted_instances,
                                          bool* scheduled,
@@ -130,7 +208,6 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
                                          BlockItem* prev,
                                          int remaining,
                                          INSTANCE* aug_graph_instance) {
-  // impossible merge condition
   if (CONDITION_IS_IMPOSSIBLE(*cond)) {
     return NULL;
   }
@@ -146,7 +223,6 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
       continue;
     }
 
-    // impossible merge condition, cannot schedule this instance
     if (MERGED_CONDITION_IS_IMPOSSIBLE(*cond, instance_condition(instance))) {
       scheduled[i] = true;
       BlockItem* result = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, prev, remaining - 1, aug_graph_instance);
@@ -154,8 +230,6 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
       return result;
     }
 
-    // if there is no dependency between this instance and the augmented dependency instance that we want to linearize for,
-    // then this instance should not be included in the linearization linked-list
     if (aug_graph_instance != instance && !edgeset_kind(aug_graph->graph[instance->index * n + aug_graph_instance->index])) {
       scheduled[i] = true;
       BlockItem* result = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, prev, remaining - 1, aug_graph_instance);
@@ -167,17 +241,14 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
     for (j = 0; j < n && ready_to_schedule; j++) {
       INSTANCE* other_instance = &aug_graph->instances.array[j];
 
-      // already scheduled dependency
       if (scheduled[j]) {
         continue;
       }
 
-      // impossible merge condition, ignore this dependency
       if (MERGED_CONDITION_IS_IMPOSSIBLE(instance_condition(instance), instance_condition(other_instance))) {
         continue;
       }
 
-      // not a direct dependency
       if (!(edgeset_kind(aug_graph->graph[j * n + i]) & DEPENDENCY_MAYBE_DIRECT)) {
         continue;
       }
@@ -186,7 +257,6 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
       break;
     }
 
-    // if all dependencies are ready to schedule
     if (!ready_to_schedule) {
       continue;
     }
@@ -231,8 +301,6 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
   return NULL;
 }
 
-// Given an augmented dependency graph, it linearizes
-// the direct dependency schedule.
 static BlockItem* linearize_block(AUG_GRAPH* aug_graph, INSTANCE* aug_graph_instance) {
   int n = aug_graph->instances.length;
   bool* scheduled = (bool*)alloca(sizeof(bool) * n);
@@ -244,9 +312,6 @@ static BlockItem* linearize_block(AUG_GRAPH* aug_graph, INSTANCE* aug_graph_inst
   return linearize_block_helper(aug_graph, sorted_instances, scheduled, &cond, NULL, n, aug_graph_instance);
 }
 
-// Given an instance it traverses the direct dependency schedule
-// trying to find the instance and if it sees the condition
-// along the way, it returns that condition.
 static BlockItem* find_surrounding_block(BlockItem* block, INSTANCE* instance) {
   while (block != NULL) {
     if (block->key == KEY_BLOCK_ITEM_CONDITION) {
@@ -437,7 +502,7 @@ static string instance_to_string(INSTANCE* in, bool force_include_node_type = fa
 
   Declaration node = in->node;
   if (force_include_node_type && node == NULL) {
-    node = current_aug_graph->lhs_decl;
+    node = synth_impl_ptr->ctx.aug_graph->lhs_decl;
   }
 
   if (!trim_node && node != NULL) {
@@ -507,8 +572,6 @@ static bool check_is_match_formal(void* node) {
   return is_formal && is_inside_match;
 }
 
-// Unified filter for determining which dependencies should be included
-// as function parameters and call arguments in synthesized eval functions.
 static bool should_skip_synth_dependency(INSTANCE* source_instance) {
   if (source_instance->fibered_attr.fiber != NULL) {
     return true;
@@ -633,6 +696,34 @@ static void dump_attribute_type(INSTANCE* in, ostream& os) {
   }
 }
 
+static void emit_synth_dep_formals(SYNTH_FUNCTION_STATE* state, ostream& out) {
+  for (auto it = state->regular_dependencies.begin(); it != state->regular_dependencies.end(); it++) {
+    INSTANCE* dep_instance = *it;
+    if (should_skip_synth_dependency(dep_instance)) continue;
+    out << ",\n" << indent(nesting_level + 1) << "v_";
+    if (!state->is_phylum_instance) {
+      out << instance_to_string(dep_instance, false, false);
+    } else {
+      out << instance_to_string(dep_instance, false, true);
+    }
+    out << ": ";
+    dump_attribute_type(dep_instance, out);
+  }
+}
+
+static void emit_synth_dep_actuals(SYNTH_FUNCTION_STATE* state, ostream& out) {
+  for (auto it = state->regular_dependencies.begin(); it != state->regular_dependencies.end(); it++) {
+    INSTANCE* dep_instance = *it;
+    if (should_skip_synth_dependency(dep_instance)) continue;
+    out << ", v_";
+    if (!state->is_phylum_instance) {
+      out << instance_to_string(dep_instance, false, false);
+    } else {
+      out << instance_to_string(dep_instance, false, true);
+    }
+  }
+}
+
 class FiberDependencyDumper {
 public:
   static void dump(AUG_GRAPH* aug_graph, INSTANCE* sink, ostream& os) {
@@ -642,7 +733,6 @@ public:
 
     vector<INSTANCE*> relevant_instances;
 
-    // collect relevant fiber dependencies
     for (i = 0; i < n; i++) {
       INSTANCE* in = &aug_graph->instances.array[i];
       if (in->node != NULL && Declaration_KEY(in->node) == KEYpragma_call) {
@@ -672,13 +762,11 @@ public:
     SccGraph scc_graph;
     scc_graph_initialize(&scc_graph, static_cast<int>(relevant_instances.size()));
 
-    // add vertices to the SCC graph
     for (auto it = relevant_instances.begin(); it != relevant_instances.end(); it++) {
       INSTANCE* in = *it;
       scc_graph_add_vertex(&scc_graph, in);
     }
 
-    // add edges to the SCC graph
     for (auto it1 = relevant_instances.begin(); it1 != relevant_instances.end(); it1++) {
       INSTANCE* in1 = *it1;
       for (auto it2 = relevant_instances.begin(); it2 != relevant_instances.end(); it2++) {
@@ -772,11 +860,17 @@ private:
       }
 
       scheduled[in->index] = true;
-      os << indent();
-      synth_impl_ptr->dump_synth_instance(in, os);
-      dumped_conditional_block_items.clear();
-      dumped_instances.clear();
-      os << "\n";
+      {
+        std::ostringstream tmp;
+        CodeWriter tmp_cw(tmp);
+        synth_impl_ptr->dump_synth_instance(in, tmp_cw);
+        tmp_cw.flush();
+        synth_impl_ptr->ctx.dumped_conditionals.clear();
+        synth_impl_ptr->ctx.dumped_instances.clear();
+        if (tmp_cw.has_code()) {
+          os << indent() << tmp.str() << "\n";
+        }
+      }
 
       dump_scc_helper_dump(aug_graph, component, scheduled, os);
     }
@@ -801,7 +895,6 @@ private:
     for (int i = 0; i < components->length; i++) {
       SCC_COMPONENT* component = components->array[i];
 
-      // if all instances in the component are scheduled, skip it
       if (already_scheduled(aug_graph, component, scheduled)) {
         continue;
       }
@@ -854,16 +947,15 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
   ostream& os = inline_definitions ? hs : cpps;
 
 #endif /* APS2SCALA */
-  // first dump all visit functions for each phylum:
 
   os << "\n";
 
-  synth_functions_states = build_synth_functions_state(s);
+  synth_impl_ptr->ctx.synth_states = build_synth_functions_state(s);
   bool needs_fixed_point = s->loop_required;
 
-  for (auto state_it = synth_functions_states.begin(); state_it != synth_functions_states.end(); state_it++) {
+  for (auto state_it = synth_impl_ptr->ctx.synth_states.begin(); state_it != synth_impl_ptr->ctx.synth_states.end(); state_it++) {
     SYNTH_FUNCTION_STATE* synth_functions_state = *state_it;
-    current_synth_functions_state = synth_functions_state;
+    synth_impl_ptr->ctx.current_state = synth_functions_state;
 
     if (include_comments) {
       os << indent() << "// " << synth_functions_state->source << " ("
@@ -876,31 +968,15 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
          << "\n\n";
     }
 
-    os << indent() << "def eval_" << synth_functions_state->fdecl_name << "(";
+    synth_impl_ptr->ctx.pending_helpers.clear();
+    synth_impl_ptr->ctx.helper_counter = 0;
+    synth_impl_ptr->ctx.eval_name = synth_functions_state->fdecl_name;
+    synth_impl_ptr->ctx.phylum_type = decl_name(synth_functions_state->source_phy_graph->phylum);
+    synth_impl_ptr->ctx.needs_fixed_point = needs_fixed_point;
+
+    os << indent() << "def " << EVAL_PREFIX << synth_functions_state->fdecl_name << "(";
     os << "node: T_" << decl_name(synth_functions_state->source_phy_graph->phylum);
-
-    for (auto it = synth_functions_state->regular_dependencies.begin();
-         it != synth_functions_state->regular_dependencies.end(); it++) {
-      INSTANCE* source_instance = *it;
-      if (should_skip_synth_dependency(source_instance)) {
-        continue;
-      }
-
-      // for locals, it needs prefix in formals, not for fibers or regular attributes
-
-      os << ",\n";
-      os << indent(nesting_level+1);
-      os << "v_";
-
-      if (!synth_functions_state->is_phylum_instance) {
-        os << instance_to_string(source_instance, false, false) << ": ";
-      } else {
-        os << instance_to_string(source_instance, false, true) << ": ";
-      }
-
-      dump_attribute_type(source_instance, os);
-    }
-
+    emit_synth_dep_formals(synth_functions_state, os);
     os << ")";
 
     if (needs_fixed_point) {
@@ -917,7 +993,6 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
     os << " = {\n";
     nesting_level++;
 
-    // don't cache if we are in the loop.
     if (needs_fixed_point) {
       os << indent() << "if (!" <<  LOOP_VAR << ") {\n";
       nesting_level++;
@@ -966,12 +1041,13 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
     }
     nesting_level++;
 
-    for (auto it = synth_functions_state->aug_graphs.begin(); it != synth_functions_state->aug_graphs.end(); it++) {
+    int aug_graph_idx = 0;
+    for (auto it = synth_functions_state->aug_graphs.begin(); it != synth_functions_state->aug_graphs.end(); it++, aug_graph_idx++) {
       AUG_GRAPH* aug_graph = *it;
       int n = aug_graph->instances.length;
 
-      current_aug_graph = aug_graph;
-      current_blocks.push_back(matcher_body(top_level_match_m(aug_graph->match_rule)));
+      synth_impl_ptr->ctx.aug_graph = aug_graph;
+      synth_impl_ptr->ctx.blocks.push_back(matcher_body(top_level_match_m(aug_graph->match_rule)));
 
       os << indent() << "case " << matcher_pat(top_level_match_m(aug_graph->match_rule)) << " => {\n";
       nesting_level++;
@@ -985,14 +1061,12 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
         aug_graph_instance = synth_functions_state->source;
       }
 
-      // Linearize the current scope block but make sure IF statements or conditional instances
-      // that have nothing to do with this instance don't appear in linearization
-      current_scope_block = linearize_block(aug_graph, aug_graph_instance);
+      synth_impl_ptr->ctx.scope_block = linearize_block(aug_graph, aug_graph_instance);
 
       if (include_comments) {
         os << indent() << "/* Linearized schedule:\n";
         nesting_level++;
-        print_linearized_block(current_scope_block, os);
+        print_linearized_block(synth_impl_ptr->ctx.scope_block, os);
         nesting_level--;
         os << indent() << "*/\n";
       }
@@ -1011,7 +1085,6 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
       string node_get = ATTR_DECL_IS_SHARED_INFO(synth_functions_state->source->fibered_attr.attr) ? "" : "node";
       string node_assign = ATTR_DECL_IS_SHARED_INFO(synth_functions_state->source->fibered_attr.attr) ? "" : "node, ";
 
-      // Open fixed-point loop using shared changed flag for convergence tracking
       if (dump_fixed_point_loop) {
         os << indent() << "{\n";
         nesting_level++;
@@ -1025,41 +1098,144 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
         nesting_level++;
         os << indent() << "newChanged" << src_idx << ".set(false);\n";
         if (synth_functions_state->is_fiber_evaluation) {
-          tracking_fiber_convergence = true;
+          synth_impl_ptr->ctx.fiber_convergence = true;
         }
         os << indent() << "implicit val " << LOOP_VAR << ": Boolean = true;\n";
         os << indent() << "implicit val changed: AtomicBoolean = newChanged" << src_idx << ";\n";
       }
 
-      // Fiber dependencies (inside loop when looping)
       if (synth_functions_state->is_fiber_evaluation) {
         if (include_comments && !dump_fixed_point_loop) {
           os << "\n";
         }
-        FiberDependencyDumper::dump(aug_graph, aug_graph_instance, os);
-        os << indent();
-        synth_impl_ptr->dump_synth_instance(aug_graph_instance, os);
-        os << "\n";
-        dumped_conditional_block_items.clear();
-        dumped_instances.clear();
+
+        
+        string eval_name = synth_functions_state->fdecl_name;
+        string phylum_type = decl_name(synth_functions_state->source_phy_graph->phylum);
+
+        {
+          std::ostringstream dep_formals_os, dep_actuals_os;
+          int saved = nesting_level;
+          nesting_level = 1;
+          emit_synth_dep_formals(synth_functions_state, dep_formals_os);
+          emit_synth_dep_actuals(synth_functions_state, dep_actuals_os);
+          nesting_level = saved;
+          synth_impl_ptr->ctx.dep_formals = dep_formals_os.str();
+          synth_impl_ptr->ctx.dep_actuals = dep_actuals_os.str();
+        }
+
+        {
+          int n_dep = aug_graph->instances.length;
+          vector<INSTANCE*> relevant_instances;
+          for (int idx = 0; idx < n_dep; idx++) {
+            INSTANCE* in = &aug_graph->instances.array[idx];
+            if (in->node != NULL && Declaration_KEY(in->node) == KEYpragma_call) continue;
+            if (in->index == aug_graph_instance->index) continue;
+            if (edgeset_kind(aug_graph->graph[in->index * n_dep + aug_graph_instance->index])) {
+              if (in->fibered_attr.fiber != NULL) {
+                if (instance_is_synthesized(in) || instance_is_local(in)) {
+                  relevant_instances.push_back(in);
+                }
+              }
+            }
+          }
+
+          if (ENABLE_FIBER_HELPERS) {
+            for (size_t batch_start = 0; batch_start < relevant_instances.size(); batch_start += FIBER_DEP_BATCH_SIZE) {
+              size_t batch_end = std::min(batch_start + (size_t)FIBER_DEP_BATCH_SIZE, relevant_instances.size());
+              string helper_name = EVAL_FIBER_PREFIX + eval_name + "_g" + std::to_string(aug_graph_idx) +
+                  "_h" + std::to_string(batch_start) + "_" + std::to_string(batch_end - 1);
+
+              std::ostringstream helper_os;
+              int saved_nesting = nesting_level;
+              nesting_level = 1;
+
+              helper_os << indent() << "private def " << helper_name
+                        << "(node: T_" << phylum_type;
+              emit_synth_dep_formals(synth_functions_state, helper_os);
+              helper_os << ")";
+              if (needs_fixed_point) {
+                helper_os << "(implicit " << LOOP_VAR << ": Boolean, changed: AtomicBoolean)";
+              }
+              helper_os << ": Unit = {\n";
+              nesting_level++;
+              helper_os << indent() << "val anchor = node;\n";
+              helper_os << indent() << "node match {\n";
+              nesting_level++;
+              helper_os << indent() << "case " << matcher_pat(top_level_match_m(aug_graph->match_rule)) << " => {\n";
+              nesting_level++;
+
+              for (size_t bi = batch_start; bi < batch_end; bi++) {
+                INSTANCE* dep_in = relevant_instances[bi];
+                std::ostringstream tmp;
+                CodeWriter tmp_cw(tmp);
+                synth_impl_ptr->dump_synth_instance(dep_in, tmp_cw);
+                tmp_cw.flush();
+                synth_impl_ptr->ctx.dumped_conditionals.clear();
+                synth_impl_ptr->ctx.dumped_instances.clear();
+                if (tmp_cw.has_code()) {
+                  helper_os << indent() << tmp.str() << "\n";
+                }
+              }
+
+              nesting_level--;
+              helper_os << indent() << "}\n";
+              helper_os << indent() << "case _ => ()\n";
+              nesting_level--;
+              helper_os << indent() << "}\n";
+              nesting_level--;
+              helper_os << indent() << "}\n";
+
+              nesting_level = saved_nesting;
+              synth_impl_ptr->ctx.pending_helpers.push_back(helper_os.str());
+
+              os << indent() << helper_name << "(node";
+              emit_synth_dep_actuals(synth_functions_state, os);
+              os << ");\n";
+            }
+          } else {
+            for (auto dep_it = relevant_instances.begin(); dep_it != relevant_instances.end(); dep_it++) {
+              INSTANCE* dep_in = *dep_it;
+              std::ostringstream tmp;
+              CodeWriter tmp_cw(tmp);
+              synth_impl_ptr->dump_synth_instance(dep_in, tmp_cw);
+              tmp_cw.flush();
+              synth_impl_ptr->ctx.dumped_conditionals.clear();
+              synth_impl_ptr->ctx.dumped_instances.clear();
+              if (tmp_cw.has_code()) {
+                os << indent() << tmp.str() << "\n";
+              }
+            }
+          }
+        }
+
+        {
+          std::ostringstream tmp;
+          CodeWriter tmp_cw(tmp);
+          synth_impl_ptr->dump_synth_instance(aug_graph_instance, tmp_cw);
+          tmp_cw.flush();
+          synth_impl_ptr->ctx.dumped_conditionals.clear();
+          synth_impl_ptr->ctx.dumped_instances.clear();
+          if (tmp_cw.has_code()) {
+            os << indent() << tmp.str() << "\n";
+          }
+        }
       }
 
-      // Non-fiber instance computation
       if (!synth_functions_state->is_fiber_evaluation) {
         if (dump_fixed_point_loop) {
           os << indent() << src_attr << ".assign(" << node_assign;
-          synth_impl_ptr->dump_synth_instance(aug_graph_instance, os);
+          { CodeWriter cw(os); synth_impl_ptr->dump_synth_instance(aug_graph_instance, cw); }
           os << ", changed);\n";
         } else {
           os << indent();
-          synth_impl_ptr->dump_synth_instance(aug_graph_instance, os);
+          { CodeWriter cw(os); synth_impl_ptr->dump_synth_instance(aug_graph_instance, cw); }
           os << "\n";
         }
       }
 
-      // Close fixed-point loop
       if (dump_fixed_point_loop) {
-        tracking_fiber_convergence = false;
+        synth_impl_ptr->ctx.fiber_convergence = false;
         if (include_comments) {
           os << indent() << "iterCount" << src_idx << " += 1;\n";
           os << indent() << "Debug.out(\"fixed-point " << synth_functions_state->fdecl_name
@@ -1075,9 +1251,9 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
         os << indent() << "}\n";
       }
 
-      current_blocks.clear();
-      dumped_conditional_block_items.clear();
-      dumped_instances.clear();
+      synth_impl_ptr->ctx.blocks.clear();
+      synth_impl_ptr->ctx.dumped_conditionals.clear();
+      synth_impl_ptr->ctx.dumped_instances.clear();
 
       nesting_level--;
       os << indent() << "}\n";
@@ -1101,13 +1277,18 @@ static void dump_synth_functions(STATE* s, output_streams& oss)
 
     nesting_level--;
     os << indent() << "}\n\n";
+
+    for (auto& helper : synth_impl_ptr->ctx.pending_helpers) {
+      os << helper << "\n";
+    }
+    synth_impl_ptr->ctx.pending_helpers.clear();
   }
 
-  destroy_synth_function_states(synth_functions_states);
-  synth_functions_states.clear();
+  destroy_synth_function_states(synth_impl_ptr->ctx.synth_states);
+  synth_impl_ptr->ctx.synth_states.clear();
 }
 
-class SynthImpl : public SynthImplementation {
+class SynthImpl : public SynthImplBase {
  public:
   typedef Implementation::ModuleInfo Super;
   class ModuleInfo : public Super {
@@ -1147,7 +1328,6 @@ class SynthImpl : public SynthImplementation {
 
     bool needs_fixed_point = s->original_state_dependency != 0;
 
-    // Implement finish routine:
 #ifdef APS2SCALA
     os << indent() << "override def finish() : Unit = {\n";
 #else  /* APS2SCALA */
@@ -1177,7 +1357,7 @@ class SynthImpl : public SynthImplementation {
         continue;
 
       string eval_name = instance_to_string_with_nodetype(s->start_phylum, &start_phy_graph->instances.array[i]);
-      os << indent() << "eval_" << eval_name << "(root);\n";
+      os << indent() << EVAL_PREFIX << eval_name << "(root);\n";
     }
     --nesting_level;
     os << indent() << "}\n";
@@ -1204,20 +1384,18 @@ void implement_value_use(Declaration vd, ostream& os) {
   int flags = Declaration_info(vd)->decl_flags;
   if (flags & LOCAL_ATTRIBUTE_FLAG) {
     int instance_index = Declaration_info(vd)->instance_index;
-    INSTANCE* instance = &current_aug_graph->instances.array[instance_index];
+    INSTANCE* instance = &synth_impl_ptr->ctx.aug_graph->instances.array[instance_index];
 
     Type ty = value_decl_type(vd);
     Declaration ctype_decl = canonical_type_decl(canonical_type(ty));
     string target_name = instance_to_string_with_nodetype(ctype_decl, instance);
 
-    os << "eval_" << target_name << "(\n";
+    os << EVAL_PREFIX << target_name << "(\n";
     int saved_nesting = nesting_level;
     nesting_level = std::max(nesting_level + 2, 1);
     os << indent() << "node";
 
-    // Find matching synth function state and use its dependencies
-    // for consistent parameter passing with the function signature
-    for (auto state_it = synth_functions_states.begin(); state_it != synth_functions_states.end(); state_it++) {
+    for (auto state_it = synth_impl_ptr->ctx.synth_states.begin(); state_it != synth_impl_ptr->ctx.synth_states.end(); state_it++) {
       SYNTH_FUNCTION_STATE* synth_function_state = *state_it;
       if (synth_function_state->fdecl_name == target_name) {
         for (auto dep_it = synth_function_state->regular_dependencies.begin();
@@ -1227,7 +1405,7 @@ void implement_value_use(Declaration vd, ostream& os) {
             continue;
           }
           os << ",\n" << indent();
-          synth_impl_ptr->dump_synth_instance(source_instance, os);
+          { CodeWriter cw(os); synth_impl_ptr->dump_synth_instance(source_instance, cw); }
         }
         break;
       }
@@ -1259,17 +1437,15 @@ static Expression default_init(Default def) {
   }
 }
 
-// Collects instance assignments from the current block scope.
 static vector<std::set<Expression> > make_instance_assignment() {
-  int n = current_aug_graph->instances.length;
+  int n = synth_impl_ptr->ctx.aug_graph->instances.length;
 
   vector<std::set<Expression> > from(n);
 
   for (int i = 0; i < n; ++i) {
-    INSTANCE* in = &current_aug_graph->instances.array[i];
+    INSTANCE* in = &synth_impl_ptr->ctx.aug_graph->instances.array[i];
     Declaration ad = in->fibered_attr.attr;
     if (ad != 0 && in->fibered_attr.fiber == 0 && ABSTRACT_APS_tnode_phylum(ad) == KEYDeclaration) {
-      // get default!
       switch (Declaration_KEY(ad)) {
         case KEYattribute_decl:
           from[in->index].insert(default_init(attribute_decl_default(ad)));
@@ -1283,14 +1459,11 @@ static vector<std::set<Expression> > make_instance_assignment() {
     }
   }
 
-  // start from the outer-most and override it with the most inner scope
-  for (auto it = current_blocks.begin(); it != current_blocks.end(); it++) {
+  for (auto it = synth_impl_ptr->ctx.blocks.begin(); it != synth_impl_ptr->ctx.blocks.end(); it++) {
     Block block = *it;
-    bool is_outermost = (it == current_blocks.begin());
+    bool is_outermost = (it == synth_impl_ptr->ctx.blocks.begin());
     vector<std::set<Expression> > array(from);
 
-    // Step #1 clear any existing assignments and insert normal assignments
-    // Step #2 insert collection assignments
     int step = 1;
     while (step <= 2) {
       Declarations ds = block_body(block);
@@ -1332,22 +1505,21 @@ static vector<std::set<Expression> > make_instance_assignment() {
       step++;
     }
 
-    // and repeat if any
     from = array;
   }
 
   return from;
 }
 
-void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
+void dump_assignment(INSTANCE* in, Expression rhs, CodeWriter& cw) {
   Declaration ad = in != NULL ? in->fibered_attr.attr : NULL;
   Symbol asym = ad ? def_name(declaration_def(ad)) : 0;
-  bool node_is_syntax = in->node == current_aug_graph->lhs_decl;
+  bool node_is_syntax = in->node == synth_impl_ptr->ctx.aug_graph->lhs_decl;
 
   if (in->fibered_attr.fiber != NULL) {
     if (rhs == NULL) {
       if (include_comments) {
-        o << "// " << in << "\n";
+        cw.comment() << "// " << in << "\n";
       }
       return;
     }
@@ -1355,49 +1527,47 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
     Declaration assign = (Declaration)tnode_parent(rhs);
     Expression lhs = assign_lhs(assign);
     Declaration field = 0;
-    // dump the object containing the field
     switch (Expression_KEY(lhs)) {
       case KEYvalue_use:
-        // shared global collection
         field = USE_DECL(value_use_use(lhs));
 #ifdef APS2SCALA
-        o << "a_" << decl_name(field) << ".";
+        cw.code() << "a_" << decl_name(field) << ".";
         if (debug)
-          o << "assign";
+          cw.code() << "assign";
         else
-          o << "set";
-        o << "(" << rhs;
-        if (tracking_fiber_convergence) {
-          o << ", changed";
+          cw.code() << "set";
+        cw.code() << "(" << rhs;
+        if (synth_impl_ptr->ctx.fiber_convergence) {
+          cw.code() << ", changed";
         }
-        o << ");\n";
+        cw.code() << ");\n";
 #else  /* APS2SCALA */
-          o << "v_" << decl_name(field) << "=";
+          cw.code() << "v_" << decl_name(field) << "=";
           switch (Default_KEY(value_decl_default(field))) {
             case KEYcomposite:
-              o << composite_combiner(value_decl_default(field));
+              cw.code() << composite_combiner(value_decl_default(field));
               break;
             default:
-              o << as_val(value_decl_type(field)) << "->v_combine";
+              cw.code() << as_val(value_decl_type(field)) << "->v_combine";
               break;
           }
-          o << "(v_" << decl_name(field) << "," << rhs << ");\n";
+          cw.code() << "(v_" << decl_name(field) << "," << rhs << ");\n";
 #endif /* APS2SCALA */
         break;
       case KEYfuncall:
         field = field_ref_p(lhs);
         if (field == 0)
           fatal_error("what sort of assignment lhs: %d", tnode_line_number(assign));
-        o << "a_" << decl_name(field) << DEREF;
+        cw.code() << "a_" << decl_name(field) << DEREF;
         if (debug)
-          o << "assign";
+          cw.code() << "assign";
         else
-          o << "set";
-        o << "(" << field_ref_object(lhs) << "," << rhs;
-        if (tracking_fiber_convergence) {
-          o << ", changed";
+          cw.code() << "set";
+        cw.code() << "(" << field_ref_object(lhs) << "," << rhs;
+        if (synth_impl_ptr->ctx.fiber_convergence) {
+          cw.code() << ", changed";
         }
-        o << ");\n";
+        cw.code() << ");\n";
         break;
       default:
         fatal_error("what sort of assignment lhs: %d", tnode_line_number(assign));
@@ -1408,30 +1578,30 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
   if (in->node == 0 && ad != NULL) {
     if (rhs) {
       if (Declaration_info(ad)->decl_flags & LOCAL_ATTRIBUTE_FLAG) {
-        o << "a" << LOCAL_UNIQUE_PREFIX(ad) << "_" << asym << DEREF;
+        cw.code() << "a" << LOCAL_UNIQUE_PREFIX(ad) << "_" << asym << DEREF;
         if (debug)
-          o << "assign";
+          cw.code() << "assign";
         else
-          o << "set";
-        o << "(node," << rhs << ");\n";
+          cw.code() << "set";
+        cw.code() << "(node," << rhs << ");\n";
       } else {
         int i = LOCAL_UNIQUE_PREFIX(ad);
         if (i == 0) {
 #ifdef APS2SCALA
           if (!def_is_constant(value_decl_def(ad))) {
             if (include_comments) {
-              o << "// v_" << asym << " is assigned/initialized by default.\n";
+              cw.comment() << "// v_" << asym << " is assigned/initialized by default.\n";
             }
           } else {
             if (include_comments) {
-              o << "// v_" << asym << " is initialized in module.\n";
+              cw.comment() << "// v_" << asym << " is initialized in module.\n";
             }
           }
 #else
-            o << "v_" << asym << " = " << rhs << ";\n";
+            cw.code() << "v_" << asym << " = " << rhs << ";\n";
 #endif
         } else {
-          o << "v" << i << "_" << asym << " = " << rhs << "; // local\n";
+          cw.code() << "v" << i << "_" << asym << " = " << rhs << "; // local\n";
         }
       }
     } else {
@@ -1439,70 +1609,69 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
         aps_warning(ad, "Local attribute %s is apparently undefined", decl_name(ad));
       }
       if (include_comments) {
-        o << "// " << in << " is ready now\n";
+        cw.comment() << "// " << in << " is ready now\n";
       }
     }
     return;
   } else if (node_is_syntax) {
     if (ATTR_DECL_IS_SHARED_INFO(ad)) {
       if (include_comments) {
-        o << "// shared info for " << decl_name(in->node) << " is ready.\n";
+        cw.comment() << "// shared info for " << decl_name(in->node) << " is ready.\n";
       }
     } else if (ATTR_DECL_IS_UP_DOWN(ad)) {
       if (include_comments) {
-        o  << "// " << decl_name(in->node) << "." << decl_name(ad) << " implicit.\n";
+        cw.comment() << "// " << decl_name(in->node) << "." << decl_name(ad) << " implicit.\n";
       }
     } else if (rhs) {
       if (Declaration_KEY(in->node) == KEYfunction_decl) {
         if (direction_is_collection(value_decl_direction(ad))) {
           std::cout << "Not expecting collection here!\n";
-          o << "v_" << asym << " = somehow_combine(v_" << asym << "," << rhs << ");\n";
+          cw.code() << "v_" << asym << " = somehow_combine(v_" << asym << "," << rhs << ");\n";
         } else {
           int i = LOCAL_UNIQUE_PREFIX(ad);
           if (i == 0)
-            o << "v_" << asym << " = " << rhs << "; // function\n";
+            cw.code() << "v_" << asym << " = " << rhs << "; // function\n";
           else
-            o << "v" << i << "_" << asym << " = " << rhs << ";\n";
+            cw.code() << "v" << i << "_" << asym << " = " << rhs << ";\n";
         }
       } else {
-        o << "a_" << asym << DEREF;
+        cw.code() << "a_" << asym << DEREF;
         if (debug)
-          o << "assign";
+          cw.code() << "assign";
         else
-          o << "set";
-        o << "(v_" << decl_name(in->node) << "," << rhs << ");\n";
+          cw.code() << "set";
+        cw.code() << "(v_" << decl_name(in->node) << "," << rhs << ");\n";
       }
     } else {
       aps_warning(in->node, "Attribute %s.%s is apparently undefined", decl_name(in->node),
                   symbol_name(asym));
 
       if (include_comments) {
-        o << "// " << in << " is ready.\n";
+        cw.comment() << "// " << in << " is ready.\n";
       }
     }
     return;
   } else if (Declaration_KEY(in->node) == KEYvalue_decl) {
     if (rhs) {
-      // assigning field of object
-      o << "a_" << asym << DEREF;
+      cw.code() << "a_" << asym << DEREF;
       if (debug)
-        o << "assign";
+        cw.code() << "assign";
       else
-        o << "set";
-      o << "(v_" << decl_name(in->node) << "," << rhs << ");\n";
+        cw.code() << "set";
+      cw.code() << "(v_" << decl_name(in->node) << "," << rhs << ");\n";
     } else {
       if (include_comments) {
-        o << "// " << in << " is ready now.\n";
+        cw.comment() << "// " << in << " is ready now.\n";
       }
     }
     return;
   }
 }
 
-void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* instance, ostream& o) {
+void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* instance, CodeWriter& cw) {
   if (item == NULL) {
     if (include_comments) {
-      o << "// " << instance << " is ready now.\n";
+      cw.comment() << "// " << instance << " is ready now.\n";
     }
     return;
   }
@@ -1511,7 +1680,7 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
     struct block_item_instance* bi = (struct block_item_instance*)item;
 
     if (bi->instance != instance && bi->next != NULL) {
-      dump_rhs_instance_helper(aug_graph, bi->next, instance, o);
+      dump_rhs_instance_helper(aug_graph, bi->next, instance, cw);
       return;
     }
 
@@ -1520,7 +1689,6 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
     bool any_assignment_dump = false;
 
     if (!relevant_assignments.empty()) {
-      // Filter out NULLs first
       vector<Expression> valid_rhs;
       for (auto it = relevant_assignments.begin(); it != relevant_assignments.end(); it++) {
         if (*it != NULL) valid_rhs.push_back(*it);
@@ -1532,29 +1700,26 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
         if (instance->fibered_attr.fiber != NULL) {
           bool first = true;
           for (auto it = valid_rhs.begin(); it != valid_rhs.end(); it++) {
-            if (!first) o << indent();
+            if (!first) cw.code() << indent();
             first = false;
-            dump_assignment(instance, *it, o);
+            dump_assignment(instance, *it, cw);
           }
         } else if (valid_rhs.size() == 1) {
-          dump_Expression(valid_rhs[0], o);
+          dump_Expression(valid_rhs[0], cw.stream());
         } else {
-          // Multiple RHS entries only occur from collect_assign (:>) contributions.
-          // Combine them pairwise using the type's v_combine.
           Declaration attr = instance->fibered_attr.attr;
           if (!direction_is_collection(value_decl_direction(attr))) {
             fatal_error("Multiple RHS for non-collection attribute %s", decl_name(attr));
           }
           Type vt = value_decl_type(attr);
-          // Nest v_combine calls for all contributions
           for (size_t i = 0; i < valid_rhs.size() - 1; i++) {
-            o << as_val(vt) << ".v_combine(";
+            cw.code() << as_val(vt) << ".v_combine(";
           }
-          dump_Expression(valid_rhs[0], o);
+          dump_Expression(valid_rhs[0], cw.stream());
           for (size_t i = 1; i < valid_rhs.size(); i++) {
-            o << ", ";
-            dump_Expression(valid_rhs[i], o);
-            o << ")";
+            cw.code() << ", ";
+            dump_Expression(valid_rhs[i], cw.stream());
+            cw.code() << ")";
           }
         }
       }
@@ -1567,7 +1732,6 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
     }
 
     if (instance->fibered_attr.fiber != NULL) {
-      // Shared info attribute wasn't assigned in this block, dump its default
       auto direction = fibered_attr_direction(&instance->fibered_attr);
       auto directionStr = "";
       switch (direction)
@@ -1586,7 +1750,7 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       }
 
       if (include_comments) {
-        o << "/* did not find any assignment for this fiber attribute " << instance << " -> " << directionStr << " <-" <<" */";
+        cw.comment() << "/* did not find any assignment for this fiber attribute " << instance << " -> " << directionStr << " <-" <<" */";
       }
       return;
     } else {
@@ -1596,8 +1760,57 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
     }
   } else if (item->key == KEY_BLOCK_ITEM_CONDITION) {
     struct block_item_condition* cond = (struct block_item_condition*)item;
-    bool visited_if_stmt = std::find(dumped_conditional_block_items.begin(), dumped_conditional_block_items.end(), item) != dumped_conditional_block_items.end();
-    dumped_conditional_block_items.push_back(item);
+    bool visited_if_stmt = std::find(synth_impl_ptr->ctx.dumped_conditionals.begin(), synth_impl_ptr->ctx.dumped_conditionals.end(), item) != synth_impl_ptr->ctx.dumped_conditionals.end();
+    synth_impl_ptr->ctx.dumped_conditionals.push_back(item);
+
+    if (!visited_if_stmt && instance->fibered_attr.fiber != NULL &&
+        !ctx.eval_name.empty() && !ctx.phylum_type.empty() &&
+        count_conditions(item) > COND_HELPER_THRESHOLD) {
+      string helper_name = EVAL_FIBER_PREFIX + ctx.eval_name + "_cond" + std::to_string(ctx.helper_counter++);
+
+      std::ostringstream helper_os;
+      int saved_nesting = nesting_level;
+      nesting_level = 1;
+
+      helper_os << indent() << "private def " << helper_name
+                << "(node: T_" << ctx.phylum_type << ctx.dep_formals << ")";
+      if (ctx.needs_fixed_point) {
+        helper_os << "(implicit " << LOOP_VAR << ": Boolean, changed: AtomicBoolean)";
+      }
+      helper_os << ": Unit = {\n";
+      nesting_level++;
+      helper_os << indent() << "val anchor = node;\n";
+      helper_os << indent() << "node match {\n";
+      nesting_level++;
+      helper_os << indent() << "case " << matcher_pat(top_level_match_m(synth_impl_ptr->ctx.aug_graph->match_rule)) << " => {\n";
+      nesting_level++;
+
+      vector<BlockItem*> saved_cond_items(synth_impl_ptr->ctx.dumped_conditionals);
+      vector<INSTANCE*> saved_dumped(synth_impl_ptr->ctx.dumped_instances);
+
+      CodeWriter helper_cw(helper_os);
+      helper_os << indent();
+      dump_rhs_instance_helper(aug_graph, item, instance, helper_cw);
+      helper_cw.flush();
+      helper_os << "\n";
+
+      synth_impl_ptr->ctx.dumped_conditionals = saved_cond_items;
+      synth_impl_ptr->ctx.dumped_instances = saved_dumped;
+
+      nesting_level--;
+      helper_os << indent() << "}\n";
+      helper_os << indent() << "case _ => ()\n";
+      nesting_level--;
+      helper_os << indent() << "}\n";
+      nesting_level--;
+      helper_os << indent() << "}\n";
+
+      nesting_level = saved_nesting;
+      ctx.pending_helpers.push_back(helper_os.str());
+
+      cw.code() << indent() << helper_name << "(node" << ctx.dep_actuals << ");\n";
+      return;
+    }
 
     switch (ABSTRACT_APS_tnode_phylum(cond->condition))
     {
@@ -1608,7 +1821,7 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
         fatal_error("expected if statement, got %s %d", decl_name(if_stmt), Declaration_info(if_stmt));
       }
 
-      if (!edgeset_kind(current_aug_graph->graph[cond->instance->index * current_aug_graph->instances.length + instance->index])) {
+      if (!edgeset_kind(synth_impl_ptr->ctx.aug_graph->graph[cond->instance->index * synth_impl_ptr->ctx.aug_graph->instances.length + instance->index])) {
         printf("\n");
         print_instance(cond->instance, stdout);
         printf(" does not affect ");
@@ -1618,41 +1831,41 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       }
 
       if (!visited_if_stmt) {
-        o << "if (";
-        dump_Expression(if_stmt_cond(if_stmt), o);
-        o << ") {\n";
+        cw.code() << "if (";
+        dump_Expression(if_stmt_cond(if_stmt), cw.stream());
+        cw.code() << ") {\n";
         nesting_level++;
       }
-      current_blocks.push_back(if_stmt_if_true(if_stmt));
+      synth_impl_ptr->ctx.blocks.push_back(if_stmt_if_true(if_stmt));
       if (!visited_if_stmt) {
-        o << indent();
+        cw.code() << indent();
       }
       
-      vector<INSTANCE*> dumped_instanced_positive(dumped_instances);
-      dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, o);
-      dumped_instances = dumped_instanced_positive;
+      vector<INSTANCE*> dumped_instanced_positive(synth_impl_ptr->ctx.dumped_instances);
+      dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, cw);
+      synth_impl_ptr->ctx.dumped_instances = dumped_instanced_positive;
 
       if (!visited_if_stmt) {
-        current_blocks.pop_back();
-        o << "\n";
+        synth_impl_ptr->ctx.blocks.pop_back();
+        cw.code() << "\n";
         nesting_level--;
-        o << indent() << "} else {\n";
+        cw.code() << indent() << "} else {\n";
         nesting_level++;
       }
-      current_blocks.push_back(if_stmt_if_false(if_stmt));
+      synth_impl_ptr->ctx.blocks.push_back(if_stmt_if_false(if_stmt));
       if (!visited_if_stmt) {
-        o << indent();
+        cw.code() << indent();
       }
 
-      vector<INSTANCE*> dumped_instanced_negative(dumped_instances);
-      dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, o);
-      dumped_instances = dumped_instanced_negative;
+      vector<INSTANCE*> dumped_instanced_negative(synth_impl_ptr->ctx.dumped_instances);
+      dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, cw);
+      synth_impl_ptr->ctx.dumped_instances = dumped_instanced_negative;
 
-      current_blocks.pop_back();
+      synth_impl_ptr->ctx.blocks.pop_back();
       if (!visited_if_stmt) {
         nesting_level--;
-        o << "\n";
-        o << indent() << "}";
+        cw.code() << "\n";
+        cw.code() << indent() << "}";
       }
 	    break;
     }
@@ -1661,30 +1874,29 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       Match m = (Match)cond->condition;
       Pattern p = matcher_pat(m);
       Declaration header = Match_info(m)->header;
-      // if first match in case, we evaluate variable:
       if (m == first_Match(case_stmt_matchers(header))) {
         Expression e = case_stmt_expr(header);
 #ifdef APS2SCALA
-        o << "{\n";
+        cw.code() << "{\n";
         nesting_level++;
-        o << indent() << "val node" << instance->index << " = " << e << ";\n";
+        cw.code() << indent() << "val node" << instance->index << " = " << e << ";\n";
 #else  /* APS2SCALA */
         Type ty = infer_expr_type(e);
-        o << indent() << ty << " node" << instance->index << " = " << e << ";\n";
+        cw.code() << indent() << ty << " node" << instance->index << " = " << e << ";\n";
 #endif /* APS2SCALA */
       }
 #ifdef APS2SCALA
-      o << indent() << "node" << instance->index << " match {\n";
+      cw.code() << indent() << "node" << instance->index << " match {\n";
       nesting_level++;
-      o << indent() << "case " << p << " => {\n";
+      cw.code() << indent() << "case " << p << " => {\n";
 #else  /* APS2SCALA */
-      o << indent() << "if (";
-      dump_Pattern_cond(p, "node" + std::to_string(instance->index), o);
-      o << ") {\n";
+      cw.code() << indent() << "if (";
+      dump_Pattern_cond(p, "node" + std::to_string(instance->index), cw.stream());
+      cw.code() << ") {\n";
 #endif /* APS2SCALA */
       nesting_level += 1;
 #ifndef APS2SCALA
-      dump_Pattern_bindings(p, o);
+      dump_Pattern_bindings(p, cw.stream());
 #endif /* APS2SCALA */
       Block if_true;
       Block if_false;
@@ -1695,37 +1907,37 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
         if_false = case_stmt_default(header);
       }
 
-      current_blocks.push_back(if_true);
-      o << indent();
-      dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, o);
-      o << "\n";
-      current_blocks.pop_back();
+      synth_impl_ptr->ctx.blocks.push_back(if_true);
+      cw.code() << indent();
+      dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, cw);
+      cw.code() << "\n";
+      synth_impl_ptr->ctx.blocks.pop_back();
 
 #ifdef APS2SCALA
       nesting_level--;
-      o << indent() << "}\n";
-      o << indent() << "case _ => {\n";
+      cw.code() << indent() << "}\n";
+      cw.code() << indent() << "case _ => {\n";
       nesting_level++;
 #else  /* APS2SCALA */
-      o << "} else {\n";
+      cw.code() << "} else {\n";
 #endif /* APS2SCALA */
-      current_blocks.push_back(if_false);
-      o << indent();
-      dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, o);
-      o << "\n";
-      current_blocks.pop_back();
+      synth_impl_ptr->ctx.blocks.push_back(if_false);
+      cw.code() << indent();
+      dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, cw);
+      cw.code() << "\n";
+      synth_impl_ptr->ctx.blocks.pop_back();
 
       nesting_level--;
 #ifdef APS2SCALA
-      o << indent() << "}\n";
+      cw.code() << indent() << "}\n";
       nesting_level--;
-      o << indent() << "}\n";
+      cw.code() << indent() << "}\n";
       if (m == first_Match(case_stmt_matchers(header))) {
         nesting_level--;
-        o << indent() << "}";
+        cw.code() << indent() << "}";
       }
 #else  /* APS2SCALA */
-      o << indent() << "}\n";
+      cw.code() << indent() << "}\n";
 #endif /* APS2SCALA */
       
       break;
@@ -1743,66 +1955,66 @@ bool try_dump_funcall(Expression e, ostream& o) override {
   Declaration node = USE_DECL(value_use_use(first_Actual(funcall_actuals(e))));
   FIBERED_ATTRIBUTE fiber_attr = {attr, NULL};
   INSTANCE* instance;
-  if (find_instance(current_aug_graph, node, fiber_attr, &instance)) {
-    dump_synth_instance(instance, o);
+  if (find_instance(synth_impl_ptr->ctx.aug_graph, node, fiber_attr, &instance)) {
+    CodeWriter cw(o);
+    dump_synth_instance(instance, cw);
     return true;
   }
   fatal_error("failed to find instance");
   return false; // unreachable
 }
 
-void dump_synth_instance(INSTANCE* instance, ostream& o) {
+void dump_synth_instance(INSTANCE* instance, CodeWriter& cw) override {
   bool already_dumped = false;
-  if (std::find(dumped_instances.begin(), dumped_instances.end(), instance) != dumped_instances.end()) {
+  if (std::find(synth_impl_ptr->ctx.dumped_instances.begin(), synth_impl_ptr->ctx.dumped_instances.end(), instance) != synth_impl_ptr->ctx.dumped_instances.end()) {
     already_dumped = true;
   } else {
-    dumped_instances.push_back(instance);
+    synth_impl_ptr->ctx.dumped_instances.push_back(instance);
   }
 
-  AUG_GRAPH* aug_graph = current_aug_graph;
-  BlockItem* block = find_surrounding_block(current_scope_block, instance);
+  AUG_GRAPH* aug_graph = synth_impl_ptr->ctx.aug_graph;
+  BlockItem* block = find_surrounding_block(synth_impl_ptr->ctx.scope_block, instance);
 
   Declaration node = instance->node;
-  bool is_parent_instance = current_aug_graph->lhs_decl == instance->node;
+  bool is_parent_instance = synth_impl_ptr->ctx.aug_graph->lhs_decl == instance->node;
 
   bool is_synthesized = instance_is_synthesized(instance);
   bool is_inherited = instance_is_inherited(instance);
-  bool is_circular = edgeset_kind(current_aug_graph->graph[instance->index * current_aug_graph->instances.length + instance->index]);
+  bool is_circular = edgeset_kind(synth_impl_ptr->ctx.aug_graph->graph[instance->index * synth_impl_ptr->ctx.aug_graph->instances.length + instance->index]);
   bool is_match_formal = check_is_match_formal(instance->fibered_attr.attr);
   bool is_available = is_match_formal || is_inherited;
 
   if (is_circular && already_dumped && !is_available) {
-    o << "/* circular dependency detected for " << instance << ", dumping as attribute access */ ";
+    cw.comment() << "/* circular dependency detected for " << instance << ", dumping as attribute access */ ";
 
-    o << instance_to_attr(instance) << ".get(";
+    cw.code() << instance_to_attr(instance) << ".get(";
     if (instance->node == NULL) {
-      o << "node";
+      cw.code() << "node";
     } else {
-      o << "v_" << decl_name(instance->node);
+      cw.code() << "v_" << decl_name(instance->node);
     }
   
-    o << ")";
+    cw.code() << ")";
     return;
   } else if (is_match_formal) {
-    o << "v_" << instance_to_string(instance, false, current_synth_functions_state->is_phylum_instance);
+    cw.code() << "v_" << instance_to_string(instance, false, synth_impl_ptr->ctx.current_state->is_phylum_instance);
   } else if (is_inherited) {
     if (is_parent_instance) {
-      o << "v_" << instance_to_string(instance, false, current_synth_functions_state->is_phylum_instance);
+      cw.code() << "v_" << instance_to_string(instance, false, synth_impl_ptr->ctx.current_state->is_phylum_instance);
     } else {
-      // we need to find the assignment and dump the RHS recursive call
-      dump_rhs_instance_helper(aug_graph, block, instance, o);
+      dump_rhs_instance_helper(aug_graph, block, instance, cw);
     }
   } else if (is_synthesized) {
     if (is_parent_instance) {
-      dump_rhs_instance_helper(aug_graph, block, instance, o);
+      dump_rhs_instance_helper(aug_graph, block, instance, cw);
     } else {
-      for (auto it = synth_functions_states.begin(); it != synth_functions_states.end(); it++) {
+      for (auto it = synth_impl_ptr->ctx.synth_states.begin(); it != synth_impl_ptr->ctx.synth_states.end(); it++) {
         SYNTH_FUNCTION_STATE* synth_function_state = *it;
         if (fibered_attr_equal(&synth_function_state->source->fibered_attr, &instance->fibered_attr)) {
-          o << "eval_" << synth_function_state->fdecl_name << "(\n";
+          cw.code() << EVAL_PREFIX << synth_function_state->fdecl_name << "(\n";
           int saved_nesting = nesting_level;
           nesting_level = std::max(nesting_level + 2, 2);
-          o << indent() << "v_" << decl_name(node);
+          cw.code() << indent() << "v_" << decl_name(node);
 
           const std::vector<INSTANCE*>& dependencies = synth_function_state->regular_dependencies;
           for (auto it = dependencies.begin(); it != dependencies.end(); it++) {
@@ -1812,17 +2024,17 @@ void dump_synth_instance(INSTANCE* instance, ostream& o) {
               continue;
             }
 
-            for (int i = 0; i < current_aug_graph->instances.length; i++) {
-              INSTANCE* in = &current_aug_graph->instances.array[i];
+            for (int i = 0; i < synth_impl_ptr->ctx.aug_graph->instances.length; i++) {
+              INSTANCE* in = &synth_impl_ptr->ctx.aug_graph->instances.array[i];
               if (in->node == node && fibered_attr_equal(&in->fibered_attr, &source_instance->fibered_attr)) {
-                o << ",\n" << indent();
-                dump_synth_instance(in, o);
+                cw.code() << ",\n" << indent();
+                dump_synth_instance(in, cw);
               }
             }
           }
           nesting_level = saved_nesting;
 
-          o << "\n" << indent() << ")";
+          cw.code() << "\n" << indent() << ")";
           return;
         }
       }
@@ -1833,7 +2045,7 @@ void dump_synth_instance(INSTANCE* instance, ostream& o) {
       fatal_error("internal error: failed to find synth function for instance");
     }
   } else {
-    dump_rhs_instance_helper(aug_graph, block, instance, o);
+    dump_rhs_instance_helper(aug_graph, block, instance, cw);
   }
 }
 }
