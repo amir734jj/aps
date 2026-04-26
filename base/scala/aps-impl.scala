@@ -278,6 +278,10 @@ class Evaluation[T_P, T_V](val anchor : T_P, val name : String)
     status = ASSIGNED;
   }
 
+  def set(v : ValueType, changed: AtomicBoolean) : Unit = {
+    set(v);
+  }
+
   def evaluateCycle : Unit = {
     throw new CyclicAttributeException("internal cyclic error: " + anchor+"."+name);
   }
@@ -345,6 +349,10 @@ extends Module("Attribute " + name)
     checkNode(n).set(v);
   }
 
+  def set(n : NodeType, v : ValueType, changed: AtomicBoolean) : Unit = {
+    checkNode(n).set(v, changed);
+  }
+
   def get(n : Any) : ValueType = {
     checkNode(n.asInstanceOf[NodeType]).get;
   }
@@ -367,6 +375,7 @@ trait CollectionEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
     if (status == UNINITIALIZED) {
       status = UNEVALUATED;
       value = initial;
+      checkForLateUpdate = false;
     }
   };
 
@@ -390,7 +399,7 @@ trait CollectionEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
     super.set(combine(value,v));
   }
 
-  def set(v : ValueType, changed: AtomicBoolean) : Unit = {
+  override def set(v : ValueType, changed: AtomicBoolean) : Unit = {
     val prev = value;
     set(v);
     if (prev != value) {
@@ -554,7 +563,7 @@ trait StaticCircularEvaluation[V_P, V_T] extends CircularEvaluation[V_P, V_T] {
     this.set(v, changed)
   }
 
-  def set(newValue: ValueType, changed: AtomicBoolean): Unit = {
+  override def set(newValue: ValueType, changed: AtomicBoolean): Unit = {
     val prevValue = value;
     super.set(newValue);
     if (prevValue != value) {
@@ -585,7 +594,7 @@ trait ChangeTrackingAttribute[T_P <: Node, T_V] {
     Debug.end();
   }
 
-  def set(n: T_P, v: T_V, changed: AtomicBoolean): Unit = checkNode(n)
+  override def set(n: T_P, v: T_V, changed: AtomicBoolean): Unit = checkNode(n)
     .asInstanceOf[StaticCircularEvaluation[T_P, T_V]]
     .set(v, changed);
 }
