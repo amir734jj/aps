@@ -48,6 +48,12 @@ class FarrowUbdParserBase {
     n
   };
 
+  def decls_concat(ds1: Declarations, ds2: Declarations) : Declarations = {
+    set_node_numbers();
+    var n = t_Tree.v_decls_concat(ds1, ds2);
+    n
+  };
+
   def expr_term(t: Term) : Expression = {
     set_node_numbers();
     var n = t_Tree.v_expr_term(t);

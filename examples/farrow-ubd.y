@@ -31,8 +31,8 @@ decls : /* NOTHING */
    { $$ = decls_empty(); }
       | decls decl
    { $$ = decls_append($1, $2); }
-      | OPN_BRACE decls CLS_BRACE
-   { $$ = scope($2); }
+      | decls OPN_BRACE decls CLS_BRACE
+   { $$ = decls_concat($1, scope($3)); }
       ;
 
 decl : ID EQ expr SEMICOLON

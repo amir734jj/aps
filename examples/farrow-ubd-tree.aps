@@ -14,6 +14,7 @@ module FARROW_UBD_TREE[] begin
   constructor decl_assign(s: Symbol; e: Expression) : Declaration;
   constructor decls_empty() : Declarations;
   constructor decls_append(ds: Declarations; d: Declaration) : Declarations;
+  constructor decls_concat(ds1: Declarations; ds2: Declarations) : Declarations;
   constructor expr_term(t: Term) : Expression;
   constructor op_add() : Operation;
   constructor op_mul() : Operation;

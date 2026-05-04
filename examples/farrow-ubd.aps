@@ -78,6 +78,13 @@ module FARROW_UBD[T :: var FARROW_UBD_TREE[]] extends T begin
     end;
   end;
 
+  match ?self:Declarations=decls_concat(?ds1: Declarations, ?ds2: Declarations) begin
+    ds1.decls_env := self.decls_env;
+    ds2.decls_env := self.decls_env;
+    self.decls_defs := DeclPairLattice$join(ds1.decls_defs, ds2.decls_defs);
+    self.decls_errs := ds1.decls_errs \/ ds2.decls_errs;
+  end;
+
   match ?self:Expression=expr_term(?t: Term) begin
     self.expr_val := t.term_val;
     self.expr_errs := t.term_errs;
