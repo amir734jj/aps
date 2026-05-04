@@ -448,6 +448,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
   override def setInCycle(ce : CircularEvaluation[_,_]) : Unit = {
     if (cycleParent == null) {
       cycleParent = ce;
+      value = getDefault
       ce.helper.add(this);
     } else {
       val p = inCycle;
@@ -476,11 +477,9 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
       if (e == this) {
         // Skip self on the pending stack — we were pushed during
         // the first doEvaluate call and shouldn't stop the search.
-      } else if (e.inCycle == cycle) {
-        return; // Found another element already in our cycle — done.
-      } else {
-        e.setInCycle(cycle);
       }
+      else if (e.inCycle == cycle) return
+      else e.setInCycle(cycle);
     }
   }
 
@@ -511,7 +510,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
     if (!lattice.v_equal(value,newValue)) {
       inCycle.helper.modified = true;
       if (!lattice.v_compare(value,newValue)) {
-	throw new CyclicAttributeException("non-monotonic " + name);
+        throw new CyclicAttributeException("non-monotonic " + name);
       }
     }
   };
@@ -523,9 +522,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
   
   def recompute() : Unit = {
     val newValue = compute;
-    if (!lattice.v_equal(value, newValue)) {
-      inCycle.helper.modified = true;
-    }
+    check(newValue);
     value = newValue;
   }
 }
