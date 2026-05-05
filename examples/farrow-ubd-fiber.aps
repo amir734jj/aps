@@ -51,6 +51,11 @@ module FARROW_UBD_FIBER[T :: var FARROW_UBD_TREE[]] extends T begin
     self.decl_errs := e.expr_errs;
   end;
 
+  match ?self:Declarations=decls_append_scope(?ds: Declarations, ?inner: Declarations) begin
+    self.decls_names := ds.decls_names \/ inner.decls_names;
+    self.decls_errs := ds.decls_errs \/ inner.decls_errs;
+  end;
+
   match ?self:Declarations=decls_empty() begin
     self.decls_errs := {};
     self.decls_names := {};

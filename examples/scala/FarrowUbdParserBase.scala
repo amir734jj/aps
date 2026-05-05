@@ -48,9 +48,9 @@ class FarrowUbdParserBase {
     n
   };
 
-  def decls_concat(ds1: Declarations, ds2: Declarations) : Declarations = {
+  def decls_append_scope(ds: Declarations, inner: Declarations) : Declarations = {
     set_node_numbers();
-    var n = t_Tree.v_decls_concat(ds1, ds2);
+    var n = t_Tree.v_decls_append_scope(ds, inner);
     n
   };
 
