@@ -522,8 +522,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
   
   def recompute() : Unit = {
     val newValue = compute;
-    check(newValue);
-    value = newValue;
+    set(newValue);
   }
 }
 
