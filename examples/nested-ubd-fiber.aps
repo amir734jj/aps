@@ -5,7 +5,7 @@ with "nested-ubd-tree";
 
 -- Farrow use-before-declaration analysis
 -- with nested blocks
-module NESTED_UBD[T :: var NESTED_UBD_TREE[]] extends T begin
+module NESTED_UBD_FIBER[T :: var NESTED_UBD_TREE[]] extends T begin
   
   type IntegerLattice := FLAT_LATTICE[Integer];
   type DeclPairLattice := TABLE_LATTICE[Symbol, IntegerLattice];

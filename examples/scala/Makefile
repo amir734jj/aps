@@ -12,13 +12,16 @@ SCALAGEN = simple.scala classic-binding.scala tiny.scala broad-fiber-cycle.scala
 	test-coll.scala test-use-coll.scala test-cycle.scala use-global.scala \
 	grammar.scala first.scala follow.scala nullable.scala	\
 	farrow-lv-tree.scala farrow-lv.static.scala \
-	farrow-ubd-tree.scala farrow-ubd.static.scala
+	farrow-ubd-tree.scala farrow-ubd.static.scala \
+	nested-ubd-tree.scala nested-ubd.static.scala nested-ubd-fiber.static.scala
 
 MISCGEN = nested-cycles.scala SimpleParser.scala SimpleScanner.scala \
 	GrammarTokens.scala SimpleTokens.scala GrammarScanner.scala GrammarParser.scala \
 	FarrowLvTokens.scala FarrowLvTokens.scala FarrowLvScanner.scala FarrowLvParser.scala farrow-lv.scala \
 	FarrowUbdTokens.scala FarrowUbdTokens.scala FarrowUbdScanner.scala FarrowUbdParser.scala farrow-ubd.scala \
 	farrow-ubd-fiber.scala \
+	NestedUbdTokens.scala NestedUbdScanner.scala NestedUbdParser.scala nested-ubd.scala \
+	nested-ubd-fiber.scala \
 	*.output *.lex *.y *.scala~
 
 .PHONY: all clean phony_explicit
@@ -34,6 +37,8 @@ all : grammar_implicit.class GrammarDriver.class
 all : FarrowLv_implicit.class FarrowLvDriver.class
 all : FarrowUbd_implicit.class FarrowUbdDriver.class
 all : FarrowUbdFiber_implicit.class FarrowUbdFiberDriver.class
+all : NestedUbd_implicit.class NestedUbdDriver.class
+all : NestedUbdFiber_implicit.class NestedUbdFiberDriver.class
 all : nested_cycles_implicit.class NestedCyclesDriver.class
 all : broad_fiber_cycle_implicit.class BroadFiberCycleDriver.class
 
@@ -45,6 +50,7 @@ phony_explicit:
 
 %.static.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S -C $*
+	mv $*.scala $@
 
 %.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} $*
@@ -89,6 +95,44 @@ FarrowUbdDriver.class : FarrowUbd_implicit.class FarrowUbdParser.class
 
 FarrowUbdFiberDriver.class : FarrowUbdFiber_implicit.class FarrowUbdParser.class
 	${SCALAC} ${SCALACFLAGS} farrow-ubd-fiber-driver.scala
+
+NestedUbd.lex : ../nested-ubd.lex NestedUbd.lex.scala
+	cat NestedUbd.lex.scala ../nested-ubd.lex > $@
+
+NestedUbdScanner.scala : NestedUbd.lex
+	java -jar ${SCALAFLEX} --scala $<
+
+NestedUbd.y : ../nested-ubd.y NestedUbd.y.scala
+	cat $< NestedUbd.y.scala > $@
+
+NestedUbdParser.scala NestedUbdTokens.scala : NestedUbd.y ${SCALABISON}
+	bison -v NestedUbd.y
+	rm NestedUbd.tab.c
+	${SCALA} -classpath ${SCALABISON} edu.uwm.cs.scalabison.RunGenerator NestedUbd.y
+
+NestedUbdScanner.class : NestedUbdScanner.scala NestedUbdTokens.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbdParser.class : NestedUbdParser.scala NestedUbdScanner.class NestedUbdParserBase.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbdParserBase.class : NestedUbdParserBase.scala NestedUbd_implicit.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbdTokens.class : NestedUbdTokens.scala
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbd_implicit.class : nested-ubd-tree.scala nested-ubd.static.scala
+	${SCALAC} ${SCALACFLAGS} $^
+
+NestedUbdDriver.class : NestedUbd_implicit.class NestedUbdParser.class
+	${SCALAC} ${SCALACFLAGS} nested-ubd-driver.scala
+
+NestedUbdFiber_implicit.class : nested-ubd-tree.scala nested-ubd-fiber.static.scala
+	${SCALAC} ${SCALACFLAGS} $^
+
+NestedUbdFiberDriver.class : NestedUbdFiber_implicit.class NestedUbdParser.class
+	${SCALAC} ${SCALACFLAGS} nested-ubd-fiber-driver.scala
 
 FarrowLv.lex : ../farrow-lv.lex FarrowLv.lex.scala
 	cat FarrowLv.lex.scala ../farrow-lv.lex > $@
