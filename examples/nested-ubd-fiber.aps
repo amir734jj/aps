@@ -54,6 +54,7 @@ module NESTED_UBD[T :: var NESTED_UBD_TREE[]] extends T begin
   end;
 
   match ?self:Declaration=decl_assign(?s: Symbol, ?e: Expression) begin
+    self.decl_name := s;
     self.decl_env.defs :> DeclPairLattice$table_entry(s, e.expr_val); 
     e.expr_env := self.decl_env;
     case DeclPairLattice$select(self.decl_env.defs, s) begin
