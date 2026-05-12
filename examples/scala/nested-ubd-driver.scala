@@ -21,4 +21,5 @@ object NestedUbdDriver extends App {
   m_nested_ubd_tree.finish();
   m_nested_ubd.finish();
 
+  println(m_nested_ubd.v_program_errs(m_nested_ubd.t_Program.nodes(0)));
 }
