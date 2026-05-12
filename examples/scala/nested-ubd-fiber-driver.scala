@@ -21,4 +21,5 @@ object NestedUbdFiberDriver extends App {
   m_nested_ubd_tree.finish();
   m_nested_ubd.finish();
 
+  println(m_nested_ubd.v_messages);
 }
