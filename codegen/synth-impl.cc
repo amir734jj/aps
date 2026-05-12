@@ -776,7 +776,7 @@ private:
       synth_impl_ptr->dump_synth_instance(in, os);
       dumped_conditional_block_items.clear();
       dumped_instances.clear();
-      os << "\n";
+      os << ";\n";
 
       dump_scc_helper_dump(aug_graph, component, scheduled, os);
     }
@@ -1431,7 +1431,7 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
         }
       }
     } else {
-      if (Declaration_KEY(ad) == KEYvalue_decl && !direction_is_collection(value_decl_direction(ad))) {
+      if (!direction_is_collection(some_value_decl_direction(ad))) {
         aps_warning(ad, "Local attribute %s is apparently undefined", decl_name(ad));
       }
       if (include_comments) {
@@ -1450,7 +1450,8 @@ void dump_assignment(INSTANCE* in, Expression rhs, ostream& o) {
       }
     } else if (rhs) {
       if (Declaration_KEY(in->node) == KEYfunction_decl) {
-        if (direction_is_collection(value_decl_direction(ad))) {
+        Direction ad_dir = some_value_decl_direction(ad);
+        if (direction_is_collection(ad_dir)) {
           std::cout << "Not expecting collection here!\n";
           o << "v_" << asym << " = somehow_combine(v_" << asym << "," << rhs << ");\n";
         } else {
@@ -1535,10 +1536,11 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
           // Multiple RHS entries only occur from collect_assign (:>) contributions.
           // Combine them pairwise using the type's v_combine.
           Declaration attr = instance->fibered_attr.attr;
-          if (!direction_is_collection(value_decl_direction(attr))) {
+          Direction attr_dir = some_value_decl_direction(attr);
+          if (!direction_is_collection(attr_dir)) {
             fatal_error("Multiple RHS for non-collection attribute %s", decl_name(attr));
           }
-          Type vt = value_decl_type(attr);
+          Type vt = Declaration_KEY(attr) == KEYattribute_decl ? function_type_return_type(attribute_decl_type(attr)) : value_decl_type(attr);
           // Nest v_combine calls for all contributions
           for (size_t i = 0; i < valid_rhs.size() - 1; i++) {
             o << as_val(vt) << ".v_combine(";
