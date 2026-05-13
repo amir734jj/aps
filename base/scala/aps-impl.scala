@@ -122,7 +122,13 @@ abstract class Node(t : C_PHYLUM[_ <: Node]) extends Value(t)
     }
     this
   }
-  def isRooted : Boolean = (parent != null) && parent.isRooted;
+  def isRooted : Boolean = {
+    var p: Node = this
+    while (p.parent != null) p = p.parent
+    // If p == this, we have no parent and no override, therefore not rooted.
+    // Otherwise p.isRooted calls to (e.g. T_Program.isRooted) which returns true.
+    if (p == this) false else p.isRooted
+  }
 }
 
 class Nodes[T_Result <: Node] extends ArrayBuffer[T_Result] {
