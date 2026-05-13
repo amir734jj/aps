@@ -20,10 +20,8 @@ module NESTED_UBD[T :: var NESTED_UBD_TREE[]] extends T begin
 
   var collection messages : Messages;
 
-  attribute Declaration.decl_name : Symbol;
   attribute Declaration.decl_env : Env;
   pragma inherited(decl_env);
-  pragma synthesized(decl_name);
 
   attribute Declarations.decls_env : Env;
   pragma inherited(decls_env);
