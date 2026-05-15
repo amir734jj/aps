@@ -8,17 +8,31 @@ SCALACFLAGS= ${SCALAFLAGS}
 APS2SCALA = ${APSTOP}/bin/aps2scala
 APS2SCALAFLAGS = -p ..:${APSTOP}/base -G
 
+EVALUATOR ?= DYNAMIC
+
+ifeq (${EVALUATOR},STATIC)
+IMPL_SUFFIX = .static.scala
+else
+IMPL_SUFFIX = .scala
+endif
+
 SCALAGEN = simple.scala classic-binding.scala tiny.scala broad-fiber-cycle.scala \
 	test-coll.scala test-use-coll.scala test-cycle.scala use-global.scala \
 	grammar.scala first.scala follow.scala nullable.scala	\
 	farrow-lv-tree.scala farrow-lv.static.scala \
-	farrow-ubd-tree.scala farrow-ubd.static.scala
+	farrow-ubd-tree.scala farrow-ubd.static.scala farrow-ubd-fiber.static.scala \
+	broad-fiber-cycle.static.scala classic-binding.static.scala \
+	grammar.scala first.static.scala follow.static.scala nullable.static.scala \
+	nested-cycles.static.scala \
+	test-coll.static.scala test-use-coll.static.scala test-cycle.static.scala use-global.static.scala
 
 MISCGEN = nested-cycles.scala SimpleParser.scala SimpleScanner.scala \
 	GrammarTokens.scala SimpleTokens.scala GrammarScanner.scala GrammarParser.scala \
 	FarrowLvTokens.scala FarrowLvTokens.scala FarrowLvScanner.scala FarrowLvParser.scala farrow-lv.scala \
 	FarrowUbdTokens.scala FarrowUbdTokens.scala FarrowUbdScanner.scala FarrowUbdParser.scala farrow-ubd.scala \
 	farrow-ubd-fiber.scala \
+	NestedUbdTokens.scala NestedUbdScanner.scala NestedUbdParser.scala nested-ubd.scala \
+	nested-ubd-fiber.scala \
 	*.output *.lex *.y *.scala~
 
 .PHONY: all clean phony_explicit
@@ -34,6 +48,8 @@ all : grammar_implicit.class GrammarDriver.class
 all : FarrowLv_implicit.class FarrowLvDriver.class
 all : FarrowUbd_implicit.class FarrowUbdDriver.class
 all : FarrowUbdFiber_implicit.class FarrowUbdFiberDriver.class
+all : NestedUbd_implicit.class NestedUbdDriver.class
+all : NestedUbdFiber_implicit.class NestedUbdFiberDriver.class
 all : nested_cycles_implicit.class NestedCyclesDriver.class
 all : broad_fiber_cycle_implicit.class BroadFiberCycleDriver.class
 
@@ -45,6 +61,11 @@ phony_explicit:
 
 %.static.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -S -C $*
+	mv $*.scala $@
+
+%.synth.scala : ../%.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -F $*
+	mv $*.scala $@
 
 %.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} $*
@@ -78,10 +99,10 @@ FarrowUbdParserBase.class : FarrowUbdParserBase.scala FarrowUbd_implicit.class
 FarrowUbdTokens.class : FarrowUbdTokens.scala
 	${SCALAC} ${SCALACFLAGS} $<
 
-FarrowUbd_implicit.class : farrow-ubd-tree.scala farrow-ubd.scala
+FarrowUbd_implicit.class : farrow-ubd-tree.scala farrow-ubd${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $^
 
-FarrowUbdFiber_implicit.class : farrow-ubd-tree.scala farrow-ubd-fiber.scala
+FarrowUbdFiber_implicit.class : farrow-ubd-tree.scala farrow-ubd-fiber${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $^
 
 FarrowUbdDriver.class : FarrowUbd_implicit.class FarrowUbdParser.class
@@ -89,6 +110,44 @@ FarrowUbdDriver.class : FarrowUbd_implicit.class FarrowUbdParser.class
 
 FarrowUbdFiberDriver.class : FarrowUbdFiber_implicit.class FarrowUbdParser.class
 	${SCALAC} ${SCALACFLAGS} farrow-ubd-fiber-driver.scala
+
+NestedUbd.lex : ../nested-ubd.lex NestedUbd.lex.scala
+	cat NestedUbd.lex.scala ../nested-ubd.lex > $@
+
+NestedUbdScanner.scala : NestedUbd.lex
+	java -jar ${SCALAFLEX} --scala $<
+
+NestedUbd.y : ../nested-ubd.y NestedUbd.y.scala
+	cat $< NestedUbd.y.scala > $@
+
+NestedUbdParser.scala NestedUbdTokens.scala : NestedUbd.y ${SCALABISON}
+	bison -v NestedUbd.y
+	rm NestedUbd.tab.c
+	${SCALA} -classpath ${SCALABISON} edu.uwm.cs.scalabison.RunGenerator NestedUbd.y
+
+NestedUbdScanner.class : NestedUbdScanner.scala NestedUbdTokens.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbdParser.class : NestedUbdParser.scala NestedUbdScanner.class NestedUbdParserBase.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbdParserBase.class : NestedUbdParserBase.scala NestedUbd_implicit.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbdTokens.class : NestedUbdTokens.scala
+	${SCALAC} ${SCALACFLAGS} $<
+
+NestedUbd_implicit.class : nested-ubd-tree.scala nested-ubd.static.scala
+	${SCALAC} ${SCALACFLAGS} $^
+
+NestedUbdDriver.class : NestedUbd_implicit.class NestedUbdParser.class
+	${SCALAC} ${SCALACFLAGS} nested-ubd-driver.scala
+
+NestedUbdFiber_implicit.class : nested-ubd-tree.scala nested-ubd-fiber.static.scala
+	${SCALAC} ${SCALACFLAGS} $^
+
+NestedUbdFiberDriver.class : NestedUbdFiber_implicit.class NestedUbdParser.class
+	${SCALAC} ${SCALACFLAGS} nested-ubd-fiber-driver.scala
 
 FarrowLv.lex : ../farrow-lv.lex FarrowLv.lex.scala
 	cat FarrowLv.lex.scala ../farrow-lv.lex > $@
@@ -116,7 +175,7 @@ FarrowLvParserBase.class : FarrowLvParserBase.scala FarrowLv_implicit.class
 FarrowLvTokens.class : FarrowLvTokens.scala
 	${SCALAC} ${SCALACFLAGS} $<
 
-FarrowLv_implicit.class : farrow-lv-tree.scala farrow-lv.scala
+FarrowLv_implicit.class : farrow-lv-tree.scala farrow-lv${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $^
 
 FarrowLvDriver.class : FarrowLv_implicit.class FarrowLvParser.class
@@ -174,8 +233,8 @@ SimpleParserBase.class : SimpleParserBase.scala simple_implicit.class
 SimpleTokens.class : SimpleTokens.scala
 	${SCALAC} ${SCALACFLAGS} $<
 
-nested-cycles.class: nested-cycles.static.scala simple_implicit.class
-	${SCALAC} ${SCALACFLAGS} nested-cycles.scala
+nested-cycles.class: nested-cycles${IMPL_SUFFIX} simple_implicit.class
+	${SCALAC} ${SCALACFLAGS} $<
 
 .PHONY: nested_cycles_implicit.class
 nested_cycles_implicit.class : nested-cycles.class simple_implicit.class ;
@@ -183,7 +242,7 @@ nested_cycles_implicit.class : nested-cycles.class simple_implicit.class ;
 NestedCyclesDriver.class: nested_cycles_implicit.class SimpleParser.class
 	${SCALAC} ${SCALACFLAGS} nested-cycles-driver.scala
 
-classic_binding_implicit.class : classic-binding.scala
+classic_binding_implicit.class : classic-binding${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $<
 
 Classic.class : classic-driver.scala SimpleParser.class
@@ -192,10 +251,10 @@ Classic.class : classic-driver.scala SimpleParser.class
 Classic.class   classic_binding_implicit.class : simple_implicit.class
 Classic.class : classic_binding_implicit.class
 
-test_coll_implicit.class : test-coll.scala tiny_implicit.class
+test_coll_implicit.class : test-coll${IMPL_SUFFIX} tiny_implicit.class
 	${SCALAC} ${SCALACFLAGS} $<
 
-test_use_coll_implicit.class : test-use-coll.scala
+test_use_coll_implicit.class : test-use-coll${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $<
 
 TestCollDriver.class : test_coll_implicit.class test-coll-driver.scala
@@ -204,13 +263,13 @@ TestCollDriver.class : test_coll_implicit.class test-coll-driver.scala
 TestUseCollDriver.class : test_use_coll_implicit.class test-use-coll-driver.scala tiny_implicit.class
 	${SCALAC} ${SCALACFLAGS}  test-use-coll-driver.scala
 
-test_cycle_implicit.class : test-cycle.scala
+test_cycle_implicit.class : test-cycle${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $<
 
 TestCycleDriver.class : test_cycle_implicit.class test-cycle-driver.scala
 	${SCALAC} ${SCALACFLAGS}  test-cycle-driver.scala
 
-grammar_implicit.class : grammar.scala first.scala follow.scala nullable.scala
+grammar_implicit.class : grammar.scala first${IMPL_SUFFIX} follow${IMPL_SUFFIX} nullable${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $^
 
 GrammarDriver.class : grammar_implicit.class GrammarParser.class
@@ -219,15 +278,15 @@ GrammarDriver.class : grammar_implicit.class GrammarParser.class
 TinyParser.class : tiny-parser.handcode.scala tiny_implicit.class
 	${SCALAC} ${SCALACFLAGS} tiny-parser.handcode.scala
 
-use_global_implicit.class : use-global.scala tiny_implicit.class
-	${SCALAC} ${SCALACFLAGS} use-global.scala
+use_global_implicit.class : use-global${IMPL_SUFFIX} tiny_implicit.class
+	${SCALAC} ${SCALACFLAGS} $<
 
 UseGlobal.class : use_global_implicit.class TinyParser.class
 UseGlobal.class : use-global-driver.scala
 	${SCALAC} ${SCALACFLAGS} $<
 
 broad_fiber_cycle_implicit.class : tiny_implicit.class
-broad_fiber_cycle_implicit.class : broad-fiber-cycle.scala
+broad_fiber_cycle_implicit.class : broad-fiber-cycle${IMPL_SUFFIX}
 	${SCALAC} ${SCALACFLAGS} $<
 
 BroadFiberCycleDriver.class : broad_fiber_cycle_implicit.class tiny_implicit.class

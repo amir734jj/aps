@@ -1,0 +1,14 @@
+// Validating Farrow's use-before-declaration (nested scopes)
+x = 10;
+y = x + 20;
+x = z / 30;
+z = 4 + unkown;
+{
+  a = b + c;
+  b = 42;
+  d = e + 1;
+  e = d - 1;
+  c = b * 2;
+  f = g + h;
+  h = a / 2;
+}

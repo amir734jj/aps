@@ -122,7 +122,13 @@ abstract class Node(t : C_PHYLUM[_ <: Node]) extends Value(t)
     }
     this
   }
-  def isRooted : Boolean = (parent != null) && parent.isRooted;
+  def isRooted : Boolean = {
+    var p: Node = this
+    while (p.parent != null) p = p.parent
+    // If p == this, we have no parent and no override, therefore not rooted.
+    // Otherwise p.isRooted calls to (e.g. T_Program.isRooted) which returns true.
+    if (p == this) false else p.isRooted
+  }
 }
 
 class Nodes[T_Result <: Node] extends ArrayBuffer[T_Result] {
@@ -448,6 +454,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
   override def setInCycle(ce : CircularEvaluation[_,_]) : Unit = {
     if (cycleParent == null) {
       cycleParent = ce;
+      value = getDefault
       ce.helper.add(this);
     } else {
       val p = inCycle;
@@ -473,8 +480,12 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
     val cycle = inCycle;
     for (e <- pending) {
       Debug.out("Checking " + e + " in pending.");
-      if (e.inCycle == cycle) return;
-      e.setInCycle(cycle);
+      if (e == this) {
+        // Skip self on the pending stack — we were pushed during
+        // the first doEvaluate call and shouldn't stop the search.
+      }
+      else if (e.inCycle == cycle) return
+      else e.setInCycle(cycle);
     }
   }
 
@@ -517,8 +528,7 @@ trait CircularEvaluation[V_P, V_T] extends Evaluation[V_P,V_T] {
   
   def recompute() : Unit = {
     val newValue = compute;
-    check(newValue);
-    value = newValue;
+    set(newValue);
   }
 }
 

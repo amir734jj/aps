@@ -1,0 +1,151 @@
+with "symbol";
+with "table";
+with "flat";
+with "nested-ubd-tree";
+
+-- Farrow use-before-declaration analysis
+-- with nested blocks
+module NESTED_UBD_FIBER[T :: var NESTED_UBD_TREE[]] extends T begin
+  
+  type IntegerLattice := FLAT_LATTICE[Integer];
+  type DeclPairLattice := TABLE_LATTICE[Symbol, IntegerLattice];
+
+  type Messages := SET[String];
+
+  phylum Scope;
+  constructor contour() : Scope;
+  attribute Scope.outer : Env;
+  circular collection attribute Scope.defs : DeclPairLattice;
+  type Env := remote Scope;
+
+  var collection messages : Messages;
+
+  attribute Declaration.decl_env : Env;
+  pragma inherited(decl_env);
+
+  attribute Declarations.decls_env : Env;
+  pragma inherited(decls_env);
+
+  attribute Block.block_env : Env;
+  pragma inherited (block_env);
+  
+  circular attribute Expression.expr_val : IntegerLattice;
+  attribute Expression.expr_env : Env;
+  pragma inherited(expr_env);
+  pragma synthesized(expr_val);
+
+  circular attribute Term.term_val : IntegerLattice;
+  attribute Term.term_env : Env;
+  pragma inherited(term_env);
+  pragma synthesized(term_val);
+
+  circular attribute Operation.op_val  : IntegerLattice;
+  circular attribute Operation.op_lval : IntegerLattice;
+  circular attribute Operation.op_rval : IntegerLattice;
+  pragma inherited(op_lval, op_rval);
+  pragma synthesized(op_val);
+
+  match ?self:Block=scope(?ds: Declarations) begin
+    newEnv : Scope := contour();
+    newEnv.outer := self.block_env;
+    ds.decls_env := newEnv;
+  end;
+
+  match ?self:Declaration=decl_assign(?s: Symbol, ?e: Expression) begin
+    self.decl_env.defs :> DeclPairLattice$table_entry(s, e.expr_val); 
+    e.expr_env := self.decl_env;
+    case DeclPairLattice$select(self.decl_env.defs, s) begin
+      match DeclPairLattice$table_entry(?,?value) begin
+        if value = IntegerLattice$top then
+	  messages :>  { "identifier " ++ symbol_name(s) ++
+    	  	         " is multiply defined" };
+        endif;
+      end;
+    end;
+  end;
+
+  match ?self:Declarations=decls_empty() begin
+  end;
+
+  match ?self:Declarations=decls_append(?ds: Declarations, ?d: Declaration) begin
+    ds.decls_env := self.decls_env;
+    d.decl_env := self.decls_env;
+  end;
+
+  match ?self:Declarations=decls_add(?ds : Declarations, ?b:Block) begin
+    b.block_env := self.decls_env;
+    ds.decls_env := self.decls_env;
+  end;
+
+  match ?self:Expression=expr_term(?t: Term) begin
+    self.expr_val := t.term_val;
+    t.term_env := self.expr_env;
+  end;
+
+  match ?self:Operation=op_add() begin
+    self.op_val := IntegerLattice$applyf2(Integer$plus, self.op_lval, self.op_rval);
+  end;
+
+  match ?self:Operation=op_mul() begin
+    self.op_val := IntegerLattice$applyf2(Integer$times, self.op_lval, self.op_rval);
+  end;
+
+  match ?self:Operation=op_sub() begin
+    self.op_val := IntegerLattice$applyf2(Integer$minus, self.op_lval, self.op_rval);
+  end;
+
+  match ?self:Operation=op_div() begin
+    self.op_val := IntegerLattice$applyf2(Integer$divide, self.op_lval, self.op_rval);
+  end;
+
+  match ?self:Expression=expr_apply(?e: Expression, ?op: Operation, ?t: Term) begin
+    self.expr_val := op.op_val;
+    op.op_lval := e.expr_val;
+    op.op_rval := t.term_val;
+    e.expr_env := self.expr_env;
+    t.term_env := self.expr_env;
+  end;
+
+  match ?self:Term=term_variable(?s: Symbol) begin
+    circular variable_value: IntegerLattice := IntegerLattice$bottom;
+    collection variable_defined: OrLattice;
+
+    case DeclPairLattice$select(self.term_env.defs, s) begin
+      match DeclPairLattice$table_entry(?,?value) begin
+        variable_value := value;
+        variable_defined :> true;
+      end;
+    end;
+
+    if variable_value = IntegerLattice$bottom then
+      if variable_defined then
+        messages :> { "identifier " ++ symbol_name(s) ++ " is defined but has an unknown value" };
+      else
+        messages :> { "unknown identifier of " ++ symbol_name(s) };
+      endif;
+    endif;
+    self.term_val := variable_value;
+  end;
+
+  var function lookup(env : Env; name : Symbol) : DeclPairLattice
+  begin
+    if env = Env$nil then
+      result := DeclPairLattice$bottom;
+    else
+      local : DeclPairLattice := DeclPairLattice$select(env.defs,name);
+      if local = DeclPairLattice$bottom then
+        result := lookup(env.outer, name);
+      else
+         result := local;
+      endif;
+    endif;
+  end;
+  
+  match ?self:Term=term_literal(?i: Integer) begin
+    self.term_val := IntegerLattice$lift(i);
+  end;
+
+  match ?self:Program=program(?b:Block) begin
+    b.block_env := Env$nil;
+  end;
+end;
