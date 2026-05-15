@@ -1552,13 +1552,9 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
             o << ")";
           }
         }
+        return;
       }
-
-      if (!any_assignment_dump) {
-        fatal_error("should have dumped an assignment here");
-      }
-
-      return;
+      // valid_rhs is empty (all NULL defaults) — fall through to default handling
     }
 
     if (instance->fibered_attr.fiber != NULL) {
@@ -1583,6 +1579,42 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
       o << "/* did not find any assignment for this fiber attribute " << instance << " -> " << directionStr << " <-" <<" */";
       return;
     } else {
+      // Check if this is a local collection attribute (value_decl with collection direction)
+      // whose type is also COMBINABLE per its canonical signature.
+      // Such attributes may have conditional assignments (inside case/match blocks) that are
+      // not found by make_instance_assignment() at this level - they are handled elsewhere.
+      Declaration attr = instance->fibered_attr.attr;
+      bool is_local_collection = direction_is_collection(some_value_decl_direction(attr));
+      if (is_local_collection) {
+        // Verify via canonical signature that the type implements COMBINABLE -
+        // i.e., some source_class in its signature set has a "combine" declaration
+        // in its body (handles COMBINABLE directly, MAKE_LATTICE, and any other
+        // combinable module, without needing to walk parent signature chains).
+        Type vt = infer_some_value_decl_type(attr);
+        CanonicalType* ctype = canonical_type(vt);
+        CanonicalSignatureSet csig_set = infer_canonical_signatures(ctype);
+        bool is_combinable = false;
+        for (int ci = 0; ci < csig_set->num_elements && !is_combinable; ci++) {
+          CanonicalSignature* csig = (CanonicalSignature*)csig_set->elements[ci];
+          Block body = some_class_decl_contents(csig->source_class);
+          for (Declaration bd = first_Declaration(block_body(body)); bd; bd = DECL_NEXT(bd)) {
+            if (strcmp(decl_name(bd), "combine") == 0) {
+              is_combinable = true;
+              break;
+            }
+          }
+        }
+        if (is_combinable) {
+          // A local collection attribute with no direct assignment in this block
+          // (e.g., assigned only inside a conditional/case block) should return
+          // the type's initial/bottom value for this branch.
+          o << as_val(vt) << ".v_initial";
+          if (include_comments) {
+            o << " /* local collection " << decl_name(attr) << ": no direct assignment, using initial */";
+          }
+          return;
+        }
+      }
       print_instance(instance, stdout);
       printf(" is a non-fiber instance, but no assignment found in this block. %d\n", if_rule_p(instance->fibered_attr.attr));
       fatal_error("crashed since non-fiber instance is missing an assignment");
@@ -1731,6 +1763,34 @@ void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, BlockItem* item, INSTANCE* i
 }
 
 bool try_dump_funcall(Expression e, ostream& o) override {
+  // In synth mode, phylum constructor calls use "node" as the AST anchor
+  // (the eval function parameter), not "anchor" (which is the Evaluation class field).
+  // Replicate the logic from dump-scala.cc's dump_anchor_actual check but emit "node".
+  {
+    Expression fexpr = funcall_f(e);
+    if (Expression_KEY(fexpr) == KEYvalue_use) {
+      Declaration udecl = USE_DECL(value_use_use(fexpr));
+      if (Declaration_KEY(udecl) == KEYconstructor_decl) {
+        // Inline constructor_decl_base_type_decl to get the base type decl
+        Type ct = constructor_decl_type(udecl);
+        Declaration retdecl = first_Declaration(function_type_return_values(ct));
+        Type return_type = value_decl_type(retdecl);
+        Declaration tdecl = USE_DECL(type_use_use(return_type));
+        if (Declaration_KEY(tdecl) == KEYphylum_decl) {
+          dump_Expression(fexpr, o);
+          o << "(";
+          bool start = true;
+          FOR_SEQUENCE(Expression, arg, Actuals, funcall_actuals(e),
+            if (start) start = false; else o << ",\n";
+            dump_Expression(arg, o));
+          if (first_Actual(funcall_actuals(e)) != NULL) o << ", ";
+          o << "node)";
+          return true;
+        }
+      }
+    }
+  }
+
   Declaration attr = attr_ref_p(e);
   if (attr == nullptr) return false;
   Declaration node = USE_DECL(value_use_use(first_Actual(funcall_actuals(e))));
