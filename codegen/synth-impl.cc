@@ -10,6 +10,7 @@ extern "C" {
 }
 #include <set>
 #include <sstream>
+#include <stack>
 #include <vector>
 
 #include "dump.h"
