@@ -89,6 +89,7 @@ int main(int argc,char **argv) {
     } else if (streq(argv[i],"-A") || streq(argv[i],"--synth")) {
       synth_implementation = true;
       anc_analysis = true;
+      continue;
     } else if (streq(argv[i],"-F") || streq(argv[i],"--farrow")) {
       farrow_implementation = true;
       anc_analysis = true;
