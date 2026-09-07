@@ -735,11 +735,6 @@ class FiberDependencyDumper {
 public:
   static void dump(AUG_GRAPH* aug_graph, INSTANCE* sink, ostream& os) {
 
-    if (!farrow_synth_improvements) {
-      dump_pure_farrow(aug_graph, sink, os);
-      return;
-    }
-
     int i, j;
     int n = aug_graph->instances.length;
 
@@ -1154,15 +1149,14 @@ static void emit_fixed_point_loop_start(ostream& os,
                                         INSTANCE* cycle_instance = NULL) {
   if (is_independent) {
     os << indent() << "// Independent cycle: always converge locally\n";
-    if (farrow_synth_improvements &&
-        cycle_instance != NULL && cycle_instance->node != NULL) {
+    if (cycle_instance != NULL && cycle_instance->node != NULL) {
       // Skip the loop if this child cycle already converged
       os << indent() << "if (" << instance_to_attr(cycle_instance)
          << ".checkNode(v_" << decl_name(cycle_instance->node)
          << ").status != Evaluation.ASSIGNED) {\n";
       ++nesting_level;
     }
-  } else if (farrow_synth_improvements) {
+  } else {
     os << indent() << "if (!" << LOOP_VAR << ") {\n";
     ++nesting_level;
   }
@@ -1179,12 +1173,11 @@ static void emit_fixed_point_loop_end(ostream& os,
   --nesting_level;
   os << indent() << "}\n";
   if (is_independent) {
-    if (farrow_synth_improvements &&
-        cycle_instance != NULL && cycle_instance->node != NULL) {
+    if (cycle_instance != NULL && cycle_instance->node != NULL) {
       --nesting_level;
       os << indent() << "}\n";
     }
-  } else if (farrow_synth_improvements) {
+  } else {
     --nesting_level;
     os << indent() << "}\n";
   }

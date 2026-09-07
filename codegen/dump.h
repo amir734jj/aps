@@ -15,7 +15,6 @@ void impl_module(const char *name, const char *type);
 
 extern bool incremental;
 extern bool static_schedule;
-extern bool farrow_synth_improvements;
 extern int verbose;
 extern int debug;
 extern bool include_comments;
