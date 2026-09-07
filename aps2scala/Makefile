@@ -11,7 +11,7 @@ ${APS2SCALAOBJS} : dump-scala.h
 install: aps2scala
 	mv aps2scala ../bin/.
 
-synth-impl.o : ../codegen/synth-impl.cc 
+synth-impl.o : ../codegen/synth-impl.cc ../codegen/synth-util.h
 	${CPP} -c ${CPPFLAGS} $< -o $@
 
 static-impl.o : ../codegen/static-impl.cc 

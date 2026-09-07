@@ -93,6 +93,10 @@ void dump_attribute_type(INSTANCE* instance, std::ostream& output);
 
 bool synth_function_is_circular(SynthFunctionState* state);
 
+std::vector<INSTANCE*> collect_child_cycle_instances(AUG_GRAPH* graph);
+
+bool child_cycle_is_independent(AUG_GRAPH* graph, INSTANCE* cycle_instance);
+
 std::vector<std::vector<INSTANCE*>> collect_child_cycle_components(AUG_GRAPH* graph, INSTANCE* sink);
 
 std::vector<std::set<Expression>> make_instance_assignments(AUG_GRAPH* graph, const std::vector<Block>& blocks);

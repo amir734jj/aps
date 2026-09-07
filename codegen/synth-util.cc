@@ -207,6 +207,34 @@ static std::vector<INSTANCE*> collect_aug_graph_attr_dependencies(AUG_GRAPH* aug
   return result;
 }
 
+static std::vector<INSTANCE*> collect_field_assign_dependencies(AUG_GRAPH* graph,
+                                                                INSTANCE* owner) {
+  std::vector<INSTANCE*> result;
+  Declaration attribute = owner->fibered_attr.attr;
+  int instance_count = graph->instances.length;
+
+  for (int index = 0; index < instance_count; ++index) {
+    INSTANCE* field_instance = &graph->instances.array[index];
+    if (field_instance->fibered_attr.attr != attribute ||
+        field_instance->fibered_attr.fiber == NULL ||
+        field_instance->index == owner->index) {
+      continue;
+    }
+    std::vector<INSTANCE*> dependencies =
+        collect_aug_graph_attr_dependencies(graph, field_instance);
+    for (INSTANCE* dependency_instance : dependencies) {
+      if (dependency_instance->index != owner->index &&
+          !should_skip_synth_dependency(dependency_instance) &&
+          instance_direction_for(dependency_instance) != instance_local &&
+          !(dependency_instance->node != NULL && dependency_instance->node != graph->lhs_decl) &&
+          std::find(result.begin(), result.end(), dependency_instance) == result.end()) {
+        result.push_back(dependency_instance);
+      }
+    }
+  }
+  return result;
+}
+
 static std::vector<AUG_GRAPH*> collect_lhs_aug_graphs(STATE* state, PHY_GRAPH* phylum_graph) {
   std::vector<AUG_GRAPH*> result;
   for (int index = 0; index < state->match_rules.length; ++index) {
@@ -269,6 +297,15 @@ std::vector<SynthFunctionState*> build_synth_function_states(STATE* state) {
       function_state->is_phylum_instance = false;
       function_state->is_side_effect_evaluation = ATTR_DECL_IS_SHARED_INFO(instance->fibered_attr.attr);
       function_state->regular_dependencies = collect_aug_graph_attr_dependencies(aug_graph, instance);
+      std::vector<INSTANCE*> field_dependencies =
+          collect_field_assign_dependencies(aug_graph, instance);
+      for (INSTANCE* dependency_instance : field_dependencies) {
+        if (std::find(function_state->regular_dependencies.begin(),
+                      function_state->regular_dependencies.end(), dependency_instance) ==
+            function_state->regular_dependencies.end()) {
+          function_state->regular_dependencies.push_back(dependency_instance);
+        }
+      }
       function_state->aug_graphs.push_back(aug_graph);
       result.push_back(function_state);
     }
@@ -406,6 +443,71 @@ bool synth_function_is_circular(SynthFunctionState* state) {
 static bool instance_is_child(INSTANCE* instance, AUG_GRAPH* graph) { return instance->node != NULL && instance->node != graph->lhs_decl; }
 
 bool instance_is_parent(INSTANCE* instance, AUG_GRAPH* graph) { return instance->node != NULL && instance->node == graph->lhs_decl; }
+
+static bool is_local_cycle_candidate(INSTANCE* instance, AUG_GRAPH* graph) {
+  return instance_is_child(instance, graph) &&
+         instance->fibered_attr.fiber == NULL &&
+         !if_rule_p(instance->fibered_attr.attr) &&
+         instance_is_synthesized(instance) && instance_circular(instance);
+}
+
+static bool is_in_same_cycle(INSTANCE* inherited, INSTANCE* instance,
+                             AUG_GRAPH* graph) {
+  int instance_count = graph->instances.length;
+  bool instance_feeds_inherited =
+      edgeset_kind(graph->graph[instance->index * instance_count + inherited->index]) &
+      DEPENDENCY_MAYBE_DIRECT;
+  return inherited != instance && inherited->node == instance->node &&
+         inherited->fibered_attr.fiber == NULL &&
+         instance_is_inherited(inherited) && instance_circular(inherited) &&
+         instance_feeds_inherited;
+}
+
+std::vector<INSTANCE*> collect_child_cycle_instances(AUG_GRAPH* graph) {
+  std::vector<INSTANCE*> result;
+  int instance_count = graph->instances.length;
+  for (int index = 0; index < instance_count; ++index) {
+    INSTANCE* instance = &graph->instances.array[index];
+    if (!is_local_cycle_candidate(instance, graph)) {
+      continue;
+    }
+    for (int inherited_index = 0; inherited_index < instance_count;
+         ++inherited_index) {
+      if (is_in_same_cycle(&graph->instances.array[inherited_index], instance, graph)) {
+        result.push_back(instance);
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+bool child_cycle_is_independent(AUG_GRAPH* graph, INSTANCE* cycle_instance) {
+  int instance_count = graph->instances.length;
+  std::vector<int> cycle_indices;
+  cycle_indices.push_back(cycle_instance->index);
+  for (int index = 0; index < instance_count; ++index) {
+    if (is_in_same_cycle(&graph->instances.array[index], cycle_instance, graph)) {
+      cycle_indices.push_back(index);
+    }
+  }
+
+  for (int index = 0; index < instance_count; ++index) {
+    INSTANCE* instance = &graph->instances.array[index];
+    if ((instance->fibered_attr.fiber == NULL &&
+         !ATTR_DECL_IS_SHARED_INFO(instance->fibered_attr.attr)) ||
+        !instance_circular(instance)) {
+      continue;
+    }
+    for (int cycle_index : cycle_indices) {
+      if (edgeset_kind(graph->graph[index * instance_count + cycle_index]) ||
+        edgeset_kind(graph->graph[cycle_index * instance_count + index])) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
 static bool component_precedes(AUG_GRAPH* graph, SCC_COMPONENT* source, SCC_COMPONENT* sink) {
   int instance_count = graph->instances.length;
@@ -581,7 +683,40 @@ static std::vector<INSTANCE*> sort_instances(AUG_GRAPH* graph) {
   return result;
 }
 
-static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INSTANCE*>& sorted_instances, bool* scheduled, CONDITION* condition, BlockItem* previous, int remaining, INSTANCE* sink) {
+static std::vector<std::vector<INSTANCE*>> direct_cycle_groups(AUG_GRAPH* graph) {
+  int instance_count = graph->instances.length;
+  SccGraph scc_graph;
+  scc_graph_initialize(&scc_graph, instance_count);
+  for (int index = 0; index < instance_count; ++index) {
+    scc_graph_add_vertex(&scc_graph, &graph->instances.array[index]);
+  }
+  for (int source = 0; source < instance_count; ++source) {
+    for (int sink = 0; sink < instance_count; ++sink) {
+      if (source != sink &&
+          (edgeset_kind(graph->graph[source * instance_count + sink]) &
+           DEPENDENCY_MAYBE_DIRECT)) {
+        scc_graph_add_edge(&scc_graph, &graph->instances.array[source],
+                           &graph->instances.array[sink]);
+      }
+    }
+  }
+
+  SCC_COMPONENTS* components = scc_graph_components(&scc_graph);
+  std::vector<std::vector<INSTANCE*>> groups;
+  for (int component_index = 0; component_index < components->length;
+       ++component_index) {
+    SCC_COMPONENT* component = components->array[component_index];
+    std::vector<INSTANCE*> group;
+    for (int index = 0; index < component->length; ++index) {
+      group.push_back(static_cast<INSTANCE*>(component->array[index]));
+    }
+    groups.push_back(group);
+  }
+  scc_graph_destroy(&scc_graph);
+  return groups;
+}
+
+static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INSTANCE*>& sorted_instances, bool* scheduled, CONDITION* condition, BlockItem* previous, int remaining, INSTANCE* sink, const std::vector<int>& component_of) {
   if (CONDITION_IS_IMPOSSIBLE(*condition)) {
     return NULL;
   }
@@ -596,13 +731,13 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INS
     }
     if (MERGED_CONDITION_IS_IMPOSSIBLE(*condition, instance_condition(instance))) {
       scheduled[index] = true;
-      BlockItem* result = linearize_block_helper(graph, sorted_instances, scheduled, condition, previous, remaining - 1, sink);
+      BlockItem* result = linearize_block_helper(graph, sorted_instances, scheduled, condition, previous, remaining - 1, sink, component_of);
       scheduled[index] = false;
       return result;
     }
     if (sink != instance && !edgeset_kind(graph->graph[index * instance_count + sink->index])) {
       scheduled[index] = true;
-      BlockItem* result = linearize_block_helper(graph, sorted_instances, scheduled, condition, previous, remaining - 1, sink);
+      BlockItem* result = linearize_block_helper(graph, sorted_instances, scheduled, condition, previous, remaining - 1, sink, component_of);
       scheduled[index] = false;
       return result;
     }
@@ -611,6 +746,9 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INS
     for (int dependency_index = 0; dependency_index < instance_count && ready; ++dependency_index) {
       INSTANCE* predecessor = &graph->instances.array[dependency_index];
       if (scheduled[dependency_index] || MERGED_CONDITION_IS_IMPOSSIBLE(instance_condition(instance), instance_condition(predecessor)) || !(edgeset_kind(graph->graph[dependency_index * instance_count + index]) & DEPENDENCY_MAYBE_DIRECT)) {
+        continue;
+      }
+      if (component_of[dependency_index] == component_of[index]) {
         continue;
       }
       ready = false;
@@ -631,10 +769,10 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INS
 
       int condition_mask = 1 << if_rule_index(instance->fibered_attr.attr);
       condition->positive |= condition_mask;
-      conditional->next_positive = linearize_block_helper(graph, sorted_instances, scheduled, condition, item, remaining - 1, sink);
+      conditional->next_positive = linearize_block_helper(graph, sorted_instances, scheduled, condition, item, remaining - 1, sink, component_of);
       condition->positive &= ~condition_mask;
       condition->negative |= condition_mask;
-      conditional->next_negative = linearize_block_helper(graph, sorted_instances, scheduled, condition, item, remaining - 1, sink);
+      conditional->next_negative = linearize_block_helper(graph, sorted_instances, scheduled, condition, item, remaining - 1, sink, component_of);
       condition->negative &= ~condition_mask;
     } else {
       BlockItemInstance* linear = static_cast<BlockItemInstance*>(std::malloc(sizeof(BlockItemInstance)));
@@ -642,7 +780,7 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INS
       linear->key = KEY_BLOCK_ITEM_INSTANCE;
       linear->instance = instance;
       linear->prev = previous;
-      linear->next = linearize_block_helper(graph, sorted_instances, scheduled, condition, item, remaining - 1, sink);
+      linear->next = linearize_block_helper(graph, sorted_instances, scheduled, condition, item, remaining - 1, sink, component_of);
     }
     scheduled[index] = false;
     return item;
@@ -663,7 +801,15 @@ BlockItem* linearize_block(AUG_GRAPH* graph, INSTANCE* sink) {
 
   CONDITION condition = {0, 0};
   std::vector<INSTANCE*> sorted_instances = sort_instances(graph);
-  return linearize_block_helper(graph, sorted_instances, scheduled, &condition, NULL, instance_count, sink);
+  std::vector<std::vector<INSTANCE*>> groups = direct_cycle_groups(graph);
+  std::vector<int> component_of(instance_count, -1);
+  for (size_t group_index = 0; group_index < groups.size(); ++group_index) {
+    for (INSTANCE* instance : groups[group_index]) {
+      component_of[instance->index] = static_cast<int>(group_index);
+    }
+  }
+  return linearize_block_helper(graph, sorted_instances, scheduled, &condition,
+                                NULL, instance_count, sink, component_of);
 }
 
 void print_linearized_block(BlockItem* block, std::ostream& output) {
