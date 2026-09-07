@@ -3,7 +3,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-DEFAULT_EVALUATORS="DYNAMIC,STATIC"
+DYNAMIC_EVALUATOR="DYNAMIC"
+STATIC_EVALUATOR="STATIC"
+ORIGINAL_FARROW_EVALUATOR="SYNTH_F0"
+DEFAULT_EVALUATORS="$DYNAMIC_EVALUATOR,$STATIC_EVALUATOR"
 
 extract_results() {
   sed -n '/^Results:$/,$p'
@@ -104,20 +107,20 @@ TESTS=(
   "TestUseCollDriver|tiny.program|$DEFAULT_EVALUATORS"
   "TestCycleDriver|tiny.program|$DEFAULT_EVALUATORS"
   "UseGlobal|tiny.program|$DEFAULT_EVALUATORS"
-  "FarrowUbdDriver|farrow-ubd.program|$DEFAULT_EVALUATORS"
+  "FarrowUbdDriver|farrow-ubd.program|$DEFAULT_EVALUATORS,$ORIGINAL_FARROW_EVALUATOR"
   "FarrowUbdFiberDriver|farrow-ubd.program|$DEFAULT_EVALUATORS"
-  "NestedUbdDriver|nested-ubd.program|$DEFAULT_EVALUATORS"
+  "NestedUbdDriver|nested-ubd.program|$DEFAULT_EVALUATORS,$ORIGINAL_FARROW_EVALUATOR"
   "NestedUbdFiberDriver|nested-ubd.program|$DEFAULT_EVALUATORS"
   "TestFieldsDriver|tiny.program|$DEFAULT_EVALUATORS"
   "FirstDriver|grammar.cfg|$DEFAULT_EVALUATORS"
   "FollowDriver|grammar.cfg|$DEFAULT_EVALUATORS"
   "NullableDriver|grammar.cfg|$DEFAULT_EVALUATORS"
-  "SimpleSncDriver|simple.program|DYNAMIC"
   "SimpleBindingDriver|simple.program|$DEFAULT_EVALUATORS"
   "SimpleBinding1Driver|simple.program|$DEFAULT_EVALUATORS"
   "SimpleBinding2Driver|simple.program|$DEFAULT_EVALUATORS"
   "SimpleBinding3Driver|simple.program|$DEFAULT_EVALUATORS"
   "TestForDriver|tiny.program|$DEFAULT_EVALUATORS"
+  "SimpleSncDriver|simple.program|$DYNAMIC_EVALUATOR,$ORIGINAL_FARROW_EVALUATOR"
 )
 
 failures=0
