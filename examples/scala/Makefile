@@ -80,13 +80,13 @@ phony_explicit:
 	${APS2SCALA} ${APS2SCALAFLAGS} -S -C $*
 	cp $*.scala $@
 
-%.synth.scala : ../%.aps ${APS2SCALA}
+%.farrow.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -F $*
 	cp $*.scala $@
 
-%.synth-f0.scala : ../%.aps ${APS2SCALA}
-	${APS2SCALA} ${APS2SCALAFLAGS} -F0 $*
-	cp $*.scala $@
+%.synth.scala : ../%.aps ${APS2SCALA}
+	${APS2SCALA} ${APS2SCALAFLAGS} -A $*
+	mv $*.scala $@
 
 %.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} $*
@@ -385,5 +385,5 @@ ${OUT}/SimpleSncDriver.class: ${OUT}/simple_snc_implicit.class ${OUT}/SimplePars
 
 clean:
 	rm -rf ${OUT_BASE}
-	rm -f *.class ${SCALAGEN} ${MISCGEN}
+	rm -f *.class ${SCALAGEN} ${MISCGEN} *.synth-f0.scala
 

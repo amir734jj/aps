@@ -12,11 +12,11 @@ default:
 %.scc.sched : %.aps
 	${APSSCHED} -C ${DEBUG_FLAGS} -p ${BASE} $*
 
-%.scc.scala : %.aps
-	${APS2SCALA} -C ${DEBUG_FLAGS} -p ${BASE} $*
+%.farrow.scala : %.aps
+	${APS2SCALA} -F ${DEBUG_FLAGS} -p ${BASE} $*
 
 %.synth.scala : %.aps
-	${APS2SCALA} -F ${DEBUG_FLAGS} -p ${BASE} $*
+	${APS2SCALA} -A ${DEBUG_FLAGS} -p ${BASE} $*
 
 %.scala : %.aps
 	${APS2SCALA} ${DEBUG_FLAGS} -p ${BASE} $*

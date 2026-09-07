@@ -63,6 +63,11 @@ jobs:
         cd examples
         ../bin/aps2scala -DCOTo -G -p .:../base test-canonicals
 
+    - name: Run compare-evaluators
+      run: |
+        cd examples/scala
+        ./compare-evaluators.sh
+
     - name: Clean up
       if: always()
       run: make clean

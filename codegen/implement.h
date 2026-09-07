@@ -59,6 +59,8 @@ class Implementation {
 
   virtual ModuleInfo* get_module_info(Declaration module) = 0;
 
+  virtual void validate_program(Program) {}
+
   // header is done, and indentation is set.
   virtual void implement_function_body(Declaration f, ostream&) = 0;
 
@@ -79,6 +81,7 @@ class SynthImplementation : public Implementation {
 extern Implementation *dynamic_impl;
 extern Implementation *static_impl;
 extern Implementation *static_scc_impl;
+extern Implementation *farrow_impl;
 extern Implementation *synth_impl;
 
 #define IMPLEMENTATION_MARKS (127<<24)
