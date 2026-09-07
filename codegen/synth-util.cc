@@ -560,6 +560,7 @@ std::vector<std::set<Expression>> make_instance_assignments(AUG_GRAPH* graph, co
   return assignments;
 }
 
+// We prefer to have IF statements at the beginning
 static std::vector<INSTANCE*> sort_instances(AUG_GRAPH* graph) {
   std::vector<INSTANCE*> result;
   int instance_count = graph->instances.length;
@@ -653,6 +654,8 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INS
   return NULL;
 }
 
+// Given an augmented dependency graph, it linearizes
+// the direct dependency schedule.
 BlockItem* linearize_block(AUG_GRAPH* graph, INSTANCE* sink) {
   int instance_count = graph->instances.length;
   bool* scheduled = static_cast<bool*>(alloca(sizeof(bool) * instance_count));
@@ -688,6 +691,9 @@ void print_linearized_block(BlockItem* block, std::ostream& output) {
   }
 }
 
+// Given an instance it traverses the direct dependency schedule
+// trying to find the instance and if it sees the condition
+// along the way, it returns that condition.
 BlockItem* find_surrounding_block(BlockItem* block, INSTANCE* instance) {
   while (block != NULL) {
     if (block->key == KEY_BLOCK_ITEM_CONDITION) {

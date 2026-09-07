@@ -77,53 +77,6 @@ static vector<BlockItem*> dumped_conditional_block_items;
 static vector<INSTANCE*> dumped_instances;
 static bool tracking_fiber_convergence = false;
 
-// Given a block, it prints its linearized schedule as comments in the output stream.
-static void print_linearized_block(BlockItem* block, ostream& os) {
-  if (block != NULL) {
-    os << indent() << block->instance << "\n";
-    if (block->key == KEY_BLOCK_ITEM_CONDITION) {
-      struct block_item_condition* cond = (struct block_item_condition*)block;
-
-      if (cond->prev != NULL && cond->prev->key != KEY_BLOCK_ITEM_CONDITION) {
-        os << indent() << cond->prev->instance << "\n";
-      }
-
-      os << indent() << "IF\n";
-      nesting_level++;
-      print_linearized_block(cond->next_positive, os);
-      nesting_level--;
-      os << indent() << "ELSE\n";
-      nesting_level++;
-      print_linearized_block(cond->next_negative, os);
-      nesting_level--;
-    } else {
-      print_linearized_block(((struct block_item_instance*)block)->next, os);
-    }
-  }
-}
-
-static vector<INSTANCE*> sort_instances(AUG_GRAPH* aug_graph) {
-  vector<INSTANCE*> result;
-
-  int n = aug_graph->instances.length;
-  int i;
-  for (i = 0; i < n; i++) {
-    INSTANCE* instance = &aug_graph->instances.array[i];
-    if (!if_rule_p(instance->fibered_attr.attr)) {
-      result.push_back(instance);
-    }
-  }
-
-  for (i = 0; i < n; i++) {
-    INSTANCE* instance = &aug_graph->instances.array[i];
-    if (if_rule_p(instance->fibered_attr.attr)) {
-      result.push_back(instance);
-    }
-  }
-
-  return result;
-}
-
 // Strongly-connected components of the direct-edge subgraph. Each cycle becomes
 // one group; everything else is a singleton. linearize_block uses these to break
 // direct dependency cycles (e.g. c1.ptr2:=c2; c2.ptr1:=c1) that a plain topological
@@ -161,166 +114,6 @@ static std::vector<std::vector<INSTANCE*> > direct_cycle_groups(AUG_GRAPH* aug_g
   return groups;
 }
 
-// Given an augmented dependency graph, it linearize it recursively
-static BlockItem* linearize_block_helper(AUG_GRAPH* aug_graph,
-                                         const vector<INSTANCE*>& sorted_instances,
-                                         bool* scheduled,
-                                         CONDITION* cond,
-                                         BlockItem* prev,
-                                         int remaining,
-                                         INSTANCE* aug_graph_instance,
-                                         const std::vector<int>& component_of) {
-  // impossible merge condition
-  if (CONDITION_IS_IMPOSSIBLE(*cond)) {
-    return NULL;
-  }
-
-  int j;
-  int n = aug_graph->instances.length;
-
-  for (auto it = sorted_instances.begin(); it != sorted_instances.end(); it++) {
-    INSTANCE* instance = *it;
-    int i = instance->index;
-
-    if (scheduled[i]) {
-      continue;
-    }
-
-    // impossible merge condition, cannot schedule this instance
-    if (MERGED_CONDITION_IS_IMPOSSIBLE(*cond, instance_condition(instance))) {
-      scheduled[i] = true;
-      BlockItem* result = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, prev, remaining - 1, aug_graph_instance, component_of);
-      scheduled[i] = false;
-      return result;
-    }
-
-    // if there is no dependency between this instance and the augmented dependency instance that we want to linearize for,
-    // then this instance should not be included in the linearization linked-list
-    if (aug_graph_instance != instance && !edgeset_kind(aug_graph->graph[instance->index * n + aug_graph_instance->index])) {
-      scheduled[i] = true;
-      BlockItem* result = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, prev, remaining - 1, aug_graph_instance, component_of);
-      scheduled[i] = false;
-      return result;
-    }
-
-    bool ready_to_schedule = true;
-    for (j = 0; j < n && ready_to_schedule; j++) {
-      INSTANCE* other_instance = &aug_graph->instances.array[j];
-
-      // already scheduled dependency
-      if (scheduled[j]) {
-        continue;
-      }
-
-      // impossible merge condition, ignore this dependency
-      if (MERGED_CONDITION_IS_IMPOSSIBLE(instance_condition(instance), instance_condition(other_instance))) {
-        continue;
-      }
-
-      // not a direct dependency
-      if (!(edgeset_kind(aug_graph->graph[j * n + i]) & DEPENDENCY_MAYBE_DIRECT)) {
-        continue;
-      }
-
-      // don't wait on a dependency in the same cycle group, that's the cycle we
-      // break here; cross-group edges still enforce the order
-      if (component_of[j] == component_of[i]) {
-        continue;
-      }
-
-      ready_to_schedule = false;
-      break;
-    }
-
-    // if all dependencies are ready to schedule
-    if (!ready_to_schedule) {
-      continue;
-    }
-
-    BlockItem* item_base;
-    scheduled[i] = true;
-
-    if (if_rule_p(instance->fibered_attr.attr)) {
-      struct block_item_condition* item = (struct block_item_condition*)malloc(sizeof(struct block_item_condition));
-      item_base = (BlockItem*)item;
-
-      item->key = KEY_BLOCK_ITEM_CONDITION;
-      item->instance = instance;
-      item->condition = instance->fibered_attr.attr;
-      item->prev = prev;
-
-      int cmask = 1 << (if_rule_index(instance->fibered_attr.attr));
-      cond->positive |= cmask;
-      item->next_positive = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, item_base, remaining - 1, aug_graph_instance, component_of);
-      cond->positive &= ~cmask;
-      cond->negative |= cmask;
-      item->next_negative = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, item_base, remaining - 1, aug_graph_instance, component_of);
-      cond->negative &= ~cmask;
-    } else {
-      struct block_item_instance* item = (struct block_item_instance*)malloc(sizeof(struct block_item_instance));
-      item_base = (BlockItem*)item;
-      item->key = KEY_BLOCK_ITEM_INSTANCE;
-      item->instance = instance;
-      item->prev = prev;
-      item->next = linearize_block_helper(aug_graph, sorted_instances, scheduled, cond, item_base, remaining - 1, aug_graph_instance, component_of);
-    }
-
-    scheduled[i] = false;
-
-    return item_base;
-  }
-
-  if (remaining != 0) {
-    fatal_error("failed to schedule some instances, remaining: %d", remaining);
-  }
-
-  return NULL;
-}
-
-// Given an augmented dependency graph, it linearizes
-// the direct dependency schedule.
-static BlockItem* linearize_block(AUG_GRAPH* aug_graph, INSTANCE* aug_graph_instance) {
-  int n = aug_graph->instances.length;
-  bool* scheduled = (bool*)alloca(sizeof(bool) * n);
-  memset(scheduled, 0, sizeof(bool) * n);
-
-  CONDITION cond = {0, 0};
-  vector<INSTANCE*> sorted_instances = sort_instances(aug_graph);
-
-  // map each instance to its cycle group so the schedule can skip same-group edges
-  std::vector<std::vector<INSTANCE*> > groups = direct_cycle_groups(aug_graph);
-
-  // -1 = singleton (not part of any multi-node cycle), so the
-  // same-group check in the scheduler won't match anything.
-  std::vector<int> component_of(n, -1);
-  for (size_t g = 0; g < groups.size(); g++) {
-    for (auto it = groups[g].begin(); it != groups[g].end(); it++) {
-      component_of[(*it)->index] = (int)g;
-    }
-  }
-
-  return linearize_block_helper(aug_graph, sorted_instances, scheduled, &cond, NULL, n, aug_graph_instance, component_of);
-}
-
-// Given an instance it traverses the direct dependency schedule
-// trying to find the instance and if it sees the condition
-// along the way, it returns that condition.
-static BlockItem* find_surrounding_block(BlockItem* block, INSTANCE* instance) {
-  while (block != NULL) {
-    if (block->key == KEY_BLOCK_ITEM_CONDITION) {
-      return block;
-    } else if (block->key == KEY_BLOCK_ITEM_INSTANCE) {
-      if (block->instance == instance) {
-        return block;
-      } else {
-        block = ((struct block_item_instance*)block)->next;
-      }
-    }
-  }
-
-  return NULL;
-}
-
 // Used only by instance_is_local, instance_is_synthesized and instance_is_inherited
 // to determine the direction of an instance that does not have a fiber.
 static enum instance_direction custom_instance_direction(INSTANCE* i) {
@@ -345,151 +138,6 @@ static bool instance_is_local(INSTANCE* instance) {
   } else {
     return fibered_attr_direction(&instance->fibered_attr) == instance_local;
   }
-}
-
-static bool instance_is_synthesized(INSTANCE* instance) {
-  if (instance->fibered_attr.fiber == NULL) {
-    return custom_instance_direction(instance) == instance_outward;
-  } else {
-    return fibered_attr_direction(&instance->fibered_attr) == instance_outward;
-  }
-}
-
-static bool instance_is_inherited(INSTANCE* instance) {
-  if (instance->fibered_attr.fiber == NULL) {
-    return custom_instance_direction(instance) == instance_inward;
-  } else {
-    return fibered_attr_direction(&instance->fibered_attr) == instance_inward;
-  }
-}
-
-static bool instance_is_pure_shared_info(INSTANCE* instance) {
-  return instance->fibered_attr.fiber == NULL && ATTR_DECL_IS_SHARED_INFO(instance->fibered_attr.attr);
-}
-
-static std::vector<INSTANCE*> collect_phylum_graph_attr_dependencies(PHY_GRAPH* phylum_graph,
-                                                                     INSTANCE* sink_instance) {
-  std::vector<INSTANCE*> result;
-
-  int i;
-  int n = phylum_graph->instances.length;
-
-  for (i = 0; i < n; i++) {
-    INSTANCE* source_instance = &phylum_graph->instances.array[i];
-    if (!instance_is_pure_shared_info(source_instance) && source_instance->index != sink_instance->index &&
-        phylum_graph->mingraph[source_instance->index * n + sink_instance->index]) {
-      result.push_back(source_instance);
-    }
-  }
-
-  return result;
-}
-
-static bool is_function_decl_attribute(INSTANCE* instance) {
-  if (instance->node != NULL && ABSTRACT_APS_tnode_phylum(instance->node) == KEYDeclaration) {
-    switch (Declaration_KEY(instance->node)) {
-      case KEYpragma_call: {
-        Declaration fdecl = Declaration_info(instance->node)->proxy_fdecl;
-        switch (Declaration_KEY(fdecl)) {
-          case KEYfunction_decl:
-            return true;
-          default:
-            break;
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  return false;
-}
-
-static std::vector<INSTANCE*> collect_aug_graph_attr_dependencies(AUG_GRAPH* aug_graph,
-                                                                  INSTANCE* sink_instance) {
-  std::vector<INSTANCE*> result;
-
-  int i;
-  int n = aug_graph->instances.length;
-
-  for (i = 0; i < n; i++) {
-    INSTANCE* source_instance = &aug_graph->instances.array[i];
-    if (!instance_is_pure_shared_info(source_instance) && source_instance->index != sink_instance->index &&
-        !is_function_decl_attribute(source_instance) &&
-        edgeset_kind(aug_graph->graph[source_instance->index * n + sink_instance->index])) {
-      result.push_back(source_instance);
-    }
-  }
-
-  return result;
-}
-
-static vector<AUG_GRAPH*> collect_lhs_aug_graphs(STATE* state, PHY_GRAPH* pgraph) {
-  vector<AUG_GRAPH*> result;
-
-  int i;
-  int n = state->match_rules.length;
-  for (i = 0; i < n; i++) {
-    AUG_GRAPH* aug_graph = &state->aug_graphs[i];
-    PHY_GRAPH* aug_graph_pgraph = Declaration_info(aug_graph->lhs_decl)->node_phy_graph;
-
-    if (aug_graph_pgraph == pgraph) {
-      switch (Declaration_KEY(aug_graph->lhs_decl)) {
-        case KEYsome_function_decl:
-          continue;
-        default:
-          break;
-      }
-
-      result.push_back(aug_graph);
-    }
-  }
-
-  return result;
-}
-
-static bool find_instance(AUG_GRAPH* aug_graph,
-                          Declaration node,
-                          FIBERED_ATTRIBUTE& fiber_attr,
-                          INSTANCE** instance_out) {
-  int i;
-  for (i = 0; i < aug_graph->instances.length; i++) {
-    INSTANCE* instance = &aug_graph->instances.array[i];
-    if (instance->node == node && instance->fibered_attr.attr == fiber_attr.attr) {
-      if (fibered_attr_equal(&instance->fibered_attr, &fiber_attr)) {
-        *instance_out = instance;
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-static string attr_to_string(Declaration attr) {
-  if (ATTR_DECL_IS_SHARED_INFO(attr)) {
-    return "sharedinfo";
-  } else {
-    return decl_name(attr);
-  }
-}
-
-static string fiber_to_string(FIBER fiber) {
-  std::stringstream ss;
-
-  while (fiber != NULL && fiber->field != NULL) {
-    std::string field = decl_name(fiber->field);
-    field.erase(std::remove(field.begin(), field.end(), '!'), field.end());
-
-    ss << field;
-    fiber = fiber->shorter;
-    if (fiber->field != NULL) {
-      ss << "_";
-    }
-  }
-
-  return ss.str();
 }
 
 static string instance_to_string(INSTANCE* in, bool force_include_node_type = false, bool trim_node = false) {
@@ -518,43 +166,6 @@ static string instance_to_string(INSTANCE* in, bool force_include_node_type = fa
 
   return std::accumulate(std::next(result.begin()), result.end(), result[0],
                          [](std::string a, std::string b) { return a + "_" + b; });
-}
-
-static string instance_to_string_with_nodetype(Declaration polymorphic, INSTANCE* in) {
-  Declaration attr = in->fibered_attr.attr;
-  std::stringstream ss;
-
-  if (Declaration_KEY(attr) == KEYvalue_decl && LOCAL_UNIQUE_PREFIX(attr) != 0) {
-    ss << "a" << LOCAL_UNIQUE_PREFIX(attr) << "_";
-  }
-
-  ss << decl_name(polymorphic) << "_" << instance_to_string(in, false, false);
-
-  return ss.str();
-}
-
-static string instance_to_attr(INSTANCE* in) {
-  Declaration attr = in->fibered_attr.attr;
-  Declaration field = in->fibered_attr.fiber != NULL ? in->fibered_attr.fiber->field : NULL;
-  std::stringstream ss;
-
-  if (Declaration_KEY(attr) == KEYvalue_decl && LOCAL_UNIQUE_PREFIX(attr) != 0) {
-    ss << "a" << LOCAL_UNIQUE_PREFIX(attr);
-  } else {
-    ss << "a";
-  }
-
-  if (attr != NULL && !ATTR_DECL_IS_SHARED_INFO(attr)) {
-    ss << "_" << decl_name(attr);
-  }
-
-  if (field != NULL) {
-    std::string field_str = decl_name(field);
-    field_str.erase(std::remove(field_str.begin(), field_str.end(), '!'), field_str.end());
-    ss << "_" << field_str;
-  }
-
-  return ss.str();
 }
 
 static bool check_is_match_formal(void* node) {
@@ -1285,7 +896,7 @@ collect_object_field_assignments(AUG_GRAPH* aug_graph, Declaration obj_decl) {
       continue;
     }
     Declaration field = field_ref_p(lhs);
-    if (field == 0) {
+    if (field == NULL) {
       continue;
     }
     Expression obj = field_ref_object(lhs);
@@ -2358,10 +1969,9 @@ void dump_synth_instance(INSTANCE* instance, ostream& o) {
 
   AUG_GRAPH* aug_graph = current_aug_graph;
   BlockItem* block = find_surrounding_block(current_scope_block, instance);
-
   Declaration node = instance->node;
-  bool is_parent_instance = instance_is_parent(instance, current_aug_graph);
 
+  bool is_parent_instance = instance_is_parent(instance, current_aug_graph);
   bool is_synthesized = instance_is_synthesized(instance);
   bool is_inherited = instance_is_inherited(instance);
   bool is_circular = edgeset_kind(current_aug_graph->graph[instance->index * current_aug_graph->instances.length + instance->index]);
