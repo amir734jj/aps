@@ -316,31 +316,6 @@ void dump_sequence_element_pattern(Pattern p, ostream& os)
   }
 }
 
-bool sequence_search_pattern(Pattern p, Pattern *middle)
-{
-  Symbol sequence_symbol = intern_symbol("{}");
-  if (Pattern_KEY(p) != KEYpattern_call) return false;
-
-  Pattern pf = pattern_call_func(p);
-  if (Pattern_KEY(pf) != KEYpattern_use) return false;
-  Declaration pfdecl = USE_DECL(pattern_use_use(pf));
-  if (!pfdecl || def_name(declaration_def(pfdecl)) != sequence_symbol) return false;
-
-  Pattern leading = first_PatternActual(pattern_call_actuals(p));
-  Pattern element = leading ? PAT_NEXT(leading) : 0;
-  Pattern trailing = element ? PAT_NEXT(element) : 0;
-  if (!leading || Pattern_KEY(leading) != KEYrest_pattern ||
-      Pattern_KEY(rest_pattern_constraint(leading)) != KEYno_pattern ||
-      !element || !trailing || Pattern_KEY(trailing) != KEYrest_pattern ||
-      Pattern_KEY(rest_pattern_constraint(trailing)) != KEYno_pattern ||
-      PAT_NEXT(trailing)) {
-    return false;
-  }
-
-  *middle = element;
-  return true;
-}
-
 void dump_sequence_elements(Pattern p, Expression value, ostream& os)
 {
   Pattern pf = pattern_call_func(p);

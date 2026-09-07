@@ -41,26 +41,6 @@ static void *attr_context[MAXDEPTH];
 static int attr_context_depth = 0;   /* current depth of attribute assigns */
 static int attr_context_started = 0; /* depth of last activation */
 
-static bool sequence_search_matcher(Declaration decl, Match *match, Pattern *middle)
-{
-  Matches matchers;
-  switch (Declaration_KEY(decl)) {
-  case KEYcase_stmt:
-    matchers = case_stmt_matchers(decl);
-    break;
-  case KEYfor_stmt:
-    matchers = for_stmt_matchers(decl);
-    break;
-  default:
-    return false;
-  }
-  Match first = first_Match(matchers);
-  if (!first || MATCH_NEXT(first)) return false;
-  if (!sequence_search_pattern(matcher_pat(first),middle)) return false;
-  if (match) *match = first;
-  return true;
-}
-
 static void push_attr_context(void *node)
 {
   if (attr_context_depth >= MAXDEPTH) {
@@ -320,47 +300,6 @@ void dump_local_decl(void *, Declaration local, ostream& o)
     o << "null.asInstanceOf[" << value_decl_type(local) << "]";
   }
   o << ";\n";
-}
-
-static bool block_assigns_to(Block b, void *vdecl)
-{
-  for (Declaration d = first_Declaration(block_body(b)); d; d = DECL_NEXT(d)) {
-    switch (Declaration_KEY(d)) {
-    case KEYassign:
-      {
-	Expression lhs = assign_lhs(d);
-	if (Expression_KEY(lhs) == KEYvalue_use &&
-	    USE_DECL(value_use_use(lhs)) == vdecl) return true;
-	if (Expression_KEY(lhs) == KEYfuncall &&
-	    USE_DECL(value_use_use(funcall_f(lhs))) == vdecl) return true;
-      }
-      break;
-    case KEYblock_stmt:
-      if (block_assigns_to(block_stmt_body(d),vdecl)) return true;
-      break;
-    case KEYif_stmt:
-      if (block_assigns_to(if_stmt_if_true(d),vdecl) ||
-	  block_assigns_to(if_stmt_if_false(d),vdecl)) return true;
-      break;
-    case KEYcase_stmt:
-      for (Match m = first_Match(case_stmt_matchers(d)); m; m = MATCH_NEXT(m)) {
-	if (block_assigns_to(matcher_body(m),vdecl)) return true;
-      }
-      if (block_assigns_to(case_stmt_default(d),vdecl)) return true;
-      break;
-    case KEYfor_stmt:
-      for (Match m = first_Match(for_stmt_matchers(d)); m; m = MATCH_NEXT(m)) {
-	if (block_assigns_to(matcher_body(m),vdecl)) return true;
-      }
-      break;
-    case KEYfor_in_stmt:
-      if (block_assigns_to(for_in_stmt_body(d),vdecl)) return true;
-      break;
-    default:
-      break;
-    }
-  }
-  return false;
 }
 
 void dump_Matches(Matches ms, bool exclusive, ASSIGNFUNC f, void*arg, ostream&os)
