@@ -485,11 +485,12 @@ static void dump_synth_functions(STATE* s, ostream& os) {
         synth_util::emit_loop_implicits(os, "newChanged" + std::to_string(src_idx));
       }
 
+      if (include_comments && synth_functions_state->is_side_effect_evaluation && !dump_fixed_point_loop) {
+        os << "\n";
+      }
+      FiberDependencyDumper::dump(aug_graph, aug_graph_instance, os);
+
       if (synth_functions_state->is_side_effect_evaluation) {
-        if (include_comments && !dump_fixed_point_loop) {
-          os << "\n";
-        }
-        FiberDependencyDumper::dump(aug_graph, aug_graph_instance, os);
         os << indent();
         synth_impl_ptr->dump_synth_instance(aug_graph_instance, os);
         os << "\n";

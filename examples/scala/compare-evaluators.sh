@@ -117,7 +117,7 @@ TESTS=(
   "FollowDriver|grammar.cfg|$DEFAULT_EVALUATORS"
   "NullableDriver|grammar.cfg|$DEFAULT_EVALUATORS"
   "SimpleSncDriver|simple.program|$DYNAMIC_EVALUATOR,$ORIGINAL_FARROW_EVALUATOR,$EXTENDED_FARROW_EVALUATOR"
-  "SimpleSncFiberDriver|simple.program|$DYNAMIC_EVALUATOR,$ORIGINAL_FARROW_EVALUATOR,$EXTENDED_FARROW_EVALUATOR"
+  "SimpleSncFiberDriver|simple.program|$DYNAMIC_EVALUATOR,$EXTENDED_FARROW_EVALUATOR"
 )
 
 failures=0

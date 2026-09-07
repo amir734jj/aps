@@ -5,6 +5,7 @@ extern "C" {
 #include <cstring>
 #include <strings.h>
 #include "aps-ag.h"
+#include "aps-analyze.h"
 }
 #include <iostream>
 #include <fstream>
