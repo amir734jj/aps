@@ -29,7 +29,8 @@ module SIMPLE_SNC_FIBER[T :: var SIMPLE[]] extends T begin
   pragma synthesized(expr_found1,expr_found2,stmt_ok,stmts_ok,block_ok,program_ok,program_names);
 
   match ?p:Program=program(?b:Block) begin
-    scope : Env := contour();
+    scope : Scope := contour();
+    scope.outer := Env$nil;
     b.block_env := scope;
     p.program_ok := b.block_ok;
     p.program_names := scope.names;

@@ -33,5 +33,5 @@ object SimpleSncFiberDriver extends App {
 
   println("Results:");
   println("program_ok is " + t_snc.v_program_ok(t_snc.t_Program.nodes(0)));
-  println("program_env is " + t_snc.v_program_env(t_snc.t_Program.nodes(0)));
+  println("program_names is " + t_snc.v_program_names(t_snc.t_Program.nodes(0)).toSeq.sorted);
 }
