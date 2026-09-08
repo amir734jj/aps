@@ -210,14 +210,23 @@ static std::vector<INSTANCE*> collect_aug_graph_attr_dependencies(AUG_GRAPH* aug
 static std::vector<INSTANCE*> collect_field_assign_dependencies(AUG_GRAPH* graph,
                                                                 INSTANCE* owner) {
   std::vector<INSTANCE*> result;
-  Declaration attribute = owner->fibered_attr.attr;
-  int instance_count = graph->instances.length;
-
-  for (int index = 0; index < instance_count; ++index) {
-    INSTANCE* field_instance = &graph->instances.array[index];
-    if (field_instance->fibered_attr.attr != attribute ||
-        field_instance->fibered_attr.fiber == NULL ||
-        field_instance->index == owner->index) {
+  Block body = matcher_body(top_level_match_m(graph->match_rule));
+  for (Declaration declaration = first_Declaration(block_body(body)); declaration;
+       declaration = DECL_NEXT(declaration)) {
+    if (Declaration_KEY(declaration) != KEYnormal_assign) {
+      continue;
+    }
+    Expression lhs = assign_lhs(declaration);
+    if (Expression_KEY(lhs) != KEYfuncall || field_ref_p(lhs) == NULL) {
+      continue;
+    }
+    Expression object = field_ref_object(lhs);
+    if (Expression_KEY(object) != KEYvalue_use ||
+        USE_DECL(value_use_use(object)) != owner->fibered_attr.attr) {
+      continue;
+    }
+    INSTANCE* field_instance = Expression_info(assign_rhs(declaration))->value_for;
+    if (field_instance == NULL) {
       continue;
     }
     std::vector<INSTANCE*> dependencies =
@@ -437,6 +446,17 @@ bool synth_function_is_circular(SynthFunctionState* state) {
       instance = state->source;
     }
     if (instance_circular(instance)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool synth_function_has_regular_dependency(SynthFunctionState* state,
+                                           INSTANCE* instance) {
+  for (INSTANCE* dependency_instance : state->regular_dependencies) {
+    if (fibered_attr_equal(&dependency_instance->fibered_attr,
+                           &instance->fibered_attr)) {
       return true;
     }
   }
@@ -751,6 +771,7 @@ static BlockItem* linearize_block_helper(AUG_GRAPH* graph, const std::vector<INS
       if (scheduled[dependency_index] || MERGED_CONDITION_IS_IMPOSSIBLE(instance_condition(instance), instance_condition(predecessor)) || !(edgeset_kind(graph->graph[dependency_index * instance_count + index]) & DEPENDENCY_MAYBE_DIRECT)) {
         continue;
       }
+      // Ignore edges within the same direct cycle so its instances can be linearized.
       if (component_of[dependency_index] == component_of[index]) {
         continue;
       }

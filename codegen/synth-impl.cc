@@ -47,8 +47,11 @@ class FiberDependencyDumper {
       if (in->index == sink->index) {
         continue;
       }
-      if (edgeset_kind(aug_graph->graph[in->index * n + sink->index]) && in->fibered_attr.fiber != NULL &&
-          (synth_util::instance_is_synthesized(in) || fibered_attr_direction(&in->fibered_attr) == instance_local)) {
+            if (edgeset_kind(aug_graph->graph[in->index * n + sink->index]) &&
+              in->fibered_attr.fiber != NULL &&
+              (synth_util::instance_is_synthesized(in) ||
+               fibered_attr_direction(&in->fibered_attr) == instance_local ||
+               fiber_is_reverse(in->fibered_attr.fiber))) {
         relevant_instances.push_back(in);
       }
     }
@@ -143,6 +146,7 @@ class FiberDependencyDumper {
       return;
     }
 
+    bool made_progress = false;
     for (int i = 0; i < component->length; i++) {
       INSTANCE* in = (INSTANCE*)component->array[i];
       if (scheduled[in->index]) {
@@ -164,6 +168,7 @@ class FiberDependencyDumper {
       }
 
       scheduled[in->index] = true;
+      made_progress = true;
       os << indent();
       synth_impl_ptr->dump_synth_instance(in, os);
       dumped_conditional_block_items.clear();
@@ -171,6 +176,22 @@ class FiberDependencyDumper {
       os << ";\n";
 
       dump_component(aug_graph, component, scheduled, os);
+    }
+
+    if (!made_progress) {
+      for (int i = 0; i < component->length; i++) {
+        INSTANCE* in = (INSTANCE*)component->array[i];
+        if (!scheduled[in->index]) {
+          scheduled[in->index] = true;
+          os << indent();
+          synth_impl_ptr->dump_synth_instance(in, os);
+          dumped_conditional_block_items.clear();
+          dumped_instances.clear();
+          os << ";\n";
+          dump_component(aug_graph, component, scheduled, os);
+          break;
+        }
+      }
     }
   }
 
@@ -240,44 +261,70 @@ static void emit_root_evaluations(ostream& os, Declaration start_phylum, const v
   os << indent() << "}\n";
 }
 
-static void emit_start_phylum_evaluations(ostream& os, STATE* state) {
+static void emit_start_phylum_evaluations(
+  ostream& os, STATE* state,
+  const vector<synth_util::SynthFunctionState*>& function_states) {
   PHY_GRAPH* start_graph = summary_graph_for(state, state->start_phylum);
   bool needs_fixed_point = state->loop_required;
+  set_phylum_graph_components(start_graph);
+  auto is_side_effect = [&function_states](INSTANCE* instance) {
+    auto function_state = std::find_if(
+        function_states.begin(), function_states.end(),
+        [instance](synth_util::SynthFunctionState* candidate) {
+          return candidate->source == instance;
+        });
+    return function_state != function_states.end() &&
+           (*function_state)->is_side_effect_evaluation;
+  };
 
   if (!needs_fixed_point) {
-    vector<INSTANCE*> synthesized_instances;
-    for (int i = 0; i < start_graph->instances.length; i++) {
-      INSTANCE* instance = &start_graph->instances.array[i];
-      if (synth_util::instance_is_synthesized(instance)) {
-        synthesized_instances.push_back(instance);
+    vector<INSTANCE*> side_effect_instances;
+    vector<INSTANCE*> value_instances;
+    for (int instance_index = 0;
+         instance_index < start_graph->instances.length; instance_index++) {
+      INSTANCE* instance = &start_graph->instances.array[instance_index];
+      if (!synth_util::instance_is_synthesized(instance)) {
+        continue;
+      }
+      if (is_side_effect(instance)) {
+        side_effect_instances.push_back(instance);
+      } else {
+        value_instances.push_back(instance);
       }
     }
-    emit_root_evaluations(os, state->start_phylum, synthesized_instances);
+    emit_root_evaluations(os, state->start_phylum, side_effect_instances);
+    emit_root_evaluations(os, state->start_phylum, value_instances);
     return;
   }
 
   os << indent() << "implicit val changed: AtomicBoolean = new AtomicBoolean(false);\n";
   os << indent() << "implicit val " << synth_util::LOOP_VAR << ": Boolean = false;\n";
 
-  set_phylum_graph_components(start_graph);
+    for (bool emit_side_effects : {true, false}) {
+      for (int component_index = start_graph->components->length - 1;
+           component_index >= 0; component_index--) {
+        SCC_COMPONENT* component = start_graph->components->array[component_index];
+        vector<INSTANCE*> synthesized_instances;
+        for (INSTANCE* instance : synthesized_component_instances(component)) {
+          if (is_side_effect(instance) == emit_side_effects) {
+            synthesized_instances.push_back(instance);
+          }
+        }
+        if (synthesized_instances.empty()) {
+          continue;
+        }
 
-  for (int component_index = 0; component_index < start_graph->components->length; component_index++) {
-    SCC_COMPONENT* component = start_graph->components->array[component_index];
-    vector<INSTANCE*> synthesized_instances = synthesized_component_instances(component);
-    if (synthesized_instances.empty()) {
-      continue;
-    }
-
-    if (start_graph->component_cycle[component_index]) {
-      os << indent() << "{\n";
-      ++nesting_level;
-      emit_fixed_point_loop_start(os, "componentChanged" + std::to_string(component_index));
-      emit_root_evaluations(os, state->start_phylum, synthesized_instances);
-      emit_fixed_point_loop_end(os);
-      --nesting_level;
-      os << indent() << "}\n";
-    } else {
-      emit_root_evaluations(os, state->start_phylum, synthesized_instances);
+        if (start_graph->component_cycle[component_index]) {
+          os << indent() << "{\n";
+          ++nesting_level;
+          emit_fixed_point_loop_start(os, "componentChanged" + std::to_string(component_index));
+          emit_root_evaluations(os, state->start_phylum, synthesized_instances);
+          emit_fixed_point_loop_end(os);
+          --nesting_level;
+          os << indent() << "}\n";
+        } else {
+          emit_root_evaluations(os, state->start_phylum, synthesized_instances);
+        }
     }
   }
 }
@@ -606,8 +653,6 @@ static void dump_synth_functions(STATE* s, ostream& os) {
     os << indent() << "}\n\n";
   }
 
-  synth_util::destroy_synth_function_states(synth_functions_states);
-  synth_functions_states.clear();
 }
 
 class SynthImpl : public SynthImplementation {
@@ -637,10 +682,13 @@ class SynthImpl : public SynthImplementation {
 
       os << indent() << "override def finish() : Unit = {\n";
       ++nesting_level;
-      emit_start_phylum_evaluations(os, s);
+      emit_start_phylum_evaluations(os, s, synth_functions_states);
       os << indent() << "super.finish();\n";
       --nesting_level;
       os << indent() << "};\n";
+
+      synth_util::destroy_synth_function_states(synth_functions_states);
+      synth_functions_states.clear();
 
       clear_implementation_marks(module_decl);
     }
@@ -1053,8 +1101,16 @@ class SynthImpl : public SynthImplementation {
     } else if (is_match_formal) {
       o << "v_" << synth_util::instance_to_string(instance, current_synth_functions_state->is_phylum_instance);
     } else if (is_inherited) {
-      if (is_parent_instance) {
+      if (instance->fibered_attr.fiber != NULL &&
+          fiber_is_reverse(instance->fibered_attr.fiber)) {
+        dump_rhs_instance_helper(aug_graph, block, instance, o);
+      } else if (is_parent_instance) {
         o << "v_" << synth_util::instance_to_string(instance, current_synth_functions_state->is_phylum_instance);
+        if (current_synth_functions_state->is_phylum_instance &&
+            !synth_util::synth_function_has_regular_dependency(
+                current_synth_functions_state, instance)) {
+          o << "(node)";
+        }
       } else {
         dump_rhs_instance_helper(aug_graph, block, instance, o);
       }

@@ -94,6 +94,9 @@ void dump_attribute_type(INSTANCE* instance, std::ostream& output);
 
 bool synth_function_is_circular(SynthFunctionState* state);
 
+bool synth_function_has_regular_dependency(SynthFunctionState* state,
+                                           INSTANCE* instance);
+
 std::vector<INSTANCE*> collect_child_cycle_instances(AUG_GRAPH* graph);
 
 bool child_cycle_is_independent(AUG_GRAPH* graph, INSTANCE* cycle_instance);
