@@ -174,7 +174,7 @@ static void dump_context_close(void *c, ostream& os) {
       os << indent() << "}\n";
       break; 
     case KEYtop_level_match:
-        os << indent() << "case _ => {}\n";
+      os << indent() << "case _ => {}\n";
       /*FALLTHROUGH*/
     default:
       --nesting_level;
@@ -212,7 +212,7 @@ static void pop_attr_context(ostream& os)
       if (ABSTRACT_APS_tnode_phylum(p) == KEYDeclaration &&
           Declaration_KEY((Declaration)p) == KEYcase_stmt &&
           (Block)c == case_stmt_default((Declaration)p)) {
-      os << indent() << "case _ => {}\n";
+        os << indent() << "case _ => {}\n";
       }
     }
   }
@@ -301,6 +301,7 @@ void dump_local_decl(void *, Declaration local, ostream& o)
   }
   o << ";\n";
 }
+
 
 void dump_Matches(Matches ms, bool exclusive, ASSIGNFUNC f, void*arg, ostream&os)
 {
