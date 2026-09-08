@@ -81,7 +81,8 @@ bool should_skip_synth_dependency(INSTANCE* instance);
 
 bool find_instance(AUG_GRAPH* graph, Declaration node, const FIBERED_ATTRIBUTE& attribute, INSTANCE** result);
 
-std::vector<SynthFunctionState*> build_synth_function_states(STATE* state);
+std::vector<SynthFunctionState*> build_synth_function_states(
+  STATE* state, bool include_field_assign_dependencies);
 
 void destroy_synth_function_states(const std::vector<SynthFunctionState*>& states);
 

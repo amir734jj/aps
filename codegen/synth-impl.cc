@@ -322,7 +322,7 @@ static std::vector<ObjectFieldAssign> collect_object_field_assignments(AUG_GRAPH
 static void dump_synth_functions(STATE* s, ostream& os) {
   os << "\n";
 
-  synth_functions_states = synth_util::build_synth_function_states(s);
+  synth_functions_states = synth_util::build_synth_function_states(s, true);
   bool needs_fixed_point = s->loop_required;
 
   for (auto state_it = synth_functions_states.begin(); state_it != synth_functions_states.end(); state_it++) {

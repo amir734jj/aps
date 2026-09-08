@@ -17,10 +17,10 @@ EVALUATOR ?= DYNAMIC
 
 ifeq (${EVALUATOR},STATIC)
 IMPL_SUFFIX = .static.scala
-else ifeq (${EVALUATOR},SYNTH_F1)
+else ifeq (${EVALUATOR},SYNTH)
 IMPL_SUFFIX = .synth.scala
-else ifeq (${EVALUATOR},SYNTH_F0)
-IMPL_SUFFIX = .synth-f0.scala
+else ifeq (${EVALUATOR},FARROW)
+IMPL_SUFFIX = .farrow.scala
 else
 IMPL_SUFFIX = .scala
 endif
@@ -37,7 +37,7 @@ EVALUATOR_EXAMPLES = classic-binding first follow nullable test-coll \
 	farrow-lv farrow-ubd farrow-ubd-fiber nested-ubd nested-ubd-fiber simple-snc \
 	simple-snc-fiber
 SCALAGEN = ${AST_TREE_SCALAGEN} \
-	$(foreach example,${EVALUATOR_EXAMPLES},$(example).scala $(example).static.scala $(example).synth.scala $(example).synth-f0.scala)
+	$(foreach example,${EVALUATOR_EXAMPLES},$(example).scala $(example).static.scala $(example).synth.scala $(example).farrow.scala)
 
 MISCGEN = SimpleParser.scala SimpleScanner.scala \
 	GrammarTokens.scala SimpleTokens.scala GrammarScanner.scala GrammarParser.scala \
@@ -84,14 +84,10 @@ phony_explicit:
 
 %.farrow.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -F $*
-	cp $*.scala $@
+	mv $*.scala $@
 
 %.synth.scala : ../%.aps ${APS2SCALA}
 	${APS2SCALA} ${APS2SCALAFLAGS} -A $*
-	mv $*.scala $@
-
-%.synth-f0.scala : ../%.aps ${APS2SCALA}
-	${APS2SCALA} ${APS2SCALAFLAGS} -F $*
 	mv $*.scala $@
 
 %.scala : ../%.aps ${APS2SCALA}
@@ -400,5 +396,5 @@ ${OUT}/SimpleSncFiberDriver.class: ${OUT}/simple_snc_fiber_implicit.class ${OUT}
 
 clean:
 	rm -rf ${OUT_BASE}
-	rm -f *.class ${SCALAGEN} ${MISCGEN} *.synth-f0.scala
+	rm -f *.class ${SCALAGEN} ${MISCGEN}
 

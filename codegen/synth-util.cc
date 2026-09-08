@@ -247,7 +247,8 @@ static std::vector<AUG_GRAPH*> collect_lhs_aug_graphs(STATE* state, PHY_GRAPH* p
   return result;
 }
 
-std::vector<SynthFunctionState*> build_synth_function_states(STATE* state) {
+std::vector<SynthFunctionState*> build_synth_function_states(
+  STATE* state, bool include_field_assign_dependencies) {
   std::vector<SynthFunctionState*> result;
 
   for (int phylum_index = 0; phylum_index < state->phyla.length; ++phylum_index) {
@@ -297,13 +298,15 @@ std::vector<SynthFunctionState*> build_synth_function_states(STATE* state) {
       function_state->is_phylum_instance = false;
       function_state->is_side_effect_evaluation = ATTR_DECL_IS_SHARED_INFO(instance->fibered_attr.attr);
       function_state->regular_dependencies = collect_aug_graph_attr_dependencies(aug_graph, instance);
-      std::vector<INSTANCE*> field_dependencies =
-          collect_field_assign_dependencies(aug_graph, instance);
-      for (INSTANCE* dependency_instance : field_dependencies) {
-        if (std::find(function_state->regular_dependencies.begin(),
-                      function_state->regular_dependencies.end(), dependency_instance) ==
-            function_state->regular_dependencies.end()) {
-          function_state->regular_dependencies.push_back(dependency_instance);
+      if (include_field_assign_dependencies) {
+        std::vector<INSTANCE*> field_dependencies =
+            collect_field_assign_dependencies(aug_graph, instance);
+        for (INSTANCE* dependency_instance : field_dependencies) {
+          if (std::find(function_state->regular_dependencies.begin(),
+                        function_state->regular_dependencies.end(), dependency_instance) ==
+              function_state->regular_dependencies.end()) {
+            function_state->regular_dependencies.push_back(dependency_instance);
+          }
         }
       }
       function_state->aug_graphs.push_back(aug_graph);
