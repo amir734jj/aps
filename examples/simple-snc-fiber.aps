@@ -23,13 +23,17 @@ module SIMPLE_SNC_FIBER[T :: var SIMPLE[]] extends T begin
   attribute Stmts.stmts_ok : Boolean;
   attribute Block.block_ok : Boolean;
   attribute Program.program_ok : Boolean;
+  attribute Program.program_names : Names;
 
   pragma inherited(block_env,decl_env,stmts_env,stmt_env,expr_env1,expr_env2);
-  pragma synthesized(expr_found1,expr_found2,stmt_ok,stmts_ok,block_ok,program_ok);
+  pragma synthesized(expr_found1,expr_found2,stmt_ok,stmts_ok,block_ok,program_ok,program_names);
 
   match ?p:Program=program(?b:Block) begin
-    b.block_env := Env$nil;
+    scope : Scope := contour();
+    scope.outer := Env$nil;
+    b.block_env := scope;
     p.program_ok := b.block_ok;
+    p.program_names := scope.names;
   end;
 
   match ?b:Block=block(?ds:Decls,?ss:Stmts) begin

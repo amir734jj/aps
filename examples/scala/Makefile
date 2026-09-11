@@ -32,7 +32,8 @@ AST_TREE_SCALAGEN = simple.scala tiny.scala grammar.scala \
 EVALUATOR_EXAMPLES = classic-binding first follow nullable test-coll \
 	test-use-coll test-cycle test-fields use-global broad-fiber-cycle \
 	below-fiber-cycle below-single-fiber-cycle local-fiber-cycle nested-cycles \
-	farrow-lv farrow-ubd farrow-ubd-fiber nested-ubd nested-ubd-fiber simple-snc
+	farrow-lv farrow-ubd farrow-ubd-fiber nested-ubd nested-ubd-fiber simple-snc \
+	simple-snc-fiber
 SCALAGEN = ${AST_TREE_SCALAGEN} \
 	$(foreach example,${EVALUATOR_EXAMPLES},$(example).scala $(example).static.scala)
 
@@ -67,6 +68,7 @@ all : ${OUT}/below_single_fiber_cycle_implicit.class ${OUT}/BelowSingleFiberCycl
 all : ${OUT}/local_fiber_cycle_implicit.class ${OUT}/LocalFiberCycleDriver.class
 all : ${OUT}/test_fields_implicit.class ${OUT}/TestFieldsDriver.class
 all : ${OUT}/simple_snc_implicit.class ${OUT}/SimpleSncDriver.class
+all : ${OUT}/simple_snc_fiber_implicit.class ${OUT}/SimpleSncFiberDriver.class
 
 .PHONY: run
 
@@ -369,8 +371,17 @@ ${OUT}/simple-snc.class: simple-snc${IMPL_SUFFIX} ${OUT}/simple_implicit.class
 .PHONY: ${OUT}/simple_snc_implicit.class
 ${OUT}/simple_snc_implicit.class : ${OUT}/simple-snc.class ${OUT}/simple_implicit.class ;
 
+${OUT}/simple-snc-fiber.class: simple-snc-fiber${IMPL_SUFFIX} ${OUT}/simple_implicit.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+.PHONY: ${OUT}/simple_snc_fiber_implicit.class
+${OUT}/simple_snc_fiber_implicit.class : ${OUT}/simple-snc-fiber.class ${OUT}/simple_implicit.class ;
+
 ${OUT}/SimpleSncDriver.class: ${OUT}/simple_snc_implicit.class ${OUT}/SimpleParser.class
 	${SCALAC} ${SCALACFLAGS} simple-snc-driver.scala
+
+${OUT}/SimpleSncFiberDriver.class: ${OUT}/simple_snc_fiber_implicit.class ${OUT}/SimpleParser.class
+	${SCALAC} ${SCALACFLAGS} simple-snc-fiber-driver.scala
 
 .PHONY: %.run
 
