@@ -33,7 +33,7 @@ EVALUATOR_EXAMPLES = classic-binding first follow nullable test-coll \
 	test-use-coll test-cycle test-fields use-global broad-fiber-cycle \
 	below-fiber-cycle below-single-fiber-cycle local-fiber-cycle nested-cycles \
 	farrow-lv farrow-ubd farrow-ubd-fiber nested-ubd nested-ubd-fiber simple-snc \
-	simple-binding simple-binding1 simple-binding2 simple-binding3 test-for
+	simple-binding simple-binding1 simple-binding2 simple-binding3 test-for \
 	simple-snc-fiber
 SCALAGEN = ${AST_TREE_SCALAGEN} \
 	$(foreach example,${EVALUATOR_EXAMPLES},$(example).scala $(example).static.scala)
