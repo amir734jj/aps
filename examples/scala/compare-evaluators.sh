@@ -121,6 +121,7 @@ TESTS=(
   "SimpleBinding3Driver|simple.program|$DEFAULT_EVALUATORS"
   "TestForDriver|tiny.program|$DEFAULT_EVALUATORS"
   "SimpleSncDriver|simple.program|$DYNAMIC_EVALUATOR,$ORIGINAL_FARROW_EVALUATOR"
+  "SimpleSncFiberDriver|simple.program|$DYNAMIC_EVALUATOR"
 )
 
 failures=0

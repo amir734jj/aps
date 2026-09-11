@@ -34,6 +34,7 @@ EVALUATOR_EXAMPLES = classic-binding first follow nullable test-coll \
 	below-fiber-cycle below-single-fiber-cycle local-fiber-cycle nested-cycles \
 	farrow-lv farrow-ubd farrow-ubd-fiber nested-ubd nested-ubd-fiber simple-snc \
 	simple-binding simple-binding1 simple-binding2 simple-binding3 test-for
+	simple-snc-fiber
 SCALAGEN = ${AST_TREE_SCALAGEN} \
 	$(foreach example,${EVALUATOR_EXAMPLES},$(example).scala $(example).static.scala)
 
@@ -71,6 +72,7 @@ all : ${OUT}/simple_snc_implicit.class ${OUT}/SimpleSncDriver.class
 all : ${OUT}/simple_binding_implicit.class ${OUT}/SimpleBindingDriver.class
 all : SimpleBinding1Driver.class SimpleBinding2Driver.class SimpleBinding3Driver.class
 all : ${OUT}/test_for_implicit.class ${OUT}/TestForDriver.class
+all : ${OUT}/simple_snc_fiber_implicit.class ${OUT}/SimpleSncFiberDriver.class
 
 .PHONY: run
 
@@ -373,6 +375,12 @@ ${OUT}/simple-snc.class: simple-snc${IMPL_SUFFIX} ${OUT}/simple_implicit.class
 .PHONY: ${OUT}/simple_snc_implicit.class
 ${OUT}/simple_snc_implicit.class : ${OUT}/simple-snc.class ${OUT}/simple_implicit.class ;
 
+${OUT}/simple-snc-fiber.class: simple-snc-fiber${IMPL_SUFFIX} ${OUT}/simple_implicit.class
+	${SCALAC} ${SCALACFLAGS} $<
+
+.PHONY: ${OUT}/simple_snc_fiber_implicit.class
+${OUT}/simple_snc_fiber_implicit.class : ${OUT}/simple-snc-fiber.class ${OUT}/simple_implicit.class ;
+
 ${OUT}/SimpleSncDriver.class: ${OUT}/simple_snc_implicit.class ${OUT}/SimpleParser.class
 	${SCALAC} ${SCALACFLAGS} simple-snc-driver.scala
 
@@ -426,6 +434,9 @@ SimpleBinding2Driver.run : ${OUT}/simple-binding2/SimpleBindingDriver.class
 
 SimpleBinding3Driver.run : ${OUT}/simple-binding3/SimpleBindingDriver.class
 	${SCALA} ${JVMFLAGS} -cp ${OUT}/simple-binding3:${OUT}:.:${APSLIB} SimpleBindingDriver ${ARGS}
+
+${OUT}/SimpleSncFiberDriver.class: ${OUT}/simple_snc_fiber_implicit.class ${OUT}/SimpleParser.class
+	${SCALAC} ${SCALACFLAGS} simple-snc-fiber-driver.scala
 
 .PHONY: %.run
 
