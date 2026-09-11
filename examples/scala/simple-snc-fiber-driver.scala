@@ -6,7 +6,7 @@ object SimpleSncFiberDriver extends App {
     val t_simple = simple_tree.t_Result;
     val ds = t_simple.v_xcons_decls(t_simple.v_no_decls(),
                 t_simple.v_decl("x",t_simple.v_integer_type()));
-    val s =	t_simple.v_assign_stmt(t_simple.v_intconstant(3),
+    val s = t_simple.v_assign_stmt(t_simple.v_intconstant(3),
                 t_simple.v_intconstant(5));
     val ss = t_simple.v_xcons_stmts(t_simple.v_no_stmts(),s);
     p = t_simple.v_program(t_simple.v_block(ds,ss));
