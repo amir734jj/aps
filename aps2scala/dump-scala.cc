@@ -271,7 +271,9 @@ void dump_debug_end(ostream& os)
 // Output Scala pattern for APS pattern
 
 int formal_count = 0;
-static void dump_pattern_call(Pattern p, Pattern result, const char* resultS, ostream& os)
+static void dump_Pattern_impl(Pattern p, ostream& os, std::vector<Expression> *conditions);
+
+static void dump_pattern_call(Pattern p, Pattern result, const char* resultS, ostream& os, std::vector<Expression> *conditions = 0)
 {
   Pattern pf = pattern_call_func(p);
   PatternActuals pactuals = pattern_call_actuals(p);
@@ -287,20 +289,44 @@ static void dump_pattern_call(Pattern p, Pattern result, const char* resultS, os
   dump_Use(pfuse,"p_",os);
   os << "(";
   if (result) {
-    dump_Pattern(result,os);
+    dump_Pattern_impl(result,os,conditions);
   } else {
     os << resultS;
   }
   formal_count = 0;
   for (Pattern pa = first_PatternActual(pactuals); pa ; pa = PAT_NEXT(pa)) {
     os << ",";
-    dump_Pattern(pa,os);
+    dump_Pattern_impl(pa,os,conditions);
     formal_count++;
   }
   os << ")";
 }
 
-void dump_Pattern(Pattern p, ostream& os) 
+void dump_sequence_element_pattern(Pattern p, ostream& os)
+{
+  std::vector<Expression> conditions;
+  dump_Pattern_impl(p,os,&conditions);
+  if (!conditions.empty()) {
+    os << " if ";
+    bool started = false;
+    for (Expression condition : conditions) {
+      if (started) os << " && ";
+      else started = true;
+      dump_Expression(condition,os);
+    }
+  }
+}
+
+void dump_sequence_elements(Pattern p, Expression value, ostream& os)
+{
+  Pattern pf = pattern_call_func(p);
+  dump_Use(pattern_use_use(pf),"p_",os);
+  os << ".unapplySeq(";
+  dump_Expression(value,os);
+  os << ").get._2";
+}
+
+static void dump_Pattern_impl(Pattern p, ostream& os, std::vector<Expression> *conditions)
 {
   switch (Pattern_KEY(p)) {
   default:
@@ -314,14 +340,14 @@ void dump_Pattern(Pattern p, ostream& os)
       break;
     case KEYpattern_var: break;
     }
-    dump_Pattern(match_pattern_pat(p),os);
+    dump_Pattern_impl(match_pattern_pat(p),os,conditions);
     os << ":";
     dump_Type(match_pattern_type(p),os);
     break;
 
   case KEYpattern_call:
     {
-      dump_pattern_call(p,((Pattern)0),"_",os);
+      dump_pattern_call(p,((Pattern)0),"_",os,conditions);
     }
     break;
 
@@ -343,18 +369,22 @@ void dump_Pattern(Pattern p, ostream& os)
     switch (Pattern_KEY(and_pattern_p2(p))) {
     default: break;
     case KEYcondition:
-      dump_Pattern(and_pattern_p1(p),os);
-      os << " if ";
-      dump_Expression(condition_e(and_pattern_p2(p)),os);
+      dump_Pattern_impl(and_pattern_p1(p),os,conditions);
+      if (conditions) {
+        conditions->push_back(condition_e(and_pattern_p2(p)));
+      } else {
+        os << " if ";
+        dump_Expression(condition_e(and_pattern_p2(p)),os);
+      }
       return;
     case KEYpattern_call:
-      dump_pattern_call(and_pattern_p2(p),and_pattern_p1(p),"",os);
+      dump_pattern_call(and_pattern_p2(p),and_pattern_p1(p),"",os,conditions);
       return;
     }
     os << "P_AND(";
-    dump_Pattern(and_pattern_p1(p),os);
+    dump_Pattern_impl(and_pattern_p1(p),os,conditions);
     os << ",";
-    dump_Pattern(and_pattern_p2(p),os);
+    dump_Pattern_impl(and_pattern_p2(p),os,conditions);
     os << ")";
     break;
 
@@ -378,6 +408,11 @@ void dump_Pattern(Pattern p, ostream& os)
     }
     break;
   }
+}
+
+void dump_Pattern(Pattern p, ostream& os)
+{
+  dump_Pattern_impl(p,os,0);
 }
 
 
@@ -1990,11 +2025,11 @@ void dump_scala_Declaration(Declaration decl,ostream& oss)
   case KEYattribute_decl:
     break; // handled by module
     
-  case KEYfunction_decl:
+  case KEYsome_function_decl:
     {
-      Type fty = function_decl_type(decl);
+      Type fty = some_function_decl_type(decl);
       Declaration rdecl = first_Declaration(function_type_return_values(fty));
-      Block b = function_decl_body(decl);
+      Block b = some_function_decl_body(decl);
       Declaration mdecl = get_enclosing_some_class_decl(decl);
       bool override_needed = false;
       if (mdecl != NULL) {

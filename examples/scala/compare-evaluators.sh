@@ -118,6 +118,11 @@ TESTS=(
   "NullableDriver|grammar.cfg|$DEFAULT_EVALUATORS"
   "SimpleSncDriver|simple.program|$DYNAMIC_EVALUATOR,$FARROW_EVALUATOR,$SYNTH_EVALUATOR"
   "SimpleSncFiberDriver|simple.program|$DYNAMIC_EVALUATOR,$SYNTH_EVALUATOR"
+  "SimpleBindingDriver|simple.program|$DEFAULT_EVALUATORS"
+  "SimpleBinding1Driver|simple.program|$DEFAULT_EVALUATORS"
+  "SimpleBinding2Driver|simple.program|$DEFAULT_EVALUATORS"
+  "SimpleBinding3Driver|simple.program|$DEFAULT_EVALUATORS"
+  "TestForDriver|tiny.program|$DEFAULT_EVALUATORS"
 )
 
 failures=0
