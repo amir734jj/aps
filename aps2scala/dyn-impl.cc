@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdint.h>
 #include <sstream>
 #include <stack>
 #include <vector>
@@ -296,8 +297,7 @@ void dump_local_decl(void *, Declaration local, ostream& o)
     dump_Expression(simple_value(init),o);
     break;
   default:
-    aps_error(local,"Can only handle initialized locals");
-    o << "0";
+    o << "null.asInstanceOf[" << value_decl_type(local) << "]";
   }
   o << ";\n";
 }
@@ -311,6 +311,60 @@ void dump_Matches(Matches ms, bool exclusive, ASSIGNFUNC f, void*arg, ostream&os
      dump_Block(matcher_body(m),f,arg,os);
      pop_attr_context(os);
      );
+}
+
+static void dump_sequence_case(Declaration d, Match match, Pattern middle,
+                               ASSIGNFUNC f, void *arg, ostream& os)
+{
+  unsigned sequence_number = (unsigned)(uintptr_t)match;
+  activate_attr_context(os);
+  os << indent() << "{\n";
+  ++nesting_level;
+  os << indent() << "val sequenceMatch" << sequence_number << " = ";
+  dump_sequence_elements(matcher_pat(match),case_stmt_expr(d),os);
+  os << ".collectFirst {\n";
+  ++nesting_level;
+  os << indent() << "case ";
+  dump_sequence_element_pattern(middle,os);
+  os << " => {\n";
+  ++nesting_level;
+  dump_Block(matcher_body(match),f,arg,os);
+  os << indent() << "()\n";
+  --nesting_level;
+  os << indent() << "}\n";
+  --nesting_level;
+  os << indent() << "}\n";
+  os << indent() << "if (sequenceMatch" << sequence_number << ".isEmpty) {\n";
+  ++nesting_level;
+  dump_Block(case_stmt_default(d),f,arg,os);
+  --nesting_level;
+  os << indent() << "}\n";
+  --nesting_level;
+  os << indent() << "}\n";
+}
+
+static void dump_sequence_for(Declaration d, Match match, Pattern middle,
+                              ASSIGNFUNC f, void *arg, ostream& os)
+{
+  activate_attr_context(os);
+  os << indent();
+  dump_sequence_elements(matcher_pat(match),for_stmt_expr(d),os);
+  os << ".foreach { v_sequence_element =>\n";
+  ++nesting_level;
+  os << indent() << "v_sequence_element match {\n";
+  ++nesting_level;
+  os << indent() << "case ";
+  dump_sequence_element_pattern(middle,os);
+  os << " => {\n";
+  ++nesting_level;
+  dump_Block(matcher_body(match),f,arg,os);
+  --nesting_level;
+  os << indent() << "}\n";
+  os << indent() << "case _ => {}\n";
+  --nesting_level;
+  os << indent() << "}\n";
+  --nesting_level;
+  os << indent() << "}\n";
 }
 
 void dump_Block(Block b,ASSIGNFUNC f,void*arg,ostream&os)
@@ -335,18 +389,37 @@ void dump_Block(Block b,ASSIGNFUNC f,void*arg,ostream&os)
        pop_attr_context(os);
        break;
      case KEYcase_stmt:
-       push_attr_context(d);
-       //!! we implement case and for!!
-       dump_Matches(case_stmt_matchers(d),true,f,arg,os);
-       push_attr_context(case_stmt_default(d));
-       dump_Block(case_stmt_default(d),f,arg,os);
-       pop_attr_context(os);
-       pop_attr_context(os);
+       {
+	 Match match;
+	 Pattern middle;
+	 if (sequence_search_matcher(d,&match,&middle) &&
+	     (block_assigns_to(matcher_body(match),arg) ||
+	      block_assigns_to(case_stmt_default(d),arg))) {
+	   dump_sequence_case(d,match,middle,f,arg,os);
+	 } else {
+	   push_attr_context(d);
+	   //!! we implement case and for!!
+	   dump_Matches(case_stmt_matchers(d),true,f,arg,os);
+	   push_attr_context(case_stmt_default(d));
+	   dump_Block(case_stmt_default(d),f,arg,os);
+	   pop_attr_context(os);
+	   pop_attr_context(os);
+	 }
+       }
        break;
      case KEYfor_stmt:
-       push_attr_context(d);
-       dump_Matches(for_stmt_matchers(d),false,f,arg,os);
-       pop_attr_context(os);
+       {
+	 Match match;
+	 Pattern middle;
+	 if (sequence_search_matcher(d,&match,&middle) &&
+	     block_assigns_to(matcher_body(match),arg)) {
+	   dump_sequence_for(d,match,middle,f,arg,os);
+	 } else {
+	   push_attr_context(d);
+	   dump_Matches(for_stmt_matchers(d),false,f,arg,os);
+	   pop_attr_context(os);
+	 }
+       }
        break;
      case KEYvalue_decl:
        if (!(Declaration_info(d)->decl_flags & LOCAL_ATTRIBUTE_FLAG) &&
@@ -720,9 +793,9 @@ public:
   }
 
   void implement_function_body(Declaration f, ostream& os) {
-    Type fty = function_decl_type(f);
+    Type fty = some_function_decl_type(f);
     Declaration rdecl = first_Declaration(function_type_return_values(fty));
-    Block b = function_decl_body(f);
+    Block b = some_function_decl_body(f);
     bool is_col = direction_is_collection(value_decl_direction(rdecl));
     const char *name = decl_name(f);
     

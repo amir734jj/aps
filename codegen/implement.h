@@ -93,4 +93,8 @@ extern Implementation *synth_impl;
 
 void clear_implementation_marks(Declaration d);
 
+bool sequence_search_pattern(Pattern p, Pattern *middle);
+bool sequence_search_matcher(Declaration decl, Match *match, Pattern *middle);
+bool block_assigns_to(Block b, void *vdecl);
+
 #endif
