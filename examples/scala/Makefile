@@ -45,7 +45,7 @@ MISCGEN = SimpleParser.scala SimpleScanner.scala \
 	NestedUbdTokens.scala NestedUbdScanner.scala NestedUbdParser.scala \
 	*.output *.lex *.y *.scala~
 
-.PHONY: all clean phony_explicit
+.PHONY: all clean phony_explicit check-farrow-acyclic
 
 # keep generated .scala
 .SECONDARY:
@@ -73,10 +73,17 @@ all : ${OUT}/simple_binding_implicit.class ${OUT}/SimpleBindingDriver.class
 all : SimpleBinding1Driver.class SimpleBinding2Driver.class SimpleBinding3Driver.class
 all : ${OUT}/test_for_implicit.class ${OUT}/TestForDriver.class
 all : ${OUT}/simple_snc_fiber_implicit.class ${OUT}/SimpleSncFiberDriver.class
+all : check-farrow-acyclic
 
 .PHONY: run
 
 run: Classic.run TestCollDriver.run TestCycleDriver.run NestedCyclesDriver.run
+
+check-farrow-acyclic: test-farrow-acyclic.synth-f0.scala
+	@if grep -q "isInsideFixedPoint" $<; then \
+		echo "Unexpected fixed-point evaluation in acyclic Farrow output"; \
+		exit 1; \
+	fi
 
 phony_explicit:
 
@@ -446,4 +453,3 @@ ${OUT}/SimpleSncFiberDriver.class: ${OUT}/simple_snc_fiber_implicit.class ${OUT}
 clean:
 	rm -rf ${OUT_BASE}
 	rm -f *.class ${SCALAGEN} ${MISCGEN} *.synth-f0.scala
-

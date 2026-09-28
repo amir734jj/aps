@@ -1,0 +1,9 @@
+with "tiny";
+module TEST_FARROW_ACYCLIC[T :: var TINY[]] extends T begin
+  attribute Root.value : Integer;
+  pragma synthesized(value);
+
+  match ?r:Root=root(?:Wood) begin
+    r.value := 1;
+  end;
+end;
