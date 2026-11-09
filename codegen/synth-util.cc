@@ -580,6 +580,7 @@ std::vector<INSTANCE*> collect_child_cycle_instances(AUG_GRAPH* graph) {
   return result;
 }
 
+// TODO: write a description for this function.
 bool child_cycle_is_independent(AUG_GRAPH* graph, INSTANCE* cycle_instance) {
   int instance_count = graph->instances.length;
   std::vector<int> cycle_indices;

@@ -50,11 +50,11 @@ class FiberDependencyDumper {
       if (in->index == sink->index) {
         continue;
       }
-            if (edgeset_kind(aug_graph->graph[in->index * n + sink->index]) &&
-              in->fibered_attr.fiber != NULL &&
-              (synth_util::instance_is_synthesized(in) ||
-               fibered_attr_direction(&in->fibered_attr) == instance_local ||
-               fiber_is_reverse(in->fibered_attr.fiber))) {
+      if (edgeset_kind(aug_graph->graph[in->index * n + sink->index]) &&
+        in->fibered_attr.fiber != NULL &&
+        (synth_util::instance_is_synthesized(in) ||
+          fibered_attr_direction(&in->fibered_attr) == instance_local ||
+          fiber_is_reverse(in->fibered_attr.fiber))) {
         relevant_instances.push_back(in);
       }
     }
@@ -193,6 +193,7 @@ class FiberDependencyDumper {
       dump_component(aug_graph, component, scheduled, os);
     }
 
+    // TODO: what are you doing here??
     if (!made_progress) {
       for (int i = 0; i < component->length; i++) {
         INSTANCE* in = (INSTANCE*)component->array[i];
@@ -348,6 +349,7 @@ static void emit_eager_phylum_evaluations(
         [](INSTANCE* source_instance) {
           return !synth_util::should_skip_synth_dependency(source_instance);
         });
+
     // This sweep has no dependency arguments to pass. Leave functions that
     // need them to their callers, and handle side effects in a separate pass.
     if (!function_state->is_phylum_instance ||
@@ -749,10 +751,21 @@ class SynthImpl : public SynthImplementation {
         os << indent() << "implicit val changed: AtomicBoolean = new AtomicBoolean(false);\n";
         os << indent() << "implicit val " << synth_util::LOOP_VAR << ": Boolean = false;\n";
       }
+
+      // TODO: complete junk. You are doing things twice.
+      // IT's doing things twice.
+      os << indent() << "// Starting phylum evaluations\n";
       emit_start_phylum_evaluations(os, s, synth_functions_states, true);
+      os << indent() << "// Finished phylum evaluations\n";
+      os << indent() << "// Starting eager phylum evaluations\n";
       emit_eager_phylum_evaluations(os, synth_functions_states, true);
+      os << indent() << "// Finished eager phylum evaluations\n";
+      os << indent() << "// Starting phylum evaluations\n";
       emit_start_phylum_evaluations(os, s, synth_functions_states, false);
+      os << indent() << "// Finished phylum evaluations\n";
+      os << indent() << "// Starting eager phylum evaluations\n";
       emit_eager_phylum_evaluations(os, synth_functions_states, false);
+      os << indent() << "// Finished eager phylum evaluations\n";
       os << indent() << "super.finish();\n";
       --nesting_level;
       os << indent() << "};\n";
