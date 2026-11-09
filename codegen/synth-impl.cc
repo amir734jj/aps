@@ -286,6 +286,8 @@ static void emit_start_phylum_evaluations(
   PHY_GRAPH* start_graph = summary_graph_for(state, state->start_phylum);
   bool needs_fixed_point = state->requires_fixed_point_loop;
   set_phylum_graph_components(start_graph);
+
+  // TODO: don't use lambda, simplify
   auto is_side_effect = [&function_states](INSTANCE* instance) {
     auto function_state = std::find_if(
         function_states.begin(), function_states.end(),
