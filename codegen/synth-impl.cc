@@ -284,7 +284,7 @@ static void emit_start_phylum_evaluations(
   const vector<synth_util::SynthFunctionState*>& function_states,
   bool emit_side_effects) {
   PHY_GRAPH* start_graph = summary_graph_for(state, state->start_phylum);
-  bool needs_fixed_point = state->loop_required;
+  bool needs_fixed_point = state->requires_fixed_point_loop;
   set_phylum_graph_components(start_graph);
   auto is_side_effect = [&function_states](INSTANCE* instance) {
     auto function_state = std::find_if(
@@ -435,7 +435,7 @@ static void dump_synth_functions(STATE* s, ostream& os) {
       }
     }
   }
-  bool needs_fixed_point = s->loop_required;
+  bool needs_fixed_point = s->requires_fixed_point_loop;
 
   for (auto state_it = synth_functions_states.begin(); state_it != synth_functions_states.end(); state_it++) {
     synth_util::SynthFunctionState* synth_functions_state = *state_it;
@@ -747,7 +747,7 @@ class SynthImpl : public SynthImplementation {
 
       os << indent() << "override def finish() : Unit = {\n";
       ++nesting_level;
-      if (s->loop_required) {
+      if (s->requires_fixed_point_loop) {
         os << indent() << "implicit val changed: AtomicBoolean = new AtomicBoolean(false);\n";
         os << indent() << "implicit val " << synth_util::LOOP_VAR << ": Boolean = false;\n";
       }
