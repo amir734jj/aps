@@ -317,7 +317,9 @@ class FiberDependencyDumper {
       synth_impl_ptr->dump_synth_instance(next, os);
       dumped_conditional_block_items.clear();
       dumped_instances.clear();
-      os << ";\n";
+      // TOOD: Collections can have 0 or more assignments, if there was no assignment in
+      // in this block body, then we shouldn't add ;
+      os << "; /* " << next << " */\n";
     }
   }
 
