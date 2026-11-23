@@ -1,5 +1,7 @@
 PARSER_BASENAME = Bigger
 
-DRIVERS = BiggerBindingDriver
+RUNS = bigger-binding
 
-DRIVER.BiggerBindingDriver = bigger-binding.aps DYNAMIC,STATIC bigger-binding-driver.scala
+SOURCES.BiggerBindingDriver = bigger-binding.aps bigger-binding-driver.scala
+DRIVER.bigger-binding = BiggerBindingDriver
+EVALUATORS.bigger-binding = DYNAMIC STATIC

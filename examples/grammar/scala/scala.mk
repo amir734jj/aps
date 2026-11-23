@@ -1,9 +1,15 @@
 PARSER_BASENAME = Grammar
 
-DRIVERS = FirstDriver FollowDriver NullableDriver
+RUNS = first follow nullable
 
-DRIVER.FirstDriver = first.aps DYNAMIC,STATIC first-driver.scala
+SOURCES.FirstDriver = first.aps first-driver.scala
+DRIVER.first = FirstDriver
+EVALUATORS.first = DYNAMIC STATIC
 
-DRIVER.FollowDriver = follow.aps DYNAMIC,STATIC follow-driver.scala
+SOURCES.FollowDriver = follow.aps follow-driver.scala
+DRIVER.follow = FollowDriver
+EVALUATORS.follow = DYNAMIC STATIC
 
-DRIVER.NullableDriver = nullable.aps DYNAMIC,STATIC nullable-driver.scala
+SOURCES.NullableDriver = nullable.aps nullable-driver.scala
+DRIVER.nullable = NullableDriver
+EVALUATORS.nullable = DYNAMIC STATIC

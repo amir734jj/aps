@@ -1,5 +1,7 @@
 PARSER_BASENAME = FarrowLv
 
-DRIVERS = FarrowLvDriver
+RUNS = farrow-lv
 
-DRIVER.FarrowLvDriver = farrow-lv.aps DYNAMIC,STATIC farrow-lv-driver.scala
+SOURCES.FarrowLvDriver = farrow-lv.aps farrow-lv-driver.scala
+DRIVER.farrow-lv = FarrowLvDriver
+EVALUATORS.farrow-lv = DYNAMIC STATIC

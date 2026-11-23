@@ -1,7 +1,11 @@
 PARSER_BASENAME = FarrowUbd
 
-DRIVERS = FarrowUbdDriver FarrowUbdFiberDriver
+RUNS = farrow-ubd farrow-ubd-fiber
 
-DRIVER.FarrowUbdDriver = farrow-ubd.aps DYNAMIC,STATIC,FARROW farrow-ubd-driver.scala
+SOURCES.FarrowUbdDriver = farrow-ubd.aps farrow-ubd-driver.scala
+DRIVER.farrow-ubd = FarrowUbdDriver
+EVALUATORS.farrow-ubd = DYNAMIC STATIC FARROW
 
-DRIVER.FarrowUbdFiberDriver = farrow-ubd-fiber.aps DYNAMIC,STATIC farrow-ubd-fiber-driver.scala
+SOURCES.FarrowUbdFiberDriver = farrow-ubd-fiber.aps farrow-ubd-fiber-driver.scala
+DRIVER.farrow-ubd-fiber = FarrowUbdFiberDriver
+EVALUATORS.farrow-ubd-fiber = DYNAMIC STATIC

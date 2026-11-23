@@ -42,7 +42,7 @@ run_driver_once() {
   local driver="$1"
   local args="$2"
   local -a evals
-  IFS=',' read -ra evals <<< "$3"
+  read -ra evals <<< "${3//,/ }"
   local pass=true
   local build_failed=false
   local tmpdir

@@ -1,18 +1,11 @@
 PARSER_BASENAME = NestedUbd
 
-# This should be run
-# And run has evluation techniques, scala source, evluation source and APS source
-DRIVERS = NestedUbdDriver NestedUbdFiberDriver
+RUNS = baseline fiber
 
-# Driver has driver source and APS source
-DRIVER.NestedUbdDriver = nested-ubd.aps DYNAMIC,STATIC,FARROW nested-ubd-driver.scala
+SOURCES.NestedUbdDriver = nested-ubd.aps nested-ubd-driver.scala
+DRIVER.baseline = NestedUbdDriver
+EVALUATORS.baseline = DYNAMIC STATIC FARROW
 
-DRIVER.NestedUbdFiberDriver = nested-ubd-fiber.aps DYNAMIC,STATIC nested-ubd-fiber-driver.scala
-
-APS_DRIVER_NAME>.SOURCES =
-DRIVER. 
-
-RUN has source, evaluations
-3 Runs, each run has it's own pices
-
-Driver
+SOURCES.NestedUbdFiberDriver = nested-ubd-fiber.aps nested-ubd-fiber-driver.scala
+DRIVER.fiber = NestedUbdFiberDriver
+EVALUATORS.fiber = DYNAMIC STATIC

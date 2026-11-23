@@ -1,7 +1,7 @@
 SCHED_MODULES ?= $(filter-out $(basename $(notdir $(AST))),$(basename $(notdir $(wildcard *.aps))))
 SCALA_MAKE = $(MAKE) -f ../scala/Makefile AST='$(AST)' LEXER='$(LEXER)' PARSER='$(PARSER)'
 
-export $(filter TEST_DRIVERS TEST_PROGRAMS,$(.VARIABLES))
+export $(filter TEST_RUNS TEST_PROGRAMS,$(.VARIABLES))
 
 .PHONY: all sched scala test
 

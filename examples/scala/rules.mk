@@ -1,12 +1,12 @@
-DRIVER_CLASSES = $(addsuffix .class,${DRIVERS})
-DRIVER_RUNS = $(addsuffix .run,${DRIVERS})
+RUN_CLASSES = $(addsuffix .class,${RUNS})
+RUN_TARGETS = $(addsuffix .run,${RUNS})
 MODULES = $(sort $(basename $(filter %.aps,${AST} ${SHARED_SOURCES})) \
 	$(foreach driver,${DRIVERS},$(call driver-module,$(driver))))
 GENERATE_TARGETS = $(addprefix ${OUT}/,$(addsuffix /generate,${MODULES}))
 
-DRIVER_NAME = $(basename $@)
-DRIVER_MODULE = $(call driver-module,${DRIVER_NAME})
-MAIN_CLASS = $(call driver-main,${DRIVER_NAME})
+RUN_NAME = $(basename $@)
+RUN_MODULE = $(call run-module,${RUN_NAME})
+MAIN_CLASS = $(call run-main,${RUN_NAME})
 
 # Output paths are <evaluator>/<module>/<file>.
 TARGET_MODULE = $(firstword $(subst /, ,$*))
@@ -24,18 +24,18 @@ PARSER_FILES = $(addprefix ${PARSER_BASENAME},Scanner.scala Parser.scala Tokens.
 PARSER_SCALA = $(if ${PARSER_BASENAME},$(addprefix ${OUT}/${TARGET_MODULE}/,${PARSER_FILES}))
 PARSER_BASE = $(addsuffix ParserBase.scala,${PARSER_BASENAME})
 
-.PHONY: ${DRIVER_CLASSES} ${DRIVER_RUNS} ${GENERATE_TARGETS}
+.PHONY: ${RUN_CLASSES} ${RUN_TARGETS} ${GENERATE_TARGETS}
 # Resolve module-specific prerequisites after Make knows the target and matched path.
 .SECONDEXPANSION:
 
-${DRIVER_CLASSES} ${DRIVER_RUNS}: ${OUT}/$$(DRIVER_MODULE)/.compiled
+${RUN_CLASSES} ${RUN_TARGETS}: ${OUT}/$$(RUN_MODULE)/.compiled
 
-${DRIVER_CLASSES}:
-	@test -f "${OUT}/${DRIVER_MODULE}/${MAIN_CLASS}.class" || \
-	  { echo "Missing main class ${MAIN_CLASS} in ${OUT}/${DRIVER_MODULE}" >&2; exit 1; }
+${RUN_CLASSES}:
+	@test -f "${OUT}/${RUN_MODULE}/${MAIN_CLASS}.class" || \
+	  { echo "Missing main class ${MAIN_CLASS} in ${OUT}/${RUN_MODULE}" >&2; exit 1; }
 
-${DRIVER_RUNS}:
-	${SCALA} ${JVMFLAGS} -cp ${OUT}/${DRIVER_MODULE}:$(abspath ${APSLIB}) ${MAIN_CLASS} ${ARGS}
+${RUN_TARGETS}:
+	${SCALA} ${JVMFLAGS} -cp ${OUT}/${RUN_MODULE}:$(abspath ${APSLIB}) ${MAIN_CLASS} ${ARGS}
 
 ${GENERATE_TARGETS}: ${OUT}/%/generate: $$(MODULE_SCALA)
 

@@ -1,34 +1,62 @@
 SHARED_SOURCES = tiny-parser.handcode.scala
 
-DRIVERS = BroadFiberCycleDriver BelowFiberCycleDriver BelowSingleFiberCycleDriver \
-	LocalFiberCycleDriver TestCollDriver TestUseCollDriver TestCycleDriver UseGlobal \
-	TestFieldsDriver TestForDriver TestForPatternsDriver TestCasePatternsDriver \
-	TestNestedPatternsDriver FinishDriver
+RUNS = broad-fiber-cycle below-fiber-cycle below-single-fiber-cycle \
+	local-fiber-cycle test-coll test-use-coll test-cycle use-global \
+	test-fields test-for test-for-patterns test-case-patterns \
+	test-nested-patterns test-finish
 
-DRIVER.BroadFiberCycleDriver = broad-fiber-cycle.aps DYNAMIC,STATIC broad-fiber-cycle-driver.scala
+SOURCES.BroadFiberCycleDriver = broad-fiber-cycle.aps broad-fiber-cycle-driver.scala
+DRIVER.broad-fiber-cycle = BroadFiberCycleDriver
+EVALUATORS.broad-fiber-cycle = DYNAMIC STATIC
 
-DRIVER.BelowFiberCycleDriver = below-fiber-cycle.aps DYNAMIC,STATIC below-fiber-cycle-driver.scala
+SOURCES.BelowFiberCycleDriver = below-fiber-cycle.aps below-fiber-cycle-driver.scala
+DRIVER.below-fiber-cycle = BelowFiberCycleDriver
+EVALUATORS.below-fiber-cycle = DYNAMIC STATIC
 
-DRIVER.BelowSingleFiberCycleDriver = below-single-fiber-cycle.aps DYNAMIC,STATIC below-single-fiber-cycle-driver.scala
+SOURCES.BelowSingleFiberCycleDriver = below-single-fiber-cycle.aps below-single-fiber-cycle-driver.scala
+DRIVER.below-single-fiber-cycle = BelowSingleFiberCycleDriver
+EVALUATORS.below-single-fiber-cycle = DYNAMIC STATIC
 
-DRIVER.LocalFiberCycleDriver = local-fiber-cycle.aps DYNAMIC,STATIC local-fiber-cycle-driver.scala
+SOURCES.LocalFiberCycleDriver = local-fiber-cycle.aps local-fiber-cycle-driver.scala
+DRIVER.local-fiber-cycle = LocalFiberCycleDriver
+EVALUATORS.local-fiber-cycle = DYNAMIC STATIC
 
-DRIVER.TestCollDriver = test-coll.aps DYNAMIC,STATIC test-coll-driver.scala
+SOURCES.TestCollDriver = test-coll.aps test-coll-driver.scala
+DRIVER.test-coll = TestCollDriver
+EVALUATORS.test-coll = DYNAMIC STATIC
 
-DRIVER.TestUseCollDriver = test-use-coll.aps DYNAMIC,STATIC test-use-coll-driver.scala
+SOURCES.TestUseCollDriver = test-use-coll.aps test-use-coll-driver.scala
+DRIVER.test-use-coll = TestUseCollDriver
+EVALUATORS.test-use-coll = DYNAMIC STATIC
 
-DRIVER.TestCycleDriver = test-cycle.aps DYNAMIC,STATIC test-cycle-driver.scala
+SOURCES.TestCycleDriver = test-cycle.aps test-cycle-driver.scala
+DRIVER.test-cycle = TestCycleDriver
+EVALUATORS.test-cycle = DYNAMIC STATIC
 
-DRIVER.UseGlobal = use-global.aps DYNAMIC,STATIC use-global-driver.scala
+SOURCES.UseGlobal = use-global.aps use-global-driver.scala
+DRIVER.use-global = UseGlobal
+EVALUATORS.use-global = DYNAMIC STATIC
 
-DRIVER.TestFieldsDriver = test-fields.aps DYNAMIC,STATIC test-fields-driver.scala
+SOURCES.TestFieldsDriver = test-fields.aps test-fields-driver.scala
+DRIVER.test-fields = TestFieldsDriver
+EVALUATORS.test-fields = DYNAMIC STATIC
 
-DRIVER.TestForDriver = test-for.aps DYNAMIC,STATIC test-for-driver.scala
+SOURCES.TestForDriver = test-for.aps test-for-driver.scala
+DRIVER.test-for = TestForDriver
+EVALUATORS.test-for = DYNAMIC STATIC
 
-DRIVER.TestForPatternsDriver = test-for-patterns.aps DYNAMIC,STATIC test-for-patterns-driver.scala
+SOURCES.TestForPatternsDriver = test-for-patterns.aps test-for-patterns-driver.scala
+DRIVER.test-for-patterns = TestForPatternsDriver
+EVALUATORS.test-for-patterns = DYNAMIC STATIC
 
-DRIVER.TestCasePatternsDriver = test-case-patterns.aps DYNAMIC,STATIC test-case-patterns-driver.scala
+SOURCES.TestCasePatternsDriver = test-case-patterns.aps test-case-patterns-driver.scala
+DRIVER.test-case-patterns = TestCasePatternsDriver
+EVALUATORS.test-case-patterns = DYNAMIC STATIC
 
-DRIVER.TestNestedPatternsDriver = test-nested-patterns.aps DYNAMIC,STATIC test-nested-patterns-driver.scala
+SOURCES.TestNestedPatternsDriver = test-nested-patterns.aps test-nested-patterns-driver.scala
+DRIVER.test-nested-patterns = TestNestedPatternsDriver
+EVALUATORS.test-nested-patterns = DYNAMIC STATIC
 
-DRIVER.FinishDriver = test-finish.aps DYNAMIC,STATIC finish-driver.scala
+SOURCES.FinishDriver = test-finish.aps finish-driver.scala
+DRIVER.test-finish = FinishDriver
+EVALUATORS.test-finish = DYNAMIC STATIC
