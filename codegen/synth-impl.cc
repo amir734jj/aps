@@ -314,12 +314,13 @@ class FiberDependencyDumper {
       component_scheduled[choice.index] = true;
       scheduled[next->index] = true;
       os << indent();
-      synth_impl_ptr->dump_synth_instance(next, os);
+      bool emitted = synth_impl_ptr->dump_synth_instance(next, os);
       dumped_conditional_block_items.clear();
       dumped_instances.clear();
-      // TOOD: Collections can have 0 or more assignments, if there was no assignment in
-      // in this block body, then we shouldn't add ;
-      os << "; /* " << next << " */\n";
+      if (emitted) {
+        os << ";";
+      }
+      os << "\n";
     }
   }
 
@@ -607,8 +608,10 @@ static void dump_synth_functions(STATE* s, ostream& os) {
           dumped_conditional_block_items.clear();
           dumped_instances.clear();
           os << indent();
-          synth_impl_ptr->dump_synth_instance(cycle_instance, os);
-          os << ";\n";
+          if (synth_impl_ptr->dump_synth_instance(cycle_instance, os)) {
+            os << ";";
+          }
+          os << "\n";
           emit_fixed_point_loop_end(os, independent, guarded_cycle);
         }
         dumped_conditional_block_items.clear();
@@ -853,7 +856,7 @@ class SynthImpl : public SynthImplementation {
                current_aug_graph->global_state->requires_circular_update_support)) {
             o << ", changed";
           }
-          o << ");\n";
+          o << ")";
           break;
         default:
           fatal_error("what sort of assignment lhs: %d", tnode_line_number(assign));
@@ -967,20 +970,19 @@ class SynthImpl : public SynthImplementation {
     }
   }
 
-  void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, synth_util::BlockItem* item, INSTANCE* instance, ostream& o) {
+  bool dump_rhs_instance_helper(AUG_GRAPH* aug_graph, synth_util::BlockItem* item, INSTANCE* instance, ostream& o) {
     if (item == NULL) {
       if (include_comments) {
         o << "// " << instance << " is ready now.\n";
       }
-      return;
+      return false;
     }
 
     if (item->key == synth_util::KEY_BLOCK_ITEM_INSTANCE) {
       synth_util::BlockItemInstance* bi = reinterpret_cast<synth_util::BlockItemInstance*>(item);
 
       if (bi->instance != instance && bi->next != NULL) {
-        dump_rhs_instance_helper(aug_graph, bi->next, instance, o);
-        return;
+        return dump_rhs_instance_helper(aug_graph, bi->next, instance, o);
       }
 
       vector<std::set<Expression>> all_assignments = synth_util::make_instance_assignments(current_aug_graph, current_blocks);
@@ -1021,12 +1023,12 @@ class SynthImpl : public SynthImplementation {
               o << ")";
             }
           }
-          return;
+          return true;
         }
       }
 
       if (instance->fibered_attr.fiber != NULL) {
-        return;
+        return false;
       }
 
       Declaration attr = instance->fibered_attr.attr;
@@ -1051,12 +1053,13 @@ class SynthImpl : public SynthImplementation {
           if (include_comments) {
             o << " /* local collection " << decl_name(attr) << ": no direct assignment, using initial */";
           }
-          return;
+          return true;
         }
       }
 
       o << "throw Evaluation.UndefinedAttributeException(\""
         << synth_util::instance_to_string(instance) << "\")";
+      return true;
     } else if (item->key == synth_util::KEY_BLOCK_ITEM_CONDITION) {
       synth_util::BlockItemCondition* cond = reinterpret_cast<synth_util::BlockItemCondition*>(item);
       bool visited_if_stmt = std::find(dumped_conditional_block_items.begin(), dumped_conditional_block_items.end(), item) != dumped_conditional_block_items.end();
@@ -1090,7 +1093,7 @@ class SynthImpl : public SynthImplementation {
           }
 
           vector<INSTANCE*> saved_instances_before_true_branch(dumped_instances);
-          dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, o);
+          bool emitted_true = dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, o);
           dumped_instances = saved_instances_before_true_branch;
           current_blocks.pop_back();
 
@@ -1106,7 +1109,7 @@ class SynthImpl : public SynthImplementation {
           }
 
           vector<INSTANCE*> saved_instances_before_false_branch(dumped_instances);
-          dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, o);
+          bool emitted_false = dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, o);
           dumped_instances = saved_instances_before_false_branch;
 
           current_blocks.pop_back();
@@ -1115,7 +1118,7 @@ class SynthImpl : public SynthImplementation {
             o << "\n";
             o << indent() << "}";
           }
-          break;
+          return !visited_if_stmt || emitted_true || emitted_false;
         }
         case KEYMatch: {
           Match m = (Match)cond->condition;
@@ -1173,7 +1176,7 @@ class SynthImpl : public SynthImplementation {
             }
             nesting_level--;
             o << indent() << "}";
-            break;
+            return true;
           }
           if (is_for) {
             fatal_error("unsupported pattern in synthesized for statement");
@@ -1219,18 +1222,20 @@ class SynthImpl : public SynthImplementation {
             nesting_level--;
             o << indent() << "}";
           }
-          break;
+          return true;
         }
         default:
           fatal_error("unhandled if statement type");
           break;
       }
     }
+    fatal_error("unhandled synthesized block item");
+    return false;
   }
 
   bool try_dump_funcall(Expression e, ostream& o) override { return synth_util::try_dump_funcall(e, current_aug_graph, this, o); }
 
-  void dump_synth_instance(INSTANCE* instance, ostream& o) override {
+  bool dump_synth_instance(INSTANCE* instance, ostream& o) override {
     bool already_dumped = false;
     if (std::find(dumped_instances.begin(), dumped_instances.end(), instance) != dumped_instances.end()) {
       already_dumped = true;
@@ -1261,14 +1266,14 @@ class SynthImpl : public SynthImplementation {
         o << "v_" << decl_name(instance->node);
       }
       o << ")";
-      return;
+      return true;
     } else if (is_match_formal) {
       o << "v_" << synth_util::instance_to_string(
           instance, emitting_completion || current_synth_functions_state->is_phylum_instance);
     } else if (is_inherited) {
       if (instance->fibered_attr.fiber != NULL &&
           fiber_is_reverse(instance->fibered_attr.fiber)) {
-        dump_rhs_instance_helper(aug_graph, block, instance, o);
+        return dump_rhs_instance_helper(aug_graph, block, instance, o);
       } else if (is_parent_instance) {
         o << "v_" << synth_util::instance_to_string(
             instance, emitting_completion || current_synth_functions_state->is_phylum_instance);
@@ -1279,13 +1284,13 @@ class SynthImpl : public SynthImplementation {
         }
       } else {
         block = synth_util::linearize_block(aug_graph, instance);
-        dump_rhs_instance_helper(aug_graph, block, instance, o);
+        return dump_rhs_instance_helper(aug_graph, block, instance, o);
       }
     } else if (is_function_call_result) {
-      dump_rhs_instance_helper(aug_graph, block, instance, o);
+      return dump_rhs_instance_helper(aug_graph, block, instance, o);
     } else if (is_synthesized) {
       if (is_parent_instance) {
-        dump_rhs_instance_helper(aug_graph, block, instance, o);
+        return dump_rhs_instance_helper(aug_graph, block, instance, o);
       } else {
         for (auto it = synth_functions_states.begin(); it != synth_functions_states.end(); it++) {
           synth_util::SynthFunctionState* synth_function_state = *it;
@@ -1313,7 +1318,7 @@ class SynthImpl : public SynthImplementation {
             nesting_level = saved_nesting;
 
             o << "\n" << indent() << ")";
-            return;
+            return true;
           }
         }
 
@@ -1323,8 +1328,9 @@ class SynthImpl : public SynthImplementation {
         fatal_error("internal error: failed to find synth function for instance");
       }
     } else {
-      dump_rhs_instance_helper(aug_graph, block, instance, o);
+      return dump_rhs_instance_helper(aug_graph, block, instance, o);
     }
+    return true;
   }
 };
 

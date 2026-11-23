@@ -443,20 +443,19 @@ class FarrowImpl : public SynthImplementation {
     }
   }
 
-  void dump_rhs_instance_helper(AUG_GRAPH* aug_graph, synth_util::BlockItem* item, INSTANCE* instance, ostream& o) {
+  bool dump_rhs_instance_helper(AUG_GRAPH* aug_graph, synth_util::BlockItem* item, INSTANCE* instance, ostream& o) {
     if (item == NULL) {
       if (include_comments) {
         o << "// " << instance << " is ready now.\n";
       }
-      return;
+      return false;
     }
 
     if (item->key == synth_util::KEY_BLOCK_ITEM_INSTANCE) {
       synth_util::BlockItemInstance* bi = reinterpret_cast<synth_util::BlockItemInstance*>(item);
 
       if (bi->instance != instance && bi->next != NULL) {
-        dump_rhs_instance_helper(aug_graph, bi->next, instance, o);
-        return;
+        return dump_rhs_instance_helper(aug_graph, bi->next, instance, o);
       }
 
       vector<std::set<Expression>> all_assignments = synth_util::make_instance_assignments(current_aug_graph, current_blocks);
@@ -490,7 +489,7 @@ class FarrowImpl : public SynthImplementation {
               o << ")";
             }
           }
-          return;
+          return true;
         }
       }
 
@@ -516,7 +515,7 @@ class FarrowImpl : public SynthImplementation {
           if (include_comments) {
             o << " /* local collection " << decl_name(attr) << ": no direct assignment, using initial */";
           }
-          return;
+          return true;
         }
       }
       print_instance(instance, stdout);
@@ -558,7 +557,7 @@ class FarrowImpl : public SynthImplementation {
           }
 
           vector<INSTANCE*> dumped_instanced_positive(dumped_instances);
-          dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, o);
+          bool emitted_true = dump_rhs_instance_helper(aug_graph, cond->next_positive, instance, o);
           dumped_instances = dumped_instanced_positive;
 
           if (!visited_if_stmt) {
@@ -574,7 +573,7 @@ class FarrowImpl : public SynthImplementation {
           }
 
           vector<INSTANCE*> dumped_instanced_negative(dumped_instances);
-          dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, o);
+          bool emitted_false = dump_rhs_instance_helper(aug_graph, cond->next_negative, instance, o);
           dumped_instances = dumped_instanced_negative;
 
           current_blocks.pop_back();
@@ -583,7 +582,7 @@ class FarrowImpl : public SynthImplementation {
             o << "\n";
             o << indent() << "}";
           }
-          break;
+          return !visited_if_stmt || emitted_true || emitted_false;
         }
         case KEYMatch: {
           Match m = (Match)cond->condition;
@@ -633,18 +632,20 @@ class FarrowImpl : public SynthImplementation {
             o << indent() << "}";
           }
 
-          break;
+          return true;
         }
         default:
           fatal_error("unhandled if statement type");
           break;
       }
     }
+    fatal_error("unhandled synthesized block item");
+    return false;
   }
 
   bool try_dump_funcall(Expression e, ostream& o) override { return synth_util::try_dump_funcall(e, current_aug_graph, this, o); }
 
-  void dump_synth_instance(INSTANCE* instance, ostream& o) {
+  bool dump_synth_instance(INSTANCE* instance, ostream& o) override {
     bool already_dumped = false;
     if (std::find(dumped_instances.begin(), dumped_instances.end(), instance) != dumped_instances.end()) {
       already_dumped = true;
@@ -675,7 +676,7 @@ class FarrowImpl : public SynthImplementation {
       }
 
       o << ")";
-      return;
+      return true;
     } else if (is_match_formal) {
       o << "v_" << synth_util::instance_to_string(
           instance,
@@ -688,11 +689,11 @@ class FarrowImpl : public SynthImplementation {
             emitting_completion ||
                 current_synth_functions_state->is_phylum_instance);
       } else {
-        dump_rhs_instance_helper(aug_graph, block, instance, o);
+        return dump_rhs_instance_helper(aug_graph, block, instance, o);
       }
     } else if (is_synthesized) {
       if (is_parent_instance) {
-        dump_rhs_instance_helper(aug_graph, block, instance, o);
+        return dump_rhs_instance_helper(aug_graph, block, instance, o);
       } else {
         for (auto it = synth_functions_states.begin(); it != synth_functions_states.end(); it++) {
           synth_util::SynthFunctionState* synth_function_state = *it;
@@ -721,7 +722,7 @@ class FarrowImpl : public SynthImplementation {
             nesting_level = saved_nesting;
 
             o << "\n" << indent() << ")";
-            return;
+            return true;
           }
         }
 
@@ -731,8 +732,9 @@ class FarrowImpl : public SynthImplementation {
         fatal_error("internal error: failed to find synth function for instance");
       }
     } else {
-      dump_rhs_instance_helper(aug_graph, block, instance, o);
+      return dump_rhs_instance_helper(aug_graph, block, instance, o);
     }
+    return true;
   }
 };
 

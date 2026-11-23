@@ -75,7 +75,7 @@ class Implementation {
 class SynthImplementation : public Implementation {
  public:
   virtual bool try_dump_funcall(Expression, ostream&) = 0;
-  virtual void dump_synth_instance(INSTANCE*, ostream&) = 0;
+  virtual bool dump_synth_instance(INSTANCE*, ostream&) = 0;
 };
 
 extern Implementation *dynamic_impl;
