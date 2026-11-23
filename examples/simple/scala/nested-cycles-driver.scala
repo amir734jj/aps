@@ -30,12 +30,12 @@ object NestedCyclesDriver extends App {
   val m_binding = new M_NESTED_CYCLES[m_simple.T_Result]("NestedCycles",m_simple.t_Result);
   val t_binding = m_binding.t_Result;
 
-  Debug.activate();
+  if (args.contains("--debug")) Debug.activate();
 
   m_simple.finish();
   m_binding.finish();
-  println("Messages:");
-  for (i <- t_binding.v_msgs) {
+  println("Results:");
+  for (i <- t_binding.v_msgs.toSeq.sorted) {
     println(i)
   }
 }

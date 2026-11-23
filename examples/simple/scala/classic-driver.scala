@@ -2,7 +2,6 @@
 
 object Classic extends App {
   var simple_tree : M_SIMPLE = null;
-  var p: Any = _;
   if (args.length == 0) {
     simple_tree = new M_SIMPLE("Simple");
     val t_simple = simple_tree.t_Result;
@@ -13,7 +12,7 @@ object Classic extends App {
 	t_simple.v_assign_stmt(t_simple.v_variable("x"),
 			       t_simple.v_variable("y"));
     val ss = t_simple.v_xcons_stmts(t_simple.v_no_stmts(),s);
-    p = t_simple.v_program(t_simple.v_block(ds,ss));
+    t_simple.v_program(t_simple.v_block(ds,ss));
   } else {
     val ss = new SimpleScanner(new java.io.FileReader(args(0)));
     val sp = new SimpleParser();
@@ -23,21 +22,20 @@ object Classic extends App {
       System.exit(1);
     }
     simple_tree = sp.getTree();
-    p = simple_tree.t_Program;
   }
   
   val m_simple = simple_tree;
   val m_binding = new M_NAME_RESOLUTION[m_simple.T_Result]("Binding",m_simple.t_Result);
   val t_binding = m_binding.t_Result;
 
-  Debug.activate();
+  if (args.contains("--debug")) Debug.activate();
 
   m_simple.finish();
   m_binding.finish();
-  println("Messages:");
+  println("Results:");
 
-  var program: t_binding.T_Program = p.asInstanceOf[t_binding.T_Program];
-  for (m <- t_binding.v_prog_msgs(program)) {
+  val program = t_binding.t_Program.nodes(0);
+  for (m <- t_binding.v_prog_msgs(program).toSeq.sorted) {
     println(m);
   }
 }
