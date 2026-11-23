@@ -39,7 +39,7 @@ include ../common.mk
 ```Makefile
 DRIVERS                   Driver names, local to this example
 DRIVER.<name>             <module>.aps <evaluators> <files.scala...> [MainObject]
-SHARED_SOURCES            Additional APS or Scala inputs shared by the example's modules
+SHARED_SOURCES            Additional APS or Scala inputs shared by the example's modules (e.g. tiny-parser.handcode.scala)
 MODULE_CONFIG             Rebuild dependencies (default: source folder's Makefile, scala/scala.mk, and ast.mk)
 PARSER_BASENAME           Prefix for generated scanner, parser, and token classes
 ```
