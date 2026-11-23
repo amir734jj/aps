@@ -16,9 +16,12 @@ object FarrowLvDriver extends App {
   val m_farrow_lv_tree = farrow_lv_tree;
   val m_farrow_lv = new M_FARROW_LV[m_farrow_lv_tree.T_Result]("FarrowLv", m_farrow_lv_tree.t_Result);
 
-  Debug.activate();
+  if (args.contains("--debug")) Debug.activate();
 
   m_farrow_lv_tree.finish();
   m_farrow_lv.finish();
+
+  println("Results:");
+  m_farrow_lv.v_program_live(m_farrow_lv.t_Program.nodes(0)).toSeq.map(_.name).sorted.foreach(println);
 
 }
