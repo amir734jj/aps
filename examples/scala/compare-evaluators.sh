@@ -2,13 +2,13 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-DYNAMIC_EVALUATOR="DYNAMIC"
-STATIC_EVALUATOR="STATIC"
-FARROW_EVALUATOR="FARROW"
-DEFAULT_EVALUATORS="$DYNAMIC_EVALUATOR,$STATIC_EVALUATOR"
-
 if [ $# -eq 0 ]; then
   exec make -C "$SCRIPT_DIR/.." test
+fi
+
+if [ $# -ne 3 ] || [ -z "$3" ]; then
+  echo "Usage: $0 driver programs evaluators" >&2
+  exit 2
 fi
 
 extract_results() {
@@ -119,6 +119,6 @@ run_driver() {
 
 driver="$1"
 args="${2:-}"
-evals="${3:-$DEFAULT_EVALUATORS}"
+evals="$3"
 run_driver "$driver" "$args" "$evals"
 exit $?
